@@ -1,0 +1,40 @@
+Project: Causal_ADRD
+Author: Daniel Mork
+Created: Jan. 21, 2022
+Overview: Causal inference analysis of air pollution (PM2.5, NO2, Ozone)
+  effect on AD/ADRD first hospitalization.
+
+File descriptions:
+/R/
+  /0. Data Pipeline/
+    1. ADRD Hospitalization Data.R: 
+    2. Denominator file.R:
+    3. Exposure data.R:
+  /1. Analysis/
+  /2. Deliverables/
+
+Data descriptions:
+../../Data/Causal_ADRD/
+  /Aggregated/
+    qid_agg_entry_to_followup.fst: complete merged data aggregated by zip,
+      entry year, followup year, sex, race, dual enrollment, number AD/ADRD
+      events, number deaths
+  /Denominator/
+    qid_complete.fst: individual data (1 row per unique individual-year, with
+      full year enrollment) and individual specific data: zip, sex, age, race, 
+      dual, death
+    zip_yr_confounders.fst: confounders from census, bfrss, etc. at every zip 
+      and year combination, ready for merging with aggregated obsevational data
+  /Exposures/
+    zip_yr_exposures.fst: exposure data for every year-zip combination, includes
+      PM2.5, NO2, Ozone, temp (max summer/winter), relative humidity (summer/winter)
+      green space %, blue space %, ...
+  /Hosp_outcomes/
+    First_hosp_AD_primary.fst: date of first primary AD hospitalization
+    First_hosp_ADRD_primary.fst: date for first primary ADRD hospitalization
+    First_hosp_AD_any.fst: date of first AD hospitalization (primary/secondary)
+    First_hosp_ADRD_any.fst: date of first ADRD hospitalization (primary/secondary)
+    AD_primary.fst: all primary AD hosp
+    AD_any.fst: all primary or secondary AD hosp
+    ADRD_primary.fst: all primary ADRD hosp
+    ADRD_any.fst: all primary or secondary ADRD hosp
