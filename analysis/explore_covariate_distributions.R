@@ -2,6 +2,7 @@ rm(list = ls())
 gc()
 
 ##### 0. Setup #####
+
 library(data.table)
 library(fst)
 library(purrr)
@@ -33,14 +34,14 @@ hist(unlist(map2(ADRD_agg$ADRD_year, ADRD_agg$n_persons, rep)), main="Year of ev
 hist(unlist(map2(ADRD_agg$ffs_entry_year, ADRD_agg$n_persons, rep)), main = "FFS entry year", xlab="")
 hist(unlist(map2(ADRD_agg$n_years, ADRD_agg$n_persons, rep)), main = "Number of years in study", xlab="")
 
-## Plot quantitative covariates, weighting by strata size ##
+# Plot quantitative covariates, weighting by strata size #
 hist(unlist(map2(ADRD_agg$mean_bmi, ADRD_agg$n_persons, rep)), main = "Mean BMI in ZIP code in year before event", xlab="")
 hist(unlist(map2(ADRD_agg$smoke_rate, ADRD_agg$n_persons, rep)), main = "Smoking rate in ZIP code in year before event", xlab="")
 hist(unlist(map2(ADRD_agg$medhouseholdincome, ADRD_agg$n_persons, rep)), main = "Median household income in ZIP code in year before event", xlab="Dollars")
-hist(unlist(map2(ADRD_agg$education, ADRD_agg$n_persons, rep)), main = "Education rate? in ZIP code in year before event", xlab="")
-hist(unlist(map2(ADRD_agg$pct_blk, ADRD_agg$n_persons, rep)), main = "Percent Black in ZIP code in year before event", xlab="")
-hist(unlist(map2(ADRD_agg$hispanic, ADRD_agg$n_persons, rep)), main = "Percent Hispanic in ZIP code in year before event", xlab="")
-hist(unlist(map2(ADRD_agg$pct_owner_occ, ADRD_agg$n_persons, rep)), main = "Percent Owner Occupancy? in ZIP code in year before event", xlab="")
+hist(unlist(map2(ADRD_agg$education, ADRD_agg$n_persons, rep)), main = "Proportion NOT graduated high school in ZIP code in year before event", xlab="")
+hist(unlist(map2(ADRD_agg$pct_blk, ADRD_agg$n_persons, rep)), main = "Proportion Black in ZIP code in year before event", xlab="")
+hist(unlist(map2(ADRD_agg$hispanic, ADRD_agg$n_persons, rep)), main = "Proportion Hispanic in ZIP code in year before event", xlab="")
+hist(unlist(map2(ADRD_agg$pct_owner_occ, ADRD_agg$n_persons, rep)), main = "Proportion Residents who own their home in ZIP code in year before event", xlab="")
 hist(unlist(map2(ADRD_agg$PIR, ADRD_agg$n_persons, rep)), main = "Mean Poverty-Income Ratio (PIR) in ZIP code in year before event", xlab="")
 hist(unlist(map2(ADRD_agg$pr, ADRD_agg$n_persons, rep)), main = "Mean annual precipitation in year before event", xlab="Inches")
 
@@ -50,18 +51,18 @@ logit <- function(x){
 
 # Plot transformed covariates, weighting by strata size
 hist(sqrt(unlist(map2(ADRD_agg$medhouseholdincome, ADRD_agg$n_persons, rep))), main = "Sqrt(Median household income in ZIP code in year before event)", xlab="Sqrt(Dollars)")
-hist(logit(unlist(map2(ADRD_agg$education, ADRD_agg$n_persons, rep))), main = "Logit(Education rate? in ZIP code in year before event)", xlab="") # sqrt transformation would also make distribution symmetric
-hist(logit(unlist(map2(ADRD_agg$pct_blk, ADRD_agg$n_persons, rep))), main = "Logit(Percent Black in ZIP code in year before event)", xlab="")
-hist(logit(unlist(map2(ADRD_agg$hispanic, ADRD_agg$n_persons, rep))), main = "Logit(Percent Hispanic in ZIP code in year before event)", xlab="")
-hist(logit(unlist(map2(ADRD_agg$pct_owner_occ, ADRD_agg$n_persons, rep))), main = "Logit(Percent Owner Occupancy? in ZIP code in year before event)", xlab="")
+hist(logit(unlist(map2(ADRD_agg$education, ADRD_agg$n_persons, rep))), main = "Logit(Proportion NOT graduated high school in ZIP code in year before event)", xlab="") # sqrt transformation would also make distribution symmetric
+hist(logit(unlist(map2(ADRD_agg$pct_blk, ADRD_agg$n_persons, rep))), main = "Logit(Proportion Black in ZIP code in year before event)", xlab="")
+hist(logit(unlist(map2(ADRD_agg$hispanic, ADRD_agg$n_persons, rep))), main = "Logit(Proportion Hispanic in ZIP code in year before event)", xlab="")
+hist(logit(unlist(map2(ADRD_agg$pct_owner_occ, ADRD_agg$n_persons, rep))), main = "Logit(Proportion Residents who own their home in ZIP code in year before event)", xlab="")
 hist(log(unlist(map2(ADRD_agg$PIR, ADRD_agg$n_persons, rep))), main = "Log(Mean Poverty-Income Ratio (PIR) in ZIP code in year before event)", xlab="") # skew left after log transformation
 
 # Plot exposure variables (quantitative), weighted by strata size
 hist(unlist(map2(ADRD_agg$pm25, ADRD_agg$n_persons, rep)), main = "Mean annual PM2.5 in ZIP code in year before event", xlab="Micrograms/cubic meter")
-hist(unlist(map2(ADRD_agg$no2, ADRD_agg$n_persons, rep)), main = "Mean annual NO2 in ZOP code in year before event", xlab="Micrograms/cubmic meter") # skew right
-hist(unlist(map2(ADRD_agg$ozone_summer, ADRD_agg$n_persons, rep)), main = "Mean summer ozone in ZIP code in year before event", xlab="Micrograms/cubic meter")
+hist(unlist(map2(ADRD_agg$no2, ADRD_agg$n_persons, rep)), main = "Mean annual NO2 in ZOP code in year before event", xlab="PPB") # skew right
+hist(unlist(map2(ADRD_agg$ozone_summer, ADRD_agg$n_persons, rep)), main = "Mean summer ozone in ZIP code in year before event", xlab="PPB")
 
-hist(sqrt(unlist(map2(ADRD_agg$no2, ADRD_agg$n_persons, rep))), main = "Sqrt(Mean annual NO2 in ZOP code in year before event)", xlab="Sqrt(Micrograms/cubmic meter)")
+hist(sqrt(unlist(map2(ADRD_agg$no2, ADRD_agg$n_persons, rep))), main = "Sqrt(Mean annual NO2 in ZOP code in year before event)", xlab="Sqrt(PPB)")
 
 # Save transformed variables in data table
 ADRD_agg[, `:=`(sqrt_medhouseholdincome = sqrt(medhouseholdincome),
@@ -71,4 +72,3 @@ ADRD_agg[, `:=`(sqrt_medhouseholdincome = sqrt(medhouseholdincome),
                 logit_pct_owner_occ = logit(pct_owner_occ),
                 log_PIR = log(PIR),
                 sqrt_no2 = sqrt(no2))]
-
