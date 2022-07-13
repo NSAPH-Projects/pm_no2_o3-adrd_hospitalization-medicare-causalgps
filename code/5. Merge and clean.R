@@ -11,8 +11,8 @@ data(zipcode)
 options(stringsAsFactors = FALSE)
 
 setDTthreads(threads = 16)
-
-dir_data <- "/nfs/home/D/dam9096/shared_space/ci3_analysis/dmork/Data/Causal_ADRD/"
+dir_proj <- "~/nsaph_projects/pm_no2_o3-adrd_hosp-medicare-causalgps/"
+dir_data <- paste0(dir_proj, "data/")
 
 ##### 0. Load data #####
 yr_zip_dat <- read_fst(paste0(dir_data, "denom/year_zip_confounders.fst"), as.data.table = TRUE)
@@ -25,10 +25,8 @@ expos_dat[, dat_year := year + 1] # year for merging into dataset (year before e
 expos_dat[, zip := as.integer(zip)]
 setkey(expos_dat, zip, dat_year)
 
-AD_agg <- read_fst(paste0(dir_data, "aggregated/AD_agg.fst"), as.data.table = TRUE)
-AD_agg[, AD_year := ffs_entry_year + n_years - 1]
-ADRD_agg <- read_fst(paste0(dir_data, "aggregated/ADRD_agg.fst"), as.data.table = TRUE)
-ADRD_agg[, ADRD_year := ffs_entry_year + n_years - 1]
+AD_agg <- read_fst(paste0(dir_data, "aggregated/AD_agg_corrected.fst"), as.data.table = TRUE)
+ADRD_agg <- read_fst(paste0(dir_data, "aggregated/ADRD_agg_corrected.fst"), as.data.table = TRUE)
 
 #### 1. Merge and clean ####
 setkey(AD_agg, AD_zip, AD_year)
@@ -54,9 +52,9 @@ AD_agg <- AD_agg[!is.na(statecode)]
 ADRD_agg <- ADRD_agg[!is.na(statecode)]
 
 ## remaining complete cases
-AD_agg[complete.cases(AD_agg), .N] # 12167271
-ADRD_agg[complete.cases(ADRD_agg), .N] # 12094195
+AD_agg[complete.cases(AD_agg), .N] # 21,467,418
+ADRD_agg[complete.cases(ADRD_agg), .N] # 21,388,893
 
 ## Save complete data
-write_fst(AD_agg[complete.cases(AD_agg)], paste0(dir_data, "analysis/AD_complete.fst"))
-write_fst(ADRD_agg[complete.cases(ADRD_agg)], paste0(dir_data, "analysis/ADRD_complete.fst"))
+write_fst(AD_agg[complete.cases(AD_agg)], paste0(dir_data, "analysis/AD_complete_corrected.fst"))
+write_fst(ADRD_agg[complete.cases(ADRD_agg)], paste0(dir_data, "analysis/ADRD_complete_corrected.fst"))
