@@ -23,17 +23,18 @@ ADRD_agg <- read_fst(paste0(dir_proj, "data/analysis/ADRD_complete_corrected.fst
 ADRD_agg_lagged <- ADRD_agg[ADRD_year - ffs_entry_year >= 2, ]
 
 
-#### Remove collinear covariates, classify covariates ####
+#### Classify variables ####
 
-ADRD_agg_lagged_subset <- copy(ADRD_agg_lagged)
-ADRD_agg_lagged_subset[, `:=`(tmmx = NULL, rmax = NULL)] # cor(tmmx, winter_tmmx) = 0.93379, cor(rmax, summer_rmax) = 0.91255
+exposure <- "pm25"
+outcome <- "n_ADRDhosp"
 zip_quant_var_names <- c("mean_bmi", "smoke_rate", "hispanic", "pct_blk", "medhouseholdincome",
                 "medianhousevalue", "PIR", "poverty", "education", "popdensity", "pct_owner_occ",
-                "summer_tmmx", "winter_tmmx", "summer_rmax", "winter_rmax", "no2", "ozone_summer",
-                "ozone_winter", "ozone_fall", "ozone_spring", "pr")
-zip_var_names <- c(zip_quant_var_names, "ADRD_year", "region")
+                "summer_tmmx", "summer_rmax", "no2", "ozone_summer")
+zip_var_names <- c(zip_quant_var_names, "ADRD_year", "region", "statecode")
 zip_var_names2 <- c(zip_quant_var_names, "ADRD_year")
 # zip_year_var_names <- c("ADRD_year", zip_var_names)
+
+ADRD_agg_lagged_subset <- subset(ADRD_agg_lagged, select = c(exposure, outcome, zip_var_names))
 
 
 #### Use CausalGPS package ####
@@ -48,10 +49,9 @@ zip_var_names2 <- c(zip_quant_var_names, "ADRD_year")
 
 # dt_subset <- ADRD_agg_lagged[sexM == F & race_cat == "black" & any_dual == F & ADRD_age == 80 & ADRD_year == 2010 & ffs_entry_year == 2000]
 
-included_states <- "PA" # c("DC", "WY", "ND")
-# dt_subset <- ADRD_agg_lagged_subset[statecode %in% ] # states with least observations
-dt_subset <- ADRD_agg_lagged_subset[statecode %in% included_states]
-dt_subset[, `:=`(region = NULL)]
+# included_states <- "WY" # c("DC", "WY", "ND") # states with least observations
+# dt_subset <- ADRD_agg_lagged_subset[statecode %in% included_states]
+# dt_subset[, `:=`(region = NULL, statecode = NULL)]
 
 # examine and/or transform quantitative covariates
 
@@ -63,13 +63,19 @@ dt_subset[, `:=`(region = NULL)]
 # hist(sqrt(dt_subset$poverty+0.001))
 # hist(sqrt(1-dt_subset$pct_owner_occ))
 
-Y_subset <- dt_subset$n_ADRDhosp
-w_subset <- dt_subset$pm25
-c_subset <- as.data.frame(subset(dt_subset, select = zip_var_names2))
+# Y_subset <- dt_subset$n_ADRDhosp
+# w_subset <- dt_subset$pm25
+# c_subset <- as.data.frame(subset(dt_subset, select = zip_var_names2))
 
 # explore how many rows in c (i.e., exposures plus covariates) are duplicated
 duplicates <- as.data.table(c_subset)[, .(count = .N), by = names(c_subset)]
 summary(duplicates$count)
+
+n_random_rows <- 35444
+random_rows <- sample(1:nrow(ADRD_agg_lagged_subset), n_random_rows)
+Y_subset <- ADRD_agg_lagged_subset[random_rows, n_ADRDhosp]
+w_subset <- ADRD_agg_lagged_subset[random_rows, pm25]
+c_subset <- as.data.frame(subset(ADRD_agg_lagged_subset[random_rows,], select = c("region", zip_var_names2)))
 
 # Y <- ADRD_agg_lagged$n_ADRDhosp
 # w <- ADRD_agg_lagged$pm25
@@ -89,10 +95,11 @@ matched_pop_state <- generate_pseudo_pop(Y_subset,
                                   transformers = list("pow2", "pow3", "sqrt", "log"), # list("pow2", "pow3", "sqrt", "log")
                                   sl_lib = c("m_xgboost"),
                                   params = list(xgb_nrounds = c(10, 30, 50)),
-                                  nthread = 16, # number of cores
+                                  nthread = 15, # number of cores
                                   covar_bl_method = "absolute",
-                                  covar_bl_trs = 0.1,
-                                  covar_bl_trs_type = "mean",
+                                  covar_bl_trs = 0.15,
+                                  covar_bl_trs_type = "maximal",
+                                 optimized_compile = TRUE,
                                   trim_quantiles = c(0.05,0.95),
                                   max_attempt = 5,
                                   matching_fun = "matching_l1",
@@ -102,14 +109,15 @@ matched_pop_state <- generate_pseudo_pop(Y_subset,
 # check ZIP-level covariate balance in matched data
 cor_val_matched_state <- matched_pop_state$adjusted_corr_results
 cor_val_unmatched_state <- matched_pop_state$original_corr_results
-abs_cor = data.frame(cov = colnames(c_subset),
+abs_cor = data.frame(cov = c(zip_quant_var_names, "region"), # colnames(c_subset)
                      unmatched = cor_val_unmatched_state$absolute_corr,
                      matched = cor_val_matched_state$absolute_corr) %>%
   gather(c(unmatched, matched), key = 'dataset', value = 'absolute correlation')
 ggplot(abs_cor, aes(x = cov, y = `absolute correlation`, color = dataset, group = dataset)) +
   geom_point() +
   geom_line() +
-  theme(axis.text.x = element_text(angle = 90))
+  ggtitle(paste("Random set of", n_random_rows, "observations")) + # ggtitle(included_states)
+  theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
 
 # check number of matches
 length(unique(matched_pop_state$pseudo_pop$row_index))
