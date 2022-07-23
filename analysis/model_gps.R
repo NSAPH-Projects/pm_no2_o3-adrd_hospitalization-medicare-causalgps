@@ -8,6 +8,7 @@ library(fst)
 # library(NSAPHutils)
 library(CausalGPS)
 library(mgcv)
+library(gnm)
 library(ggplot2)
 library(tidyr)
 
@@ -17,148 +18,272 @@ set.seed(100)
 dir_proj <- "~/nsaph_projects/pm_no2_o3-adrd_hosp-medicare-causalgps/"
 dir_data <- paste0(dir_proj, "data/")
 
+# create log file to see internal processes of CausalGPS
+# to do: change name of repo from "pm_no2_o3-adrd_hospitalization-medicare-causalgps" (since name is similar to project folder) to "git"
+set_logger(logger_file_path = paste0(dir_proj, "pm_no2_o3-adrd_hospitalization-medicare-causalgps/analysis/CausalGPS.log"),
+           logger_level = "TRACE")
+
 ADRD_agg <- read_fst(paste0(dir_proj, "data/analysis/ADRD_complete_corrected.fst"), as.data.table = TRUE)
 
 # Approximate first ADRD hospitalization by requiring no ADRD hosps for 2 years
 ADRD_agg_lagged <- ADRD_agg[ADRD_year - ffs_entry_year >= 2, ]
 
 
-#### Classify variables ####
+##### Classify variables #####
 
-exposure <- "pm25"
-outcome <- "n_ADRDhosp"
+exposure_name <- "pm25"
+outcome_name <- "n_ADRDhosp"
 zip_quant_var_names <- c("mean_bmi", "smoke_rate", "hispanic", "pct_blk", "medhouseholdincome",
                 "medianhousevalue", "PIR", "poverty", "education", "popdensity", "pct_owner_occ",
                 "summer_tmmx", "summer_rmax", "no2", "ozone_summer")
-zip_var_names <- c(zip_quant_var_names, "ADRD_year", "region", "statecode")
-zip_var_names2 <- c(zip_quant_var_names, "ADRD_year")
-# zip_year_var_names <- c("ADRD_year", zip_var_names)
+zip_cat_var_names <- c("region", "ADRD_year")
+zip_var_names <- c(zip_quant_var_names, zip_cat_var_names)
+indiv_cat_var_names <- c("sexM", "race_cat", "any_dual")
+indiv_var_names <- c(indiv_cat_var_names, "ADRD_age") # note: for now, using ADRD_age as a quantitative variable (not binned)
+offset_var_names <- c("n_persons", "n_years")
 
-ADRD_agg_lagged_subset <- subset(ADRD_agg_lagged, select = c(exposure, outcome, zip_var_names))
-
-
-#### Use CausalGPS package ####
-
-# generate_pseudo_pop
-# estimate_pmetric_erf
-# estimate_npmetric_erf
-# estimate_gps
-# estimate_erf
-# generate_syn_data
+ADRD_agg_lagged_subset <- subset(ADRD_agg_lagged, select = c(exposure_name, outcome_name, zip_var_names, indiv_var_names, offset_var_names))
+for (var in c(zip_cat_var_names, indiv_cat_var_names)){
+  ADRD_agg_lagged_subset[[var]] <- as.factor(ADRD_agg_lagged_subset[[var]])
+}
 
 
-# dt_subset <- ADRD_agg_lagged[sexM == F & race_cat == "black" & any_dual == F & ADRD_age == 80 & ADRD_year == 2010 & ffs_entry_year == 2000]
+##### Subset data to make code run faster #####
 
-# included_states <- "WY" # c("DC", "WY", "ND") # states with least observations
-# dt_subset <- ADRD_agg_lagged_subset[statecode %in% included_states]
-# dt_subset[, `:=`(region = NULL, statecode = NULL)]
-
-# examine and/or transform quantitative covariates
-
-# for (var in zip_quant_var_names){
-#   hist(dt_subset[[var]], main = included_states, xlab = var)
-# }
-# skew_r_vars <- c("hispanic", "pct_blk", "medianhouseholdincome", "medianhousevalue", "PIR", "poverty", "popdensity")
-# skew_l_vars <- c("pct_owner_occ")
-# hist(sqrt(dt_subset$poverty+0.001))
-# hist(sqrt(1-dt_subset$pct_owner_occ))
-
-# Y_subset <- dt_subset$n_ADRDhosp
-# w_subset <- dt_subset$pm25
-# c_subset <- as.data.frame(subset(dt_subset, select = zip_var_names2))
-
-# explore how many rows in c (i.e., exposures plus covariates) are duplicated
-duplicates <- as.data.table(c_subset)[, .(count = .N), by = names(c_subset)]
-summary(duplicates$count)
-
-n_random_rows <- 35444
+set.seed(100)
+n_random_rows <- 100000
 random_rows <- sample(1:nrow(ADRD_agg_lagged_subset), n_random_rows)
+# Y_subset <- subset(ADRD_agg_lagged_subset, subset = (row.names(ADRD_agg_lagged_subset) == random_rows), select = outcome_name)
+# w_subset <- subset(ADRD_agg_lagged_subset, subset = random_rows, select = exposure_name)
 Y_subset <- ADRD_agg_lagged_subset[random_rows, n_ADRDhosp]
 w_subset <- ADRD_agg_lagged_subset[random_rows, pm25]
-c_subset <- as.data.frame(subset(ADRD_agg_lagged_subset[random_rows,], select = c("region", zip_var_names2)))
+c_subset <- as.data.frame(subset(ADRD_agg_lagged_subset[random_rows,], select = zip_var_names))
 
+# Full data
 # Y <- ADRD_agg_lagged$n_ADRDhosp
 # w <- ADRD_agg_lagged$pm25
-# c <- as.data.frame(subset(ADRD_agg_lagged, select = zip_var_names)) # to do: consider including region, latitude, longitude
+# c <- as.data.frame(subset(ADRD_agg_lagged, select = zip_var_names))
+
+# Not used in GPS matching, but used in outcome model
+indiv_vars_subset <- ADRD_agg_lagged_subset[random_rows, .(sexM, race_cat, any_dual, ADRD_age)] # To Do: consider including ffs_entry_year/ADRD_year in GPS or outcome model
+offset_subset <- ADRD_agg_lagged_subset[random_rows, .(person_years = n_persons * n_years)]
+data_subset <- cbind(Y_subset, w_subset, indiv_vars_subset, c_subset, offset_subset)
 
 
-# To Do: transform covariates
+##### Naive (associational) Poisson regression #####
+
+bam_naive <- bam(Y_subset ~ w_subset + no2 + ozone_summer +
+                           any_dual + ADRD_age + sexM + race_cat +
+                           summer_tmmx + summer_rmax + region + ADRD_year +
+                           mean_bmi + smoke_rate + hispanic + pct_blk +
+                           medhouseholdincome + medianhousevalue + PIR + poverty +
+                           education + popdensity + pct_owner_occ,
+                         data = data_subset,
+                         offset = log(person_years),
+                         family = poisson(link = "log"),
+                         samfrac = 0.05,
+                         chunk.size = 5000,
+                         control = gam.control(trace = TRUE))
+summary(bam_naive)
+
+
+##### Write functions to transform variables #####
+
+log_nonneg <- function(x) log(x + 0.001)
+logit_nonneg <- function(x) log((x + 0.001)/(1 - x + 0.001))
+
+
+##### Match on GPS using CausalGPS package #####
 
 # GPS matching on ZIP-level covariates
-matched_pop_state <- generate_pseudo_pop(Y_subset,
+matched_pop_subset <- generate_pseudo_pop(Y_subset,
                                  w_subset,
                                  c_subset,
                                   ci_appr = "matching",
                                   pred_model = "sl",
                                   gps_model = "parametric",
                                   use_cov_transform = TRUE,
-                                  transformers = list("pow2", "pow3", "sqrt", "log"), # list("pow2", "pow3", "sqrt", "log")
+                                  transformers = list("pow2", "pow3", "sqrt", "log_nonneg", "logit_nonneg"), # list("pow2", "pow3")
                                   sl_lib = c("m_xgboost"),
-                                  params = list(xgb_nrounds = c(10, 30, 50)),
+                                  params = list(xgb_nrounds = c(10, 20, 30, 50)),
                                   nthread = 15, # number of cores
                                   covar_bl_method = "absolute",
-                                  covar_bl_trs = 0.15,
+                                  covar_bl_trs = 0.1,
                                   covar_bl_trs_type = "maximal",
                                  optimized_compile = TRUE,
-                                  trim_quantiles = c(0.05,0.95),
+                                  trim_quantiles = c(0.05,0.95), # c(0.05, 0.95) or c(0.01, 0.99)
                                   max_attempt = 5,
                                   matching_fun = "matching_l1",
                                   delta_n = 0.1, # std dev of pm2.5 is 2.87, so I'll set delta_n = 0.2? parameters may depend on if state-level or national
                                   scale = 1)
 
 # check ZIP-level covariate balance in matched data
-cor_val_matched_state <- matched_pop_state$adjusted_corr_results
-cor_val_unmatched_state <- matched_pop_state$original_corr_results
-abs_cor = data.frame(cov = c(zip_quant_var_names, "region"), # colnames(c_subset)
-                     unmatched = cor_val_unmatched_state$absolute_corr,
-                     matched = cor_val_matched_state$absolute_corr) %>%
+cor_val_matched_subset <- matched_pop_subset$adjusted_corr_results
+cor_val_unmatched_subset <- matched_pop_subset$original_corr_results
+abs_cor = data.frame(covariate = zip_var_names, # colnames(c_subset)
+                     unmatched = cor_val_unmatched_subset$absolute_corr,
+                     matched = cor_val_matched_subset$absolute_corr) %>%
   gather(c(unmatched, matched), key = 'dataset', value = 'absolute correlation')
-ggplot(abs_cor, aes(x = cov, y = `absolute correlation`, color = dataset, group = dataset)) +
+ggplot(abs_cor, aes(x = covariate, y = `absolute correlation`, color = dataset, group = dataset)) +
   geom_point() +
   geom_line() +
   ggtitle(paste("Random set of", n_random_rows, "observations")) + # ggtitle(included_states)
   theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
 
 # check number of matches
-length(unique(matched_pop_state$pseudo_pop$row_index))
-sum(matched_pop_state$pseudo_pop$counter)
+counter <- matched_pop_subset$pseudo_pop$counter
+cat("Number of observations included in pseudo-population:", length(unique(matched_pop_subset$pseudo_pop$row_index)))
+cat("Total number of matches:", sum(counter))
+print("Distribution of number of matches per included observation:")
+summary(counter)
+
+# To Do: fix this; ess1 and ess2 are not equivalent; both formulas could be wrong
+# check effective sample size
+# source of formula: https://stats.stackexchange.com/questions/499397/matchit-output-using-coarsened-exact-matching
+ess1 <- sum(counter)^2 / (sum(counter^2))
+counter_scaled_to_1 <- counter/sum(counter) # scale weights to sum to 1
+ess2 <- length(counter_scaled_to_1) / (1 + var(counter_scaled_to_1)) # should be equivalent to ess1
+ess1
+ess2
 
 
-##### IGNORE EVERYTHING BELOW THIS FOR NOW #####
+##### If desired, winsorize matches ("counter" variable) at 95th percentile #####
+
+winsorize_counts = F
+
+if (winsorize_counts){
+  cutoff <- quantile(matched_pop_subset$pseudo_pop$counter, 0.95)
+  matched_pop_subset$pseudo_pop$counter <- ifelse(matched_pop_subset$pseudo_pop$counter > cutoff, cutoff, matched_pop_subset$pseudo_pop$counter)
+  adjusted_corr_obj <- check_covar_balance(matched_pop_subset$pseudo_pop,
+                                           ci_appr="matching",
+                                           nthread=15,
+                                           covar_bl_method = "absolute",
+                                           covar_bl_trs = 0.1,
+                                           covar_bl_trs_type = "maximal",
+                                           optimized_compile=T)
+  matched_pop_subset$adjusted_corr_results <-  adjusted_corr_obj$corr_results
+  
+  # check ZIP-level covariate balance in matched data
+  cor_val_matched_subset <- matched_pop_subset$adjusted_corr_results
+  cor_val_unmatched_subset <- matched_pop_subset$original_corr_results
+  abs_cor = data.frame(covariate = zip_var_names, # colnames(c_subset)
+                       unmatched = cor_val_unmatched_subset$absolute_corr,
+                       matched = cor_val_matched_subset$absolute_corr) %>%
+    gather(c(unmatched, matched), key = 'dataset', value = 'absolute correlation')
+  ggplot(abs_cor, aes(x = covariate, y = `absolute correlation`, color = dataset, group = dataset)) +
+    geom_point() +
+    geom_line() +
+    ggtitle(paste("Random set of", n_random_rows, "observations")) + # ggtitle(included_states)
+    theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
+}
+
+
+##### (Poisson) Parametric outcome models #####
 
 
 # outcome model, including individual-level covariates (i.e., strata), trimming away unmatched data
-# matched_obs <- matched_pop$pseudo_pop$row_index[matched_pop$pseudo_pop$counter > 0]
-matched_obs <- matched_pop$pseudo_pop$row_index
-indiv_vars <- ADRD_agg_lagged[matched_obs, .(sexM, race_cat, any_dual, ADRD_age)] # To Do: consider including ffs_entry_year/ADRD_year in GPS or outcome model
-offset <- dt_subset[matched_obs, .(offset = n_persons * n_years)]
-matched_data <- cbind(matched_pop$pseudo_pop, indiv_vars, offset) # to do: check that rows are in same order and whether this is data.frame
+# matched_obs <- matched_pop_subset$pseudo_pop$row_index[matched_pop_subset$pseudo_pop$counter > 0]
+matched_obs <- matched_pop_subset$pseudo_pop$row_index
+matched_indiv_vars <- indiv_vars_subset[matched_obs] # To Do: consider including ffs_entry_year/ADRD_year in GPS or outcome model
+matched_offset <- offset_subset[matched_obs]
+matched_data <- cbind(matched_pop_subset$pseudo_pop, matched_indiv_vars, matched_offset) # to do: check that rows are in same order
+matched_data <- as.data.frame(matched_data)
 
+# method 1: gam package
+# To do: figure out if exposure_only and exposures_controlled models should stratify across indiv characteristics
+# To do: rd rest of Kevin's code to see if there's anything extra I should do to account for matching
+bam_doubly_robust <- bam(Y ~ w + no2 + ozone_summer +
+                     any_dual + ADRD_age + sexM + race_cat +
+                     summer_tmmx + summer_rmax + region + ADRD_year +
+                     mean_bmi + smoke_rate + hispanic + pct_blk +
+                     medhouseholdincome + medianhousevalue + PIR + poverty +
+                     education + popdensity + pct_owner_occ,
+                   data = matched_data,
+                   offset = log(person_years),
+                   family = poisson(link = "log"),
+                   weights = counter,
+                   samfrac = 0.05,
+                   chunk.size = 5000,
+                   control = gam.control(trace = TRUE))
+summary(bam_doubly_robust)
+
+bam_exposures_controlled <- bam(Y ~ w + no2 + ozone_summer,
+                                data = matched_data,
+                                offset = log(person_years),
+                                family = poisson(link = "log"),
+                                weights = counter,
+                                samfrac = 0.05,
+                                chunk.size = 5000,
+                                control = gam.control(trace = TRUE))
+summary(bam_exposures_controlled)
+
+bam_exposure_only <- bam(Y ~ w,
+                    data = matched_data,
+                    offset = log(person_years),
+                    family = poisson(link = "log"),
+                    weights = counter,
+                    samfrac = 0.05,
+                    chunk.size = 5000,
+                    control = gam.control(trace = TRUE))
+summary(bam_exposure_only)
+
+
+# method 2: gnm package
+# To do: figure out how to use eliminate (rn, there's an error: only first element used)
+gnm_doubly_robust <- gnm(Y ~ w + no2 + ozone_summer +
+                     any_dual + ADRD_age + sexM + race_cat +
+                     summer_tmmx + summer_rmax + region + ADRD_year +
+                     mean_bmi + smoke_rate + hispanic + pct_blk +
+                     medhouseholdincome + medianhousevalue + PIR + poverty +
+                     education + popdensity + pct_owner_occ,
+               eliminate = (as.factor(sexM):as.factor(race_cat):as.factor(any_dual):ADRD_age),
+               data = matched_data,
+               offset = log(person_years),
+               family = poisson(link = "log"),
+               weights = counter)
+summary(gnm_doubly_robust)
+
+# method 3: CausalGPS package
+# To do: wrong right now cuz offset shouldn't be constant; to do - fix
 outcome <- estimate_pmetric_erf(formula = Y ~ . -row_index -gps -counter, # w or .?
-                                  family = poisson, # poisson(link = "log")
-                                  data = matched_data, # To Do: check if this must be a data.frame
-                                  ci_appr = "matching")
+                                family = poisson, # poisson(link = "log")
+                                data = matched_data, # To Do: check if this must be a data.frame
+                                ci_appr = "matching")
 summary(outcome)
 
-# maybe just use gam instead of estimate_pmetric_erf
 
-# non-linear model on matched data
+##### Print results from (Poisson) parametric outcome models #####
 
-erf_obj <- estimate_npmetric_erf(as.double(pseudo$Y),
-                                 as.double(pseudo$w),
+iqr <- IQR(ADRD_agg_lagged$pm25)
+iqr
+coef_bam_doubly_robust <- bam_doubly_robust$coefficients[2]
+coef_bam_exposures_controlled <- bam_exposures_controlled$coefficients[2]
+coef_bam_exposure_only <- bam_exposure_only$coefficients[2]
+coef_bam_doubly_robust
+coef_bam_exposures_controlled
+coef_bam_exposure_only
+cat("Hazard ratio per 1 IQR increase in PM2.5:", exp(coef_bam_doubly_robust*iqr))
+cat("Hazard ratio per 1 IQR increase in PM2.5:", exp(coef_bam_exposures_controlled*iqr))
+cat("Hazard ratio per 1 IQR increase in PM2.5:", exp(coef_bam_exposure_only*iqr))
+
+
+##### Non-parametric model on matched data ##### 
+
+erf_obj <- estimate_npmetric_erf(as.double(matched_data$Y),
+                                 as.double(matched_data$w),
+                                 matched_data$counter, # if I comment out this line, the ERF is much smoother (why?)
                                  bw_seq=seq(0.2,2,0.2),
                                  w_vals = seq(0,15,0.5),
                                  nthread = 16)
-
-#summary(erf_obj)
 plot(erf_obj)
-
-
-#### Alternative: use gam ####
+#summary(erf_obj)
 
 
 
 #### To Do: use transformed variables created in explore_covariate_distributions.R ####
+
+
+##### Old code #####
 
 # Estimate GPS using IPW
 
@@ -323,7 +448,7 @@ print("To compare with Shi et al 2020")
 cat("Hazard ratio per 5 micrograms/m^3 increase in PM2.5:", exp(model_pm25$coefficients[2]*5))
 
 
-##### Old code #####
+
 
 # c <- copy(ADRD_agg_lagged)
 # c[, `:=`(conf_year = NULL, year.y = NULL)] # conf_year = ADRD_year - 1, year.y is probably a duplicate variable
