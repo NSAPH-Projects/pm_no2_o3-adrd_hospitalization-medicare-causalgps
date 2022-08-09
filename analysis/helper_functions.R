@@ -21,31 +21,33 @@ logit_nonneg <- function(x){
   }
 }
 
-# Generate absolute polyserial correlation for each permutation of possible orders of unordered categorical variable and return absolute mean
-# If there are more than 24 permutations of the variable's levels (i.e., there are >5 levels), randomly sample
-# Note - polyserial correlation is calculated using polycor::polyserial, which "based on the assumption that the joint distribution of the quantitative variable and a latent continuous variable underlying the ordinal variable is bivariate normal"
-# param w is the vector of continuous exposures
-cor_unordered_var <- function(w, unordered_var, seed = 42){
-  library(polycor)
-  library(combinat)
+# Generate absolute point-biserial correlation between continuous exposure (w) and binary covariate (binary_cov)
+pt_biserial_cor <- function(w, binary_cov){
+  mean_gp1 <- mean(w[binary_cov == 1])
+  mean_gp0 <- mean(w[binary_cov == 0])
+  s_nminus1 <- sd(w)
+  n1 <- sum(binary_cov == 1)
+  n0 <- sum(binary_cov == 0)
+  n <- length(binary_cov) # n = n0 + n1
   
-  abs_polycor_for_1_order <- function(order){
-    var_ordered <- factor(unordered_var, levels = order, ordered = T)
-    return(abs(polyserial(w, var_ordered)))
-  }
-  
-  levels <- levels(unordered_var)
-  
-  if (length(levels) > 5){
-    set.seed(seed)
-    possible_orders <- lapply(1:100, function (i) sample(levels))
-  } else possible_orders <- permn(levels)
-  
-  correlations <- lapply(possible_orders, abs_polycor_for_1_order)
-  return(mean(unlist(correlations)))
+  r_pb <- (mean_gp1 - mean_gp0) / s_nminus1 * sqrt(n1 / n * n0 / (n-1))
+  abs_r_pb <- abs(r_pb)
+  return(abs_r_pb)
 }
 
-# Check ZIP-level covariate balance in matched data: abs correlation for quantitative or ordered categorical variables, mean polyserial correlation for unordered categorical vars
+# Calculate mean of absolute point-biserial correlation between continuous exposure and each binary indicator for an unordered categorical covariate 
+# params: w is the vector of continuous exposure, unordered_var is vector of unordered categorical covariate 
+cor_unordered_var <- function(w, unordered_var){
+  levels <- levels(unordered_var) # assumes unordered_var is already a factor, as it should be to be entered into generate_pseudo_pop()
+  binary_indicators <- lapply(levels, function(i) 1*(unordered_var == i))
+  abs_r_pb <- lapply(binary_indicators, pt_biserial_cor, w = w)
+  return(mean(unlist(abs_r_pb)))
+}
+
+# Check ZIP-level covariate balance in matched data
+# i.e., absolute correlation for quantitative covariates
+# polyserial correlation for ordered categorical variables
+# mean absolute point-biserial correlation for unordered categorical vars
 # params w and c are the same as what was entered into generate_pseudo_pop()
 all_cov_bal <- function(pseudo_pop, w, c_unordered_vars, ci_appr, all_cov_names, title){
   cor_val_pseudo <- pseudo_pop$original_corr_results$absolute_corr
@@ -101,9 +103,7 @@ quant_cov_bal <- function(pseudo_pop, ci_appr, var_names, title){
 }
 
 # Check ZIP-level covariate balance in matched data via boxplot: unordered categorical variables
-# to do: contrast test or something
-# to do: consider writing function or for loop for all unordered cat vars, or use Xiao's suggestion about polyserial
-cat_cov_bal <- function(pseudo_pop, ci_appr, var_names, title){
+cat_cov_bal_boxplot <- function(pseudo_pop, ci_appr, var_names, title){
   if (ci_appr == "matching") weights = "counter"
   else if (ci_appr == "weighting") weights = "ipw"
   else stop("ci_appr must be 'matching' or 'weighting'")

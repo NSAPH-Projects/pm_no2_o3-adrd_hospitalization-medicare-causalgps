@@ -90,14 +90,8 @@ matched_pop_subset <- generate_pseudo_pop(Y_subset,
                                   delta_n = 0.1, # to do: check if this is good or if should use bigger
                                   scale = 1)
 
-# check ZIP-level covariate balance in matched data: abs correlation for quantitative or ordered categorical variables
-quant_cov_bal(matched_pop_subset, "matching", zip_quant_var_names, title = paste("Random set of", n_random_rows, "observations"))
-
-# check ZIP-level covariate balance in matched data: boxplot for unordered categorical variables
-cat_cov_bal(matched_pop_subset, "matching", zip_unordered_cat_var_names, title = paste("Random set of", n_random_rows, "observations"))
-
-# check ZIP-level covariate balance: abs correlation for quantitative or ordered categorical variables, mean of polyserial correlations for unordered categorical variables
-# To Do: think about polyserial implementation (random sample vs exactly half of all permutations)
+# check ZIP-level covariate balance
+# i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
 all_cov_bal(matched_pop_subset, w_subset, subset(c_subset, select = zip_unordered_cat_var_names),
             "matching", colnames(c_subset), title = paste("Random set of", n_random_rows, "observations"))
 
@@ -156,25 +150,10 @@ weighted_pop_subset <- generate_pseudo_pop(Y_subset,
                                           delta_n = 0.1, # std dev of pm2.5 is 2.87, so I'll set delta_n = 0.2? parameters may depend on if state-level or national
                                           scale = 1)
 
-# check ZIP-level covariate balance in matched data: abs correlation for quantitative or ordered categorical variables
-cor_val_unweighted_subset <- weighted_pop_subset$original_corr_results$absolute_corr[zip_quant_var_names] # remove non-ordinal categorical variables; can include zip_ordered_cat_var_names if exists
-cor_val_weighted_subset <- weighted_pop_subset$adjusted_corr_results$absolute_corr[zip_quant_var_names]
-abs_cor_weighting = data.frame(Covariate = zip_quant_var_names,
-                     Unweighted = cor_val_unweighted_subset,
-                     Weighted = cor_val_weighted_subset) %>%
-  gather(c(Unweighted, Weighted), key = 'Dataset', value = 'Absolute Correlation')
-ggplot(abs_cor_weighting, aes(x = Covariate, y = `Absolute Correlation`, color = Dataset, group = Dataset)) +
-  geom_point() +
-  geom_line() +
-  ggtitle(paste("Random set of", n_random_rows, "observations")) + # ggtitle(included_states)
-  theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
-
-# check ZIP-level covariate balance in matched data: unordered categorical variables
-# to do: contrast test or something, consider writing function or for loop for all unordered cat vars
-ggplot(weighted_pop_subset$pseudo_pop, aes(x = region, y = w, weight = ipw)) +
-  geom_boxplot()
-ggplot(weighted_pop_subset$pseudo_pop, aes(x = ADRD_year, y = w, weight = ipw)) +
-  geom_boxplot()
+# check ZIP-level covariate balance
+# i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
+all_cov_bal(matched_pop_subset, w_subset, subset(c_subset, select = zip_unordered_cat_var_names),
+            "weighting", colnames(c_subset), title = paste("Random set of", n_random_rows, "observations"))
 
 # check number of matches
 ipw <- weighted_pop_subset$pseudo_pop$ipw
