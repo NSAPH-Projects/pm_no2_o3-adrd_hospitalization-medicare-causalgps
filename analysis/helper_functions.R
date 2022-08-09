@@ -21,7 +21,7 @@ logit_nonneg <- function(x){
   }
 }
 
-# Generate polyserial correlation for each permutation of possible orders of unordered categorical variable and return absolute mean
+# Generate absolute polyserial correlation for each permutation of possible orders of unordered categorical variable and return absolute mean
 # If there are more than 24 permutations of the variable's levels (i.e., there are >5 levels), randomly sample
 # Note - polyserial correlation is calculated using polycor::polyserial, which "based on the assumption that the joint distribution of the quantitative variable and a latent continuous variable underlying the ordinal variable is bivariate normal"
 # param w is the vector of continuous exposures
@@ -29,9 +29,9 @@ cor_unordered_var <- function(w, unordered_var, seed = 42){
   library(polycor)
   library(combinat)
   
-  polycor_for_1_order <- function(order){
+  abs_polycor_for_1_order <- function(order){
     var_ordered <- factor(unordered_var, levels = order, ordered = T)
-    return(polyserial(w, var_ordered))
+    return(abs(polyserial(w, var_ordered)))
   }
   
   levels <- levels(unordered_var)
@@ -39,13 +39,10 @@ cor_unordered_var <- function(w, unordered_var, seed = 42){
   if (length(levels) > 5){
     set.seed(seed)
     possible_orders <- lapply(1:100, function (i) sample(levels))
-  } else{
-    all_possible_orders <- permn(levels)
-    possible_orders <- all_possible_orders[1:(length(all_possible_orders)/2)] # only use first half of permutations because half is the mirror image (with same correlations *-1)
-  }
+  } else possible_orders <- permn(levels)
   
-  correlations <- lapply(possible_orders, polycor_for_1_order)
-  return(abs(mean(unlist(correlations))))
+  correlations <- lapply(possible_orders, abs_polycor_for_1_order)
+  return(mean(unlist(correlations)))
 }
 
 # Check ZIP-level covariate balance in matched data: abs correlation for quantitative or ordered categorical variables, mean polyserial correlation for unordered categorical vars
