@@ -64,8 +64,8 @@ weighted_cor_unordered_var <- function(w, unordered_var, weights){
 # mean absolute point-biserial correlation for unordered categorical vars
 # params w and c are the same as what was entered into generate_pseudo_pop()
 all_cov_bal <- function(pseudo_pop, w, c_unordered_vars, ci_appr, all_cov_names, title){
-  cor_val_pseudo <- pseudo_pop$original_corr_results$absolute_corr
-  cor_val_orig <- pseudo_pop$adjusted_corr_results$absolute_corr
+  cor_val_pseudo <- pseudo_pop$adjusted_corr_results$absolute_corr
+  cor_val_orig <- pseudo_pop$original_corr_results$absolute_corr
   
   if (ci_appr == "matching"){
     weights <- pseudo_pop$pseudo_pop$counter
