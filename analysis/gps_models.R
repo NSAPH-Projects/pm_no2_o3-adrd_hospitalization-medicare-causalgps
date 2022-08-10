@@ -63,7 +63,7 @@ set_logger(logger_file_path = paste0(dir_git, "analysis/CausalGPS_logs/CausalGPS
 
 # if using SL.gam, remove mgcv library and allow custom parameters
 # library(SuperLearner)
-# m_gam <- function(cts.num = 16, ...) SL.gam(cts.num = cts.num, ...)
+# m_gam <- function(cts.num = 16, deg.gam = 1, ...) SL.gam(cts.num = cts.num, deg.gam = deg.gam, ...) # to do: explain these params
 # detach("package:mgcv", unload=TRUE)
 
 # To Do: consider using larger delta_n
@@ -76,7 +76,7 @@ matched_pop_subset <- generate_pseudo_pop(Y_subset,
                                   pred_model = "sl",
                                   gps_model = "parametric",
                                   use_cov_transform = TRUE,
-                                  transformers = list("sqrt", "log_nonneg", "logit_nonneg", "pow2", "pow3"),
+                                  transformers = list("pow2", "pow3", "sqrt", "log_nonneg", "logit_nonneg"),
                                   sl_lib = c("m_xgboost"), # or SL.glm
                                   params = list(xgb_nrounds = c(10, 20, 30, 50)), # comment out if using sl_lib = "SL.glm"
                                   nthread = 31, # 47

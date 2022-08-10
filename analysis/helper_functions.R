@@ -21,7 +21,8 @@ logit_nonneg <- function(x){
   }
 }
 
-# Generate absolute point-biserial correlation between continuous exposure (w) and binary covariate (binary_cov)
+# Generate point-biserial correlation between continuous exposure (w) and binary covariate (binary_cov)
+# Note - equivalent to pearson correlation
 pt_biserial_cor <- function(w, binary_cov){
   mean_gp1 <- mean(w[binary_cov == 1])
   mean_gp0 <- mean(w[binary_cov == 0])
@@ -30,9 +31,12 @@ pt_biserial_cor <- function(w, binary_cov){
   n0 <- sum(binary_cov == 0)
   n <- length(binary_cov) # n = n0 + n1
   
-  r_pb <- (mean_gp1 - mean_gp0) / s_nminus1 * sqrt(n1 / n * n0 / (n-1))
-  abs_r_pb <- abs(r_pb)
-  return(abs_r_pb)
+  cor_pb <- (mean_gp1 - mean_gp0) / s_nminus1 * sqrt(n1 / n * n0 / (n-1))
+  return(cor_pb)
+}
+
+abs_pt_biserial_cor <- function(w, binary_cov){
+  return(abs(pt_biserial_cor(w, binary_cov)))
 }
 
 # Calculate mean of absolute point-biserial correlation between continuous exposure and each binary indicator for an unordered categorical covariate 
@@ -40,8 +44,18 @@ pt_biserial_cor <- function(w, binary_cov){
 cor_unordered_var <- function(w, unordered_var){
   levels <- levels(unordered_var) # assumes unordered_var is already a factor, as it should be to be entered into generate_pseudo_pop()
   binary_indicators <- lapply(levels, function(i) 1*(unordered_var == i))
-  abs_r_pb <- lapply(binary_indicators, pt_biserial_cor, w = w)
-  return(mean(unlist(abs_r_pb)))
+  abs_cor_pb <- lapply(binary_indicators, abs_pt_biserial_cor, w = w)
+  return(mean(unlist(abs_cor_pb)))
+}
+
+weighted_cor_unordered_var <- function(w, unordered_var, weights){
+  library(wCorr)
+  
+  levels <- levels(unordered_var) # assumes unordered_var is already a factor, as it should be to be entered into generate_pseudo_pop()
+  binary_indicators <- lapply(levels, function(i) 1*(unordered_var == i))
+  weighted_cor <- lapply(binary_indicators, weightedCorr, y = w, method = "Pearson", weights = weights)
+  abs_weighted_cor <- lapply(weighted_cor, abs)
+  return(mean(unlist(abs_weighted_cor)))
 }
 
 # Check ZIP-level covariate balance in matched data
@@ -53,9 +67,15 @@ all_cov_bal <- function(pseudo_pop, w, c_unordered_vars, ci_appr, all_cov_names,
   cor_val_pseudo <- pseudo_pop$original_corr_results$absolute_corr
   cor_val_orig <- pseudo_pop$adjusted_corr_results$absolute_corr
   
+  if (ci_appr == "matching"){
+    weights <- pseudo_pop$pseudo_pop$counter
+  } else if (ci_appr == "weighting"){
+    weights <- pseudo_pop$pseudo_pop$ipw
+  } else stop("ci_appr must be 'matching' or 'weighting'")
+  
   # correct abs corr values for unordered categorical variables
   for (unordered_var in colnames(c_unordered_vars)){
-    cor_val_pseudo[unordered_var] <- cor_unordered_var(pseudo_pop$pseudo_pop$w, pseudo_pop$pseudo_pop[[unordered_var]])
+    cor_val_pseudo[unordered_var] <- weighted_cor_unordered_var(pseudo_pop$pseudo_pop$w, pseudo_pop$pseudo_pop[[unordered_var]], weights)
     cor_val_orig[unordered_var] <- cor_unordered_var(w, c_unordered_vars[[unordered_var]])
   }
   
