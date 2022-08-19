@@ -13,6 +13,8 @@ dir_proj <- "~/nsaph_projects/pm_no2_o3-adrd_hosp-medicare-causalgps/"
 dir_data <- paste0(dir_proj, "data/")
 ADRD_agg <- read_fst(paste0(dir_data, "analysis/ADRD_complete.fst"), as.data.table = TRUE)
 
+source(paste0(dir_proj, "pm_no2_o3-adrd_hospitalization-medicare-causalgps/analysis/helper_functions.R"))
+
 # Approximate first ADRD shospitalization by requiring no ADRD hosps for 2 years
 ADRD_agg_lagged <- ADRD_agg[ADRD_year - ffs_entry_year >= 2, ]
 
@@ -63,26 +65,7 @@ hist(ADRD_agg_lagged$ffs_entry_year, main = "FFS entry year", xlab="")
 hist(ADRD_agg_lagged$n_years, main = "Number of years in study", xlab="")
 
 # Summarize ZIP-code-level covariates
-mean(ADRD_agg_lagged$mean_bmi)
-sd(ADRD_agg_lagged$mean_bmi)
-mean(ADRD_agg_lagged$smoke_rate)
-sd(ADRD_agg_lagged$smoke_rate)
-mean(ADRD_agg_lagged$pct_blk)
-sd(ADRD_agg_lagged$pct_blk)
-mean(ADRD_agg_lagged$hispanic)
-sd(ADRD_agg_lagged$hispanic)
-mean(ADRD_agg_lagged$education)
-sd(ADRD_agg_lagged$education)
-mean(ADRD_agg_lagged$popdensity)
-sd(ADRD_agg_lagged$popdensity)
-mean(ADRD_agg_lagged$poverty)
-sd(ADRD_agg_lagged$poverty)
-mean(ADRD_agg_lagged$medhouseholdincome)
-sd(ADRD_agg_lagged$medhouseholdincome)
-mean(ADRD_agg_lagged$PIR)
-sd(ADRD_agg_lagged$PIR)
-mean(ADRD_agg_lagged$pct_owner_occ)
-sd(ADRD_agg_lagged$pct_owner_occ)
+explore_zip_covs(ADRD_agg_lagged)
 
 hist(ADRD_agg_lagged$mean_bmi, main = "Mean BMI in ZIP code in year before event", xlab="")
 hist(ADRD_agg_lagged$smoke_rate, main = "Smoking rate in ZIP code in year before event", xlab="")

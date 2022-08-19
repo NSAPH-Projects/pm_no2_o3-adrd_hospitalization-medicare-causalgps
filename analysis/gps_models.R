@@ -12,14 +12,13 @@ library(tidyr)
 
 dir_proj <- "~/nsaph_projects/pm_no2_o3-adrd_hosp-medicare-causalgps/"
 dir_data <- paste0(dir_proj, "data/")
-dir_git <- paste0(dir_proj, "pm_no2_o3-adrd_hospitalization-medicare-causalgps/")
+dir_code <- paste0(dir_proj, "code/")
 
 # read in full data
-ADRD_agg <- read_fst(paste0(dir_proj, "data/analysis/ADRD_complete_corrected.fst"), as.data.table = TRUE)
+ADRD_agg <- read_fst(paste0(dir_data, "analysis/ADRD_complete_corrected.fst"), as.data.table = TRUE)
 ADRD_agg_lagged <- ADRD_agg[ADRD_year - ffs_entry_year >= 2, ] # Approximate first ADRD hospitalization by requiring no ADRD hosps for 2 years
 
-# to do: change name of repo from "pm_no2_o3-adrd_hospitalization-medicare-causalgps" (since name is similar to project folder) to "git"
-source(paste0(dir_proj, "pm_no2_o3-adrd_hospitalization-medicare-causalgps/analysis/helper_functions.R"))
+source(paste0(dir_code, "analysis/helper_functions.R"))
 
 
 ##### Get data for exposure, outcome, and covariates of interest #####
@@ -38,7 +37,7 @@ for (var in c(zip_unordered_cat_var_names, indiv_unordered_cat_var_names)){
 ##### Use (random) subset of data to make code run faster than full data #####
 
 set.seed(100)
-n_random_rows <- 100000 # To Do: use a bigger sample
+n_random_rows <- 5000000 # To Do: use a bigger sample
 random_rows <- sample(1:nrow(ADRD_agg_lagged_subset), n_random_rows)
 Y_subset <- ADRD_agg_lagged_subset[random_rows, n_ADRDhosp]
 w_subset <- ADRD_agg_lagged_subset[random_rows, pm25]
@@ -58,7 +57,7 @@ data_subset <- cbind(Y_subset, w_subset, indiv_vars_subset, c_subset, offset_sub
 ##### Match on GPS using CausalGPS package #####
 
 # create log file to see internal processes of CausalGPS
-set_logger(logger_file_path = paste0(dir_git, "analysis/CausalGPS_logs/CausalGPS_09Aug_xgb_1e5rows_32cores_64gb.log"),
+set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_17Aug_xgb_5e6rows_48cores_64gb.log"),
            logger_level = "DEBUG")
 
 # if using SL.gam, remove mgcv library and allow custom parameters
@@ -76,42 +75,41 @@ matched_pop_subset <- generate_pseudo_pop(Y_subset,
                                   pred_model = "sl",
                                   gps_model = "parametric",
                                   use_cov_transform = TRUE,
-                                  transformers = list("pow2", "pow3", "sqrt", "log_nonneg", "logit_nonneg"),
+                                  transformers = list("sqrt", "log_nonneg", "logit_nonneg", "pow2", "pow3"),
                                   sl_lib = c("m_xgboost"), # or SL.glm
                                   params = list(xgb_nrounds = c(10, 20, 30, 50)), # comment out if using sl_lib = "SL.glm"
-                                  nthread = 31, # 47
+                                  nthread = 47,
                                   covar_bl_method = "absolute",
-                                  covar_bl_trs = 0.1,
+                                  covar_bl_trs = 0.2,
                                   covar_bl_trs_type = "maximal",
                                  optimized_compile = TRUE,
-                                  trim_quantiles = c(0.05,0.95),
+                                  trim_quantiles = c(0.01,0.99),
                                   max_attempt = 10, # to do: try up to 20
                                   matching_fun = "matching_l1",
-                                  delta_n = 0.1, # to do: check if this is good or if should use bigger
+                                  delta_n = 0.2, # to do: check if this is good or if should use bigger
                                   scale = 1)
 
 # check ZIP-level covariate balance
 # i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
-all_cov_bal(matched_pop_subset, w_subset, subset(c_subset, select = zip_unordered_cat_var_names),
-            "matching", colnames(c_subset), title = paste("Random set of", n_random_rows, "observations"))
+all_cov_bal(matched_pop_subset, w_subset, c_unordered_vars = subset(c_subset, select = zip_unordered_cat_var_names),
+            ci_appr = "matching", all_cov_names = colnames(c_subset), title = paste("Random set of", format(n_random_rows, scientific = F), "observations"))
 
 # print summary statistics for pseudopopulation counter
-summarize_pseudo_weights(matched_pop_subset, "matching")
+summarize_pseudo_counter(matched_pop_subset)
 
-### old code ###
+# pseudopopulation, including individual-level covariates (i.e., strata), trimming away unmatched data
+matched_obs <- matched_pop_subset$pseudo_pop$row_index[matched_pop_subset$pseudo_pop$counter > 0]
+matched_indiv_vars <- indiv_vars_subset[matched_obs] # To Do: consider including ffs_entry_year/ADRD_year in GPS or outcome model
+matched_offset <- offset_subset[matched_obs]
+matched_data <- cbind(matched_pop_subset$pseudo_pop[matched_pop_subset$pseudo_pop$counter > 0, ], matched_indiv_vars, matched_offset) # to do: check that rows are in same order
+matched_data <- as.data.frame(matched_data)
 
-# check number of matches
-counter <- matched_pop_subset$pseudo_pop$counter
-# cat("Number of observations included in pseudo-population:", length(unique(matched_pop_subset$pseudo_pop$row_index)))
-# cat("Total number of matches:", sum(counter))
-# print("Distribution of number of matches per included observation:")
-summary(counter)
+# Examine distribution of exposure in original and pseudo population
+summary(ADRD_agg_lagged_subset$pm25)
+summary(matched_data$w)
 
-# check number of observations used in pseudopopulation
-cat("Number of observations used in pseudopopulation:", sum(counter > 0))
-
-# check Kish's effective sample size
-cat("Kish ESS:", ess(counter))
+# Examine distribution of ZIP-level covariates (which were used to match) in pseudopopulation
+explore_zip_covs(matched_data)
 
 
 ##### If desired, cap matches ("counter" variable) at 95th percentile #####
@@ -119,13 +117,15 @@ cat("Kish ESS:", ess(counter))
 
 cap_counts = F
 if (cap_counts){
-  cap_weights(matched_pop_subset, "matching", 15, zip_quant_var_names, zip_unordered_cat_var_names, paste("Random set of", n_random_rows, "observations"))
+  cap_weights(matched_pop_subset, "matching", 15, zip_quant_var_names, zip_unordered_cat_var_names, paste("Random set of", format(n_random_rows, scientific = F), "observations"))
 }
 
 
 ##### IPTW by GPS using CausalGPS package #####
 
-# To Do: consider using larger delta_n, more cores, lm [or another package Kevin may have mentioned?] instead of xgboost, more attempts
+# create log file to see internal processes of CausalGPS
+set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_17Aug_weight_xgb_max0.2_delta0.2_1e7rows_16cores_64gb.log"),
+           logger_level = "DEBUG")
 
 # GPS weighting on ZIP-level covariates
 set.seed(200)
@@ -141,62 +141,111 @@ weighted_pop_subset <- generate_pseudo_pop(Y_subset,
                                           params = list(xgb_nrounds = c(10, 20, 30, 50)),
                                           nthread = 15,
                                           covar_bl_method = "absolute",
-                                          covar_bl_trs = 0.1,
+                                          covar_bl_trs = 0.2,
                                           covar_bl_trs_type = "maximal",
                                           optimized_compile = TRUE,
-                                          trim_quantiles = c(0.05,0.95), # c(0.05, 0.95) or c(0.01, 0.99)
+                                          trim_quantiles = c(0.01,0.99), # c(0.05, 0.95) or c(0.01, 0.99)
                                           max_attempt = 10,
                                           matching_fun = "matching_l1",
-                                          delta_n = 0.1, # std dev of pm2.5 is 2.87, so I'll set delta_n = 0.2? parameters may depend on if state-level or national
+                                          delta_n = 0.2, # std dev of pm2.5 is 2.87, so I'll set delta_n = 0.2? parameters may depend on if state-level or national
                                           scale = 1)
 
 # check ZIP-level covariate balance
 # i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
-all_cov_bal(matched_pop_subset, w_subset, subset(c_subset, select = zip_unordered_cat_var_names),
-            "weighting", colnames(c_subset), title = paste("Random set of", n_random_rows, "observations"))
+all_cov_bal(weighted_pop_subset, w_subset, c_unordered_vars = subset(c_subset, select = zip_unordered_cat_var_names),
+            "weighting", all_cov_names = colnames(c_subset), title = paste("Random set of", format(n_random_rows, scientific = F), "observations"))
 
-# check number of matches
-ipw <- weighted_pop_subset$pseudo_pop$ipw
-cat("Number of observations included in pseudo-population:", length(unique(matched_pop_subset$pseudo_pop$row_index)))
-cat("Sum of weights:", sum(ipw))
-print("Distribution of weights:")
-summary(ipw)
-quantile(ipw, c(0, 0.25, 0.5, 0.75, 0.95, 0.99, 0.999))
+# print summary statistics for pseudopopulation weights
+summarize_pseudo_weights(weighted_pop_subset)
 
-# check Kish's effective sample size
-ipw <- weighted_pop_subset$pseudo_pop$ipw
-ess(ipw)
+# pseudopopulation, including individual-level covariates (i.e., strata), trimming away unmatched data
+# weighted_obs <- weighted_pop_subset$pseudo_pop$row_index
+# weighted_indiv_vars <- indiv_vars_subset[weighted_obs] # To Do: consider including ffs_entry_year/ADRD_year in GPS or outcome model
+# weighted_offset <- offset_subset[weighted_obs]
+# weighted_data <- cbind(weighted_pop_subset$pseudo_pop, weighted_indiv_vars, weighted_offset) # to do: check that rows are in same order
+# weighted_data <- as.data.frame(weighted_data)
 
-
-##### If desired, cap weights at 95th percentile #####
+##### If desired, cap weights at 10 (or 99th percentile) #####
 
 cap_weights = T
+# cutoff_weight <- quantile(weighted_pop_subset$pseudo_pop$ipw, 0.99)
+# print(cutoff_weight)
+cutoff_weight <- 10
 
+# to do: write function for this, taking cutoff as input
 if (cap_weights){
-  cutoff_weight <- quantile(weighted_pop_subset$pseudo_pop$ipw, 0.95)
-  weighted_pop_subset$pseudo_pop$ipw <- ifelse(weighted_pop_subset$pseudo_pop$ipw > cutoff_weight, cutoff_weight, weighted_pop_subset$pseudo_pop$ipw)
-  adjusted_corr_obj <- check_covar_balance(weighted_pop_subset$pseudo_pop,
+  ipw <- weighted_pop_subset$pseudo_pop$ipw
+  capped_weighted_pop_subset <- copy(weighted_pop_subset)
+  capped_weighted_pop_subset$pseudo_pop$ipw <- ifelse(ipw > cutoff_weight, cutoff_weight, ipw)
+  adjusted_corr_obj <- check_covar_balance(capped_weighted_pop_subset$pseudo_pop,
                                            ci_appr="weighting",
                                            nthread=15,
                                            covar_bl_method = "absolute",
-                                           covar_bl_trs = 0.1,
+                                           covar_bl_trs = 0.1, # or 0.2
                                            covar_bl_trs_type = "maximal",
                                            optimized_compile=T)
-  weighted_pop_subset$adjusted_corr_results <-  adjusted_corr_obj$corr_results
-  
-  # check ZIP-level covariate balance in matched data: abs correlation for quantitative or ordered categorical variables
-  cor_val_unweighted_subset <- weighted_pop_subset$original_corr_results$absolute_corr[zip_quant_var_names] # remove non-ordinal categorical variables; can include zip_ordered_cat_var_names if exists
-  cor_val_weighted_subset <- weighted_pop_subset$adjusted_corr_results$absolute_corr[zip_quant_var_names]
-  abs_cor_weighting = data.frame(Covariate = zip_quant_var_names,
-                                 Unweighted = cor_val_unweighted_subset,
-                                 Weighted = cor_val_weighted_subset) %>%
-    gather(c(Unweighted, Weighted), key = 'Dataset', value = 'Absolute Correlation')
-  ggplot(abs_cor_weighting, aes(x = Covariate, y = `Absolute Correlation`, color = Dataset, group = Dataset)) +
-    geom_point() +
-    geom_line() +
-    ggtitle(paste("Random set of", n_random_rows, "observations")) + # ggtitle(included_states)
-    theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
+  capped_weighted_pop_subset$adjusted_corr_results <- adjusted_corr_obj$corr_results
 }
+
+cat("ESS of capped weighted pseudopopulation:", ess(capped_weighted_pop_subset$pseudo_pop$ipw))
+
+# check ZIP-level covariate balance
+# i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
+all_cov_bal(capped_weighted_pop_subset, w_subset, c_unordered_vars = subset(c_subset, select = zip_unordered_cat_var_names),
+            "weighting", all_cov_names = colnames(c_subset), title = paste("Random set of", format(n_random_rows, scientific = F), "observations, weights capped at", cutoff_weight))
+
+# pseudopopulation, including individual-level covariates (i.e., strata), trimming away unmatched data
+capped_weighted_obs <- capped_weighted_pop_subset$pseudo_pop$row_index
+capped_weighted_indiv_vars <- indiv_vars_subset[capped_weighted_obs] # To Do: consider including ffs_entry_year/ADRD_year in GPS or outcome model
+capped_weighted_offset <- offset_subset[capped_weighted_obs]
+capped_weighted_data <- cbind(capped_weighted_pop_subset$pseudo_pop, capped_weighted_indiv_vars, capped_weighted_offset) # to do: check that rows are in same order
+capped_weighted_data <- as.data.frame(capped_weighted_data)
+
+# Examine distribution of exposure in original and pseudo population
+summary(ADRD_agg_lagged_subset$pm25)
+summary(capped_weighted_data$w)
+
+# Examine distribution of ZIP-level covariates (which were used to match) in pseudopopulation
+explore_zip_covs(capped_weighted_data)
+
+
+##### Adjusting by GPS using CausalGPS package #####
+
+# create log file to see internal processes of CausalGPS
+set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_10Aug_adjust_xgb_2e6rows_16cores_64gb.log"),
+           logger_level = "DEBUG")
+
+# GPS estimation on ZIP-level covariates
+set.seed(200)
+estimating_gps <- estimate_gps(Y_subset,
+                              w_subset,
+                              c_subset,
+                              pred_model = "sl",
+                              gps_model = "parametric",
+                              sl_lib = c("m_xgboost"),
+                              params = list(xgb_nrounds = c(10, 20, 30, 50)),
+                              nthread = 15,
+                              internal_use = FALSE)
+estimated_gps <- estimating_gps$dataset
+estimated_gps$counter <- NULL
+estimated_gps$row_index <- NULL
+
+# check ZIP-level covariate balance (note: this is the original, unchanged population)
+# i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
+abs_cor_orig <- rep(NA, ncol(c_subset))
+names(abs_cor_orig) <- colnames(c_subset)
+for (ordered_var in zip_quant_var_names){
+  abs_cor_orig[ordered_var] <- abs(cor(w_subset, c_subset[[ordered_var]]))
+}
+for (unordered_var in zip_unordered_cat_var_names){
+  abs_cor_orig[unordered_var] <- abs(cor_unordered_var(w_subset, c_subset[[unordered_var]]))
+}
+abs_cor_orig <- data.frame(cov = names(abs_cor_orig), abs_cor = abs_cor_orig)
+ggplot(abs_cor_orig, aes(x = cov, y = abs_cor)) +
+  geom_point() +
+  geom_line() +
+  labs(title = paste("Random set of", format(n_random_rows, scientific = F), "observations"), x = "Covariate", y = "Absolute Correlation") +
+  theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
 
 
 ##### Old code #####

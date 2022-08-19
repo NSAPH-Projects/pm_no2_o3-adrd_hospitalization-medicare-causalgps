@@ -138,18 +138,61 @@ cat_cov_bal_boxplot <- function(pseudo_pop, ci_appr, var_names, title){
 # Calculate Kish's effective sample size
 ess <- function(weights) return(sum(weights)^2 / (sum(weights^2)))
 
-# Print summary statistics for pseudopopulation counter or weights
-summarize_pseudo_weights <- function(pseudo_pop, ci_appr){
-  if (ci_appr == "matching") weights = pseudo_pop$pseudo_pop$counter
-  else if (ci_appr == "weighting") weights = pseudo_pop$pseudo_pop$ipw
-  else stop("ci_appr must be 'matching' or 'weighting'")
-  
-  # to do: check if these are equivalent
-  cat("Number of observations included in pseudo-population:", length(unique(pseudo_pop$pseudo_pop$row_index)))
-  cat("Number of observations used in pseudopopulation:", sum(weights > 0))
-  
-  quantile(weights, c(0, 0.25, 0.5, 0.75, 0.95, 0.99, 0.999))
-  cat("Kish ESS:", ess(weights))
+# Explore distribution of ZIP-level covariates
+explore_zip_covs <- function(df){
+  cat("\nMean of mean_bmi:", mean(df$mean_bmi))
+  cat("\nSD of mean_bmi:", sd(df$mean_bmi))
+  cat("\nMean of smoke_rate:", mean(df$smoke_rate))
+  cat("\nSD of smoke_rate:", sd(df$smoke_rate))
+  cat("\nMean of pct_blk:", mean(df$pct_blk))
+  cat("\nSD of pct_blk:", sd(df$pct_blk))
+  cat("\nMean of hispanic:", mean(df$hispanic))
+  cat("\nSD of hispanic:", sd(df$hispanic))
+  cat("\nMean of education:", mean(df$education))
+  cat("\nSD of education:", sd(df$education))
+  cat("\nMean of popdensity:", mean(df$popdensity))
+  cat("\nSD of popdensity:", sd(df$popdensity))
+  cat("\nMean of poverty:", mean(df$poverty))
+  cat("\nSD of poverty:", sd(df$poverty))
+  cat("\nMean of medhouseholdincome:", mean(df$medhouseholdincome))
+  cat("\nSD of medhouseholdincome:", sd(df$medhouseholdincome))
+  cat("\nMean of PIR:", mean(df$PIR))
+  cat("\nSD of PIR:", sd(df$PIR))
+  cat("\nMean of pct_owner_occ:", mean(df$pct_owner_occ))
+  cat("\nSD of pct_owner_occ:", sd(df$pct_owner_occ))
+}
+
+# Explore distribution of individual-level covariates
+# To Do: add age distribution
+# Note: offset is not taken into account
+explore_indiv_covs <- function(df){
+  cat("\nProportion male\n")
+  print(prop.table(table(df$sexM)))
+  print(prop.table(table(df$race_cat)))
+  cat("\nProportion Medicaid-eligible\n")
+  print(prop.table(table(df$any_dual)))
+}
+
+# For GPS-matched pseudopopulation, print summary statistics for counter
+summarize_pseudo_counter <- function(pseudo_pop){
+  counter <- pseudo_pop$pseudo_pop$counter
+  cat("Number of observations UNTRIMMED by GPS matching algorithm:", length(pseudo_pop$pseudo_pop$row_index))
+  cat("\nNumber of observations matched:", sum(counter > 0), "\n")
+  cat("\nNumber of matches:", sum(counter), "\n")
+  print("\nDistribution of number of matches per untrimmed observation\n")
+  print(quantile(counter, c(0, 0.25, 0.5, 0.75, 0.95, 0.99, 0.999)))
+  cat("\nKish ESS:", ess(counter))
+}
+
+# For GPS-weighted pseudopopulation, print summary statistics for weights
+summarize_pseudo_weights <- function(pseudo_pop){
+  weights <- pseudo_pop$pseudo_pop$ipw
+  cat("Number of observations UNTRIMMED by GPS weighting algorithm:", length(pseudo_pop$pseudo_pop$row_index))
+  cat("\nNumber of observations with non-zero weight:", sum(weights > 0), "\n")
+  cat("\nSum of weights:", sum(weights), "\n")
+  print("\nDistribution of weights\n")
+  print(quantile(weights, c(0, 0.25, 0.5, 0.75, 0.95, 0.99, 0.999)))
+  cat("\nKish ESS:", ess(weights))
 }
 
 # Cap counts or weights if desired

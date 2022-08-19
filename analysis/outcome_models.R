@@ -17,21 +17,27 @@ bam_naive <- bam(Y_subset ~ w_subset + no2 + ozone_summer +
 summary(bam_naive)
 
 
+##### Poisson regression adjusting for GPS #####
+
+data_with_gps <- copy(data_subset)
+data_with_gps$gps <- estimated_gps$gps
+
+bam_gps_adjusted <- bam(Y_subset ~ w_subset + no2 + ozone_summer +
+                   any_dual + ADRD_age + sexM + race_cat +
+                   summer_tmmx + summer_rmax + region + ADRD_year +
+                   mean_bmi + smoke_rate + hispanic + pct_blk +
+                   medhouseholdincome + medianhousevalue + PIR + poverty +
+                   education + popdensity + pct_owner_occ + gps,
+                 data = data_with_gps,
+                 offset = log(person_years),
+                 family = poisson(link = "log"),
+                 samfrac = 0.05,
+                 chunk.size = 5000,
+                 control = gam.control(trace = TRUE))
+summary(bam_gps_adjusted)
+
+
 ##### (Poisson) Parametric outcome models #####
-
-# outcome model, including individual-level covariates (i.e., strata), trimming away unmatched data
-matched_obs <- matched_pop_subset$pseudo_pop$row_index[matched_pop_subset$pseudo_pop$counter > 0]
-matched_indiv_vars <- indiv_vars_subset[matched_obs] # To Do: consider including ffs_entry_year/ADRD_year in GPS or outcome model
-matched_offset <- offset_subset[matched_obs]
-matched_data <- cbind(matched_pop_subset$pseudo_pop[matched_pop_subset$pseudo_pop$counter > 0, ], matched_indiv_vars, matched_offset) # to do: check that rows are in same order
-matched_data <- as.data.frame(matched_data)
-
-### weighted model
-weighted_obs <- weighted_pop_subset$pseudo_pop$row_index
-weighted_indiv_vars <- indiv_vars_subset[weighted_obs] # To Do: consider including ffs_entry_year/ADRD_year in GPS or outcome model
-weighted_offset <- offset_subset[weighted_obs]
-weighted_data <- cbind(weighted_pop_subset$pseudo_pop, weighted_indiv_vars, weighted_offset) # to do: check that rows are in same order
-weighted_data <- as.data.frame(weighted_data)
 
 # method 1: gam package
 # To do: rd rest of Kevin's code (https://github.com/kevjosey/erc-strata/blob/master/R/match_estimate.R)
@@ -76,6 +82,16 @@ summary(bam_doubly_robust_matched)
 
 
 ### GPS weighting
+bam_exposure_only_weighted <- bam(Y ~ w + any_dual + ADRD_age + sexM + race_cat,
+                                  data = weighted_data,
+                                  offset = log(person_years),
+                                  family = poisson(link = "log"),
+                                  weights = ipw,
+                                  samfrac = 0.05,
+                                  chunk.size = 5000,
+                                  control = gam.control(trace = TRUE))
+summary(bam_exposure_only_weighted)
+
 bam_exposures_controlled_weighted <- bam(Y ~ w + no2 + ozone_summer +
                                            any_dual + ADRD_age + sexM + race_cat,
                                          data = weighted_data,
@@ -102,8 +118,9 @@ bam_doubly_robust_weighted <- bam(Y ~ w + no2 + ozone_summer +
                                   control = gam.control(trace = TRUE))
 summary(bam_doubly_robust_weighted)
 
+### Capped GPS weighting
 bam_exposure_only_weighted <- bam(Y ~ w + any_dual + ADRD_age + sexM + race_cat,
-                                  data = weighted_data,
+                                  data = capped_weighted_data,
                                   offset = log(person_years),
                                   family = poisson(link = "log"),
                                   weights = ipw,
@@ -111,6 +128,32 @@ bam_exposure_only_weighted <- bam(Y ~ w + any_dual + ADRD_age + sexM + race_cat,
                                   chunk.size = 5000,
                                   control = gam.control(trace = TRUE))
 summary(bam_exposure_only_weighted)
+
+bam_exposures_controlled_weighted <- bam(Y ~ w + no2 + ozone_summer +
+                                           any_dual + ADRD_age + sexM + race_cat,
+                                         data = capped_weighted_data,
+                                         offset = log(person_years),
+                                         family = poisson(link = "log"),
+                                         weights = ipw,
+                                         samfrac = 0.05,
+                                         chunk.size = 5000,
+                                         control = gam.control(trace = TRUE))
+summary(bam_exposures_controlled_weighted)
+
+bam_doubly_robust_weighted <- bam(Y ~ w + no2 + ozone_summer +
+                                    any_dual + ADRD_age + sexM + race_cat +
+                                    summer_tmmx + summer_rmax + region + ADRD_year +
+                                    mean_bmi + smoke_rate + hispanic + pct_blk +
+                                    medhouseholdincome + medianhousevalue + PIR + poverty +
+                                    education + popdensity + pct_owner_occ,
+                                  data = capped_weighted_data,
+                                  offset = log(person_years),
+                                  family = poisson(link = "log"),
+                                  weights = ipw,
+                                  samfrac = 0.05,
+                                  chunk.size = 5000,
+                                  control = gam.control(trace = TRUE))
+summary(bam_doubly_robust_weighted)
 
 
 # method 2: gnm package
