@@ -76,7 +76,6 @@ set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGP
 # m_gam <- function(cts.num = 16, deg.gam = 1, ...) SL.gam(cts.num = cts.num, deg.gam = deg.gam, ...) # to do: explain these params
 # detach("package:mgcv", unload=TRUE)
 
-# To Do: consider using larger delta_n
 # GPS matching by ZIP-level covariates
 set.seed(200)
 matched_pop_subset <- generate_pseudo_pop(Y_subset,
@@ -87,17 +86,18 @@ matched_pop_subset <- generate_pseudo_pop(Y_subset,
                                   gps_model = "parametric",
                                   use_cov_transform = TRUE,
                                   transformers = list("sqrt", "log_nonneg", "logit_nonneg", "pow2", "pow3"),
-                                  sl_lib = c("m_xgboost"), # or SL.glm
-                                  params = list(xgb_nrounds = c(10, 20, 30, 50)), # comment out if using sl_lib = "SL.glm"
+                                  sl_lib = c("m_xgboost"),
+                                  params = list(xgb_nrounds = seq(10, 50),
+                                                xgb_eta = seq(0.1, 0.4, 0.01)),
                                   nthread = n_cores - 1,
                                   covar_bl_method = "absolute",
                                   covar_bl_trs = 0.2,
                                   covar_bl_trs_type = "maximal",
                                  optimized_compile = TRUE,
                                   trim_quantiles = c(0.01,0.99),
-                                  max_attempt = 10, # to do: try up to 20
+                                  max_attempt = 10,
                                   matching_fun = "matching_l1",
-                                  delta_n = 0.2, # to do: check if this is good or if should use bigger
+                                  delta_n = 0.2,
                                   scale = 1)
 
 # check ZIP-level covariate balance
