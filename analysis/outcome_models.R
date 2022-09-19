@@ -65,7 +65,7 @@ bam_exposures_controlled_matched <- bam(Y ~ w + no2 + ozone_summer +
                                         control = gam.control(trace = TRUE))
 summary(bam_exposures_controlled_matched)
 
-bam_doubly_robust_matched <- bam(Y ~ w + no2 + ozone_summer +
+bam_all_covariates_matched <- bam(Y ~ w + no2 + ozone_summer +
                                    any_dual + ADRD_age + sexM + race_cat +
                                    summer_tmmx + summer_rmax + region + ADRD_year +
                                    mean_bmi + smoke_rate + hispanic + pct_blk +
@@ -78,45 +78,45 @@ bam_doubly_robust_matched <- bam(Y ~ w + no2 + ozone_summer +
                                  samfrac = 0.05,
                                  chunk.size = 5000,
                                  control = gam.control(trace = TRUE))
-summary(bam_doubly_robust_matched)
+summary(bam_all_covariates_matched)
 
 
 ### GPS weighting
-bam_exposure_only_weighted <- bam(Y ~ w + any_dual + ADRD_age + sexM + race_cat,
-                                  data = weighted_data,
-                                  offset = log(person_years),
-                                  family = poisson(link = "log"),
-                                  weights = ipw,
-                                  samfrac = 0.05,
-                                  chunk.size = 5000,
-                                  control = gam.control(trace = TRUE))
-summary(bam_exposure_only_weighted)
-
-bam_exposures_controlled_weighted <- bam(Y ~ w + no2 + ozone_summer +
-                                           any_dual + ADRD_age + sexM + race_cat,
-                                         data = weighted_data,
-                                         offset = log(person_years),
-                                         family = poisson(link = "log"),
-                                         weights = ipw,
-                                         samfrac = 0.05,
-                                         chunk.size = 5000,
-                                         control = gam.control(trace = TRUE))
-summary(bam_exposures_controlled_weighted)
-
-bam_doubly_robust_weighted <- bam(Y ~ w + no2 + ozone_summer +
-                                    any_dual + ADRD_age + sexM + race_cat +
-                                    summer_tmmx + summer_rmax + region + ADRD_year +
-                                    mean_bmi + smoke_rate + hispanic + pct_blk +
-                                    medhouseholdincome + medianhousevalue + PIR + poverty +
-                                    education + popdensity + pct_owner_occ,
-                                  data = weighted_data,
-                                  offset = log(person_years),
-                                  family = poisson(link = "log"),
-                                  weights = ipw,
-                                  samfrac = 0.05,
-                                  chunk.size = 5000,
-                                  control = gam.control(trace = TRUE))
-summary(bam_doubly_robust_weighted)
+# bam_exposure_only_weighted <- bam(Y ~ w + any_dual + ADRD_age + sexM + race_cat,
+#                                   data = weighted_data,
+#                                   offset = log(person_years),
+#                                   family = poisson(link = "log"),
+#                                   weights = ipw,
+#                                   samfrac = 0.05,
+#                                   chunk.size = 5000,
+#                                   control = gam.control(trace = TRUE))
+# summary(bam_exposure_only_weighted)
+# 
+# bam_exposures_controlled_weighted <- bam(Y ~ w + no2 + ozone_summer +
+#                                            any_dual + ADRD_age + sexM + race_cat,
+#                                          data = weighted_data,
+#                                          offset = log(person_years),
+#                                          family = poisson(link = "log"),
+#                                          weights = ipw,
+#                                          samfrac = 0.05,
+#                                          chunk.size = 5000,
+#                                          control = gam.control(trace = TRUE))
+# summary(bam_exposures_controlled_weighted)
+# 
+# bam_all_covariates_weighted <- bam(Y ~ w + no2 + ozone_summer +
+#                                     any_dual + ADRD_age + sexM + race_cat +
+#                                     summer_tmmx + summer_rmax + region + ADRD_year +
+#                                     mean_bmi + smoke_rate + hispanic + pct_blk +
+#                                     medhouseholdincome + medianhousevalue + PIR + poverty +
+#                                     education + popdensity + pct_owner_occ,
+#                                   data = weighted_data,
+#                                   offset = log(person_years),
+#                                   family = poisson(link = "log"),
+#                                   weights = ipw,
+#                                   samfrac = 0.05,
+#                                   chunk.size = 5000,
+#                                   control = gam.control(trace = TRUE))
+# summary(bam_all_covariates_weighted)
 
 ### Capped GPS weighting
 bam_exposure_only_weighted <- bam(Y ~ w + any_dual + ADRD_age + sexM + race_cat,
@@ -140,7 +140,7 @@ bam_exposures_controlled_weighted <- bam(Y ~ w + no2 + ozone_summer +
                                          control = gam.control(trace = TRUE))
 summary(bam_exposures_controlled_weighted)
 
-bam_doubly_robust_weighted <- bam(Y ~ w + no2 + ozone_summer +
+bam_all_covariates_weighted <- bam(Y ~ w + no2 + ozone_summer +
                                     any_dual + ADRD_age + sexM + race_cat +
                                     summer_tmmx + summer_rmax + region + ADRD_year +
                                     mean_bmi + smoke_rate + hispanic + pct_blk +
@@ -153,13 +153,13 @@ bam_doubly_robust_weighted <- bam(Y ~ w + no2 + ozone_summer +
                                   samfrac = 0.05,
                                   chunk.size = 5000,
                                   control = gam.control(trace = TRUE))
-summary(bam_doubly_robust_weighted)
+summary(bam_all_covariates_weighted)
 
 
 # method 2: gnm package
 # To do: fix error: only first element used
 # rd rest of Xiao's code (https://github.com/wxwx1993/National_Causal/blob/master/statistical_models.R)
-gnm_doubly_robust <- gnm(Y ~ w + no2 + ozone_summer +
+gnm_all_covariates <- gnm(Y ~ w + no2 + ozone_summer +
                            any_dual + ADRD_age + sexM + race_cat +
                            summer_tmmx + summer_rmax + region + ADRD_year +
                            mean_bmi + smoke_rate + hispanic + pct_blk +
@@ -170,7 +170,7 @@ gnm_doubly_robust <- gnm(Y ~ w + no2 + ozone_summer +
                          offset = log(person_years),
                          family = poisson(link = "log"),
                          weights = counter)
-summary(gnm_doubly_robust)
+summary(gnm_all_covariates)
 
 # method 3: CausalGPS package
 # To do: wrong right now cuz offset should be constant not various in the regression; to do - fix
@@ -188,13 +188,13 @@ summary(outcome)
 
 iqr <- IQR(ADRD_agg_lagged$pm25)
 iqr
-coef_bam_doubly_robust <- bam_doubly_robust$coefficients[2]
+coef_bam_all_covariates <- bam_all_covariates$coefficients[2]
 coef_bam_exposures_controlled <- bam_exposures_controlled$coefficients[2]
 coef_bam_exposure_only <- bam_exposure_only$coefficients[2]
-coef_bam_doubly_robust
+coef_bam_all_covariates
 coef_bam_exposures_controlled
 coef_bam_exposure_only
-cat("Hazard ratio per 1 IQR increase in PM2.5:", exp(coef_bam_doubly_robust*iqr))
+cat("Hazard ratio per 1 IQR increase in PM2.5:", exp(coef_bam_all_covariates*iqr))
 cat("Hazard ratio per 1 IQR increase in PM2.5:", exp(coef_bam_exposures_controlled*iqr))
 cat("Hazard ratio per 1 IQR increase in PM2.5:", exp(coef_bam_exposure_only*iqr))
 
