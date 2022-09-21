@@ -15,6 +15,8 @@ bam_naive <- bam(Y_subset ~ w_subset + no2 + ozone_summer +
                  chunk.size = 5000,
                  control = gam.control(trace = TRUE))
 summary(bam_naive)
+saveRDS(summary(bam_naive), file = paste0(dir_proj, "code/results/parametric_results/bam_naive_", n_rows, "rows", modifications, ".rds"))
+# readRDS(paste0(dir_proj, "code/results/parametric_results/bam_naive_", n_rows, "rows.rds"))
 
 
 ##### Poisson regression adjusting for GPS #####
@@ -22,19 +24,42 @@ summary(bam_naive)
 data_with_gps <- copy(data_subset)
 data_with_gps$gps <- estimated_gps$gps
 
-bam_gps_adjusted <- bam(Y_subset ~ w_subset + no2 + ozone_summer +
-                   any_dual + ADRD_age + sexM + race_cat +
-                   summer_tmmx + summer_rmax + region + ADRD_year +
-                   mean_bmi + smoke_rate + hispanic + pct_blk +
-                   medhouseholdincome + medianhousevalue + PIR + poverty +
-                   education + popdensity + pct_owner_occ + gps,
+bam_exposure_only_adjusted <- bam(Y_subset ~ w_subset + gps +
+                                    any_dual + ADRD_age + sexM + race_cat,
                  data = data_with_gps,
                  offset = log(person_years),
                  family = poisson(link = "log"),
                  samfrac = 0.05,
                  chunk.size = 5000,
                  control = gam.control(trace = TRUE))
-summary(bam_gps_adjusted)
+summary(bam_exposure_only_adjusted)
+saveRDS(summary(bam_exposure_only_adjusted), file = paste0(dir_proj, "code/results/parametric_results/bam_adjusted_exposure_only_", n_rows, "rows", modifications, ".rds"))
+
+bam_exposures_controlled_adjusted <- bam(Y_subset ~ w_subset + no2 + ozone_summer + gps +
+                                           any_dual + ADRD_age + sexM + race_cat,
+                        data = data_with_gps,
+                        offset = log(person_years),
+                        family = poisson(link = "log"),
+                        samfrac = 0.05,
+                        chunk.size = 5000,
+                        control = gam.control(trace = TRUE))
+summary(bam_exposures_controlled_adjusted)
+saveRDS(summary(bam_exposures_controlled_adjusted), file = paste0(dir_proj, "code/results/parametric_results/bam_adjusted_all_exposures_", n_rows, "rows", modifications, ".rds"))
+
+bam_all_covariates_adjusted <- bam(Y_subset ~ w_subset + no2 + ozone_summer +
+                          any_dual + ADRD_age + sexM + race_cat +
+                          summer_tmmx + summer_rmax + region + ADRD_year +
+                          mean_bmi + smoke_rate + hispanic + pct_blk +
+                          medhouseholdincome + medianhousevalue + PIR + poverty +
+                          education + popdensity + pct_owner_occ + gps,
+                        data = data_with_gps,
+                        offset = log(person_years),
+                        family = poisson(link = "log"),
+                        samfrac = 0.05,
+                        chunk.size = 5000,
+                        control = gam.control(trace = TRUE))
+summary(bam_all_covariates_adjusted)
+saveRDS(summary(bam_all_covariates_adjusted), file = paste0(dir_proj, "code/results/parametric_results/bam_adjusted_all_covariates_", n_rows, "rows", modifications, ".rds"))
 
 
 ##### (Poisson) Parametric outcome models #####
@@ -53,6 +78,7 @@ bam_exposure_only_matched <- bam(Y ~ w + any_dual + ADRD_age + sexM + race_cat,
                                  chunk.size = 5000,
                                  control = gam.control(trace = TRUE))
 summary(bam_exposure_only_matched)
+saveRDS(summary(bam_exposure_only_matched), file = paste0(dir_proj, "code/results/parametric_results/bam_matched_exposure_only_", n_rows, "rows", modifications, ".rds"))
 
 bam_exposures_controlled_matched <- bam(Y ~ w + no2 + ozone_summer +
                                           any_dual + ADRD_age + sexM + race_cat,
@@ -64,6 +90,7 @@ bam_exposures_controlled_matched <- bam(Y ~ w + no2 + ozone_summer +
                                         chunk.size = 5000,
                                         control = gam.control(trace = TRUE))
 summary(bam_exposures_controlled_matched)
+saveRDS(summary(bam_exposures_controlled_matched), file = paste0(dir_proj, "code/results/parametric_results/bam_matched_all_exposures_", n_rows, "rows", modifications, ".rds"))
 
 bam_all_covariates_matched <- bam(Y ~ w + no2 + ozone_summer +
                                    any_dual + ADRD_age + sexM + race_cat +
@@ -79,6 +106,7 @@ bam_all_covariates_matched <- bam(Y ~ w + no2 + ozone_summer +
                                  chunk.size = 5000,
                                  control = gam.control(trace = TRUE))
 summary(bam_all_covariates_matched)
+saveRDS(summary(bam_all_covariates_matched), file = paste0(dir_proj, "code/results/parametric_results/bam_matched_all_covariates_", n_rows, "rows", modifications, ".rds"))
 
 
 ### GPS weighting
@@ -128,6 +156,7 @@ bam_exposure_only_weighted <- bam(Y ~ w + any_dual + ADRD_age + sexM + race_cat,
                                   chunk.size = 5000,
                                   control = gam.control(trace = TRUE))
 summary(bam_exposure_only_weighted)
+saveRDS(summary(bam_exposure_only_weighted), file = paste0(dir_proj, "code/results/parametric_results/bam_weighted_exposure_only_", n_rows, "rows", modifications, ".rds"))
 
 bam_exposures_controlled_weighted <- bam(Y ~ w + no2 + ozone_summer +
                                            any_dual + ADRD_age + sexM + race_cat,
@@ -139,6 +168,7 @@ bam_exposures_controlled_weighted <- bam(Y ~ w + no2 + ozone_summer +
                                          chunk.size = 5000,
                                          control = gam.control(trace = TRUE))
 summary(bam_exposures_controlled_weighted)
+saveRDS(summary(bam_exposures_controlled_weighted), file = paste0(dir_proj, "code/results/parametric_results/bam_weighted_all_exposures_", n_rows, "rows", modifications, ".rds"))
 
 bam_all_covariates_weighted <- bam(Y ~ w + no2 + ozone_summer +
                                     any_dual + ADRD_age + sexM + race_cat +
@@ -154,6 +184,7 @@ bam_all_covariates_weighted <- bam(Y ~ w + no2 + ozone_summer +
                                   chunk.size = 5000,
                                   control = gam.control(trace = TRUE))
 summary(bam_all_covariates_weighted)
+saveRDS(summary(bam_all_covariates_weighted), file = paste0(dir_proj, "code/results/parametric_results/bam_weighted_all_covariates_", n_rows, "rows", modifications, ".rds"))
 
 
 # method 2: gnm package

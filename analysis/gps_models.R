@@ -12,20 +12,22 @@ library(tidyr)
 
 # directory
 dir_proj <- "~/nsaph_projects/pm_no2_o3-adrd_hosp-medicare-causalgps/"
-dir_data <- paste0(dir_proj, "data/")
-dir_code <- paste0(dir_proj, "code/")
+# dir_data <- paste0(dir_proj, "data/")
+# dir_code <- paste0(dir_proj, "code/")
 
 # parameters for this computing job
 n_cores <- 48
-n_gb <- 64
-n_random_rows <- 5000000
-# n_random_rows <- 17640610 # Full data
+n_gb <- 184
+n_rows <- 5000000
+# n_rows <- 17640610 # Full data
+modifications <- "" # to be used in names of output files, for instance "delta0.3_"
+
 
 # read in full data
-ADRD_agg <- read_fst(paste0(dir_data, "analysis/ADRD_complete_corrected.fst"), as.data.table = TRUE)
+ADRD_agg <- read_fst(paste0(dir_proj, "data/analysis/ADRD_complete_corrected.fst"), as.data.table = TRUE)
 ADRD_agg_lagged <- ADRD_agg[ADRD_year - ffs_entry_year >= 2, ] # Approximate first ADRD hospitalization by requiring no ADRD hosps for 2 years
 
-source(paste0(dir_code, "analysis/helper_functions.R"))
+source(paste0(dir_proj, "code/analysis/helper_functions.R"))
 
 
 ##### Get data for exposure, outcome, and covariates of interest #####
@@ -44,15 +46,15 @@ for (var in c(zip_unordered_cat_var_names, indiv_unordered_cat_var_names)){
 ##### Use (random) subset of data to make code run faster than full data #####
 
 set.seed(100)
-random_rows <- sample(1:nrow(ADRD_agg_lagged_subset), n_random_rows)
-# random_rows <- 1:n_random_rows # for full data
-Y_subset <- ADRD_agg_lagged_subset[random_rows, n_ADRDhosp]
-w_subset <- ADRD_agg_lagged_subset[random_rows, pm25]
-c_subset <- as.data.frame(subset(ADRD_agg_lagged_subset[random_rows,], select = zip_var_names))
+selected_rows <- sample(1:nrow(ADRD_agg_lagged_subset), n_rows)
+# selected_rows <- 1:17640610 # for full data
+Y_subset <- ADRD_agg_lagged_subset[selected_rows, n_ADRDhosp]
+w_subset <- ADRD_agg_lagged_subset[selected_rows, pm25]
+c_subset <- as.data.frame(subset(ADRD_agg_lagged_subset[selected_rows,], select = zip_var_names))
 
 # Not used in GPS matching, but used in outcome model
-indiv_vars_subset <- ADRD_agg_lagged_subset[random_rows, .(sexM, race_cat, any_dual, ADRD_age)] # To Do: consider including ffs_entry_year/ADRD_year in GPS or outcome model
-offset_subset <- ADRD_agg_lagged_subset[random_rows, .(person_years = n_persons * n_years)]
+indiv_vars_subset <- ADRD_agg_lagged_subset[selected_rows, .(sexM, race_cat, any_dual, ADRD_age)] # To Do: consider including ffs_entry_year/ADRD_year in GPS or outcome model
+offset_subset <- ADRD_agg_lagged_subset[selected_rows, .(person_years = n_persons * n_years)]
 data_subset <- cbind(Y_subset, w_subset, indiv_vars_subset, c_subset, offset_subset)
 
 # Examine distribution of exposure and ZIP-level covariates in sample
@@ -68,7 +70,7 @@ explore_zip_covs(c_subset)
 ##### Match on GPS using CausalGPS package #####
 
 # create log file to see internal processes of CausalGPS
-set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_xgb_", n_random_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
+set_logger(logger_file_path = paste0(dir_proj, "code/analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_match_", modifications, n_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
            logger_level = "DEBUG")
 
 # if using SL.gam, remove mgcv library and allow custom parameters
@@ -99,11 +101,12 @@ matched_pop_subset <- generate_pseudo_pop(Y_subset,
                                   matching_fun = "matching_l1",
                                   delta_n = 0.2,
                                   scale = 1)
+saveRDS(matched_pop_subset, file = paste0(dir_proj, "code/analysis/pseudopops/matched_pop_", n_rows, "rows", modifications, ".rds"))
 
 # check ZIP-level covariate balance
 # i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
 all_cov_bal(matched_pop_subset, w_subset, c_unordered_vars = subset(c_subset, select = zip_unordered_cat_var_names),
-            ci_appr = "matching", all_cov_names = colnames(c_subset), title = paste("Random set of", format(n_random_rows, scientific = F), "observations"))
+            ci_appr = "matching", all_cov_names = colnames(c_subset), title = paste("Set of", format(n_rows, scientific = F), "observations"))
 
 # print summary statistics for pseudopopulation counter
 summarize_pseudo_counter(matched_pop_subset)
@@ -124,7 +127,7 @@ explore_zip_covs(matched_data)
 ##### IPTW by GPS using CausalGPS package #####
 
 # create log file to see internal processes of CausalGPS
-set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_weight_", n_random_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
+set_logger(logger_file_path = paste0(dir_proj, "code/analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_weight_", modifications, n_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
            logger_level = "DEBUG")
 
 # GPS weighting on ZIP-level covariates
@@ -138,7 +141,8 @@ weighted_pop_subset <- generate_pseudo_pop(Y_subset,
                                           use_cov_transform = TRUE,
                                           transformers = list("sqrt", "log_nonneg", "logit_nonneg", "pow2", "pow3"), # list("pow2", "pow3")
                                           sl_lib = c("m_xgboost"),
-                                          params = list(xgb_nrounds = c(10, 20, 30, 50)),
+                                          params = list(xgb_nrounds = seq(10, 50),
+                                                        xgb_eta = seq(0.1, 0.4, 0.01)),
                                           nthread = n_cores - 1,
                                           covar_bl_method = "absolute",
                                           covar_bl_trs = 0.2,
@@ -149,11 +153,12 @@ weighted_pop_subset <- generate_pseudo_pop(Y_subset,
                                           matching_fun = "matching_l1",
                                           delta_n = 0.2, # std dev of pm2.5 is 2.87, so I'll set delta_n = 0.2? parameters may depend on if state-level or national
                                           scale = 1)
+saveRDS(weighted_pop_subset, file = paste0(dir_proj, "code/analysis/pseudopops/weighted_pop_", n_rows, "rows", modifications, ".rds"))
 
 # check ZIP-level covariate balance
 # i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
 all_cov_bal(weighted_pop_subset, w_subset, c_unordered_vars = subset(c_subset, select = zip_unordered_cat_var_names),
-            "weighting", all_cov_names = colnames(c_subset), title = paste("Random set of", format(n_random_rows, scientific = F), "observations"))
+            "weighting", all_cov_names = colnames(c_subset), title = paste("Set of", format(n_rows, scientific = F), "observations"))
 
 # print summary statistics for pseudopopulation weights
 summarize_pseudo_weights(weighted_pop_subset)
@@ -192,7 +197,7 @@ cat("ESS of capped weighted pseudopopulation:", ess(capped_weighted_pop_subset$p
 # check ZIP-level covariate balance
 # i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
 all_cov_bal(capped_weighted_pop_subset, w_subset, c_unordered_vars = subset(c_subset, select = zip_unordered_cat_var_names),
-            "weighting", all_cov_names = colnames(c_subset), title = paste("Random set of", format(n_random_rows, scientific = F), "observations, weights capped at", cutoff_weight))
+            "weighting", all_cov_names = colnames(c_subset), title = paste("Set of", format(n_rows, scientific = F), "observations, weights capped at", cutoff_weight))
 
 # pseudopopulation, including individual-level covariates (i.e., strata), trimming away unmatched data
 capped_weighted_obs <- capped_weighted_pop_subset$pseudo_pop$row_index
@@ -209,7 +214,7 @@ explore_zip_covs(capped_weighted_data)
 ##### Adjusting by GPS using CausalGPS package #####
 
 # create log file to see internal processes of CausalGPS
-set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_adjust_xgb_", n_random_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
+set_logger(logger_file_path = paste0(dir_proj, "code/analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_adjust_", modifications, n_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
            logger_level = "DEBUG")
 
 # GPS estimation on ZIP-level covariates
@@ -220,12 +225,15 @@ estimating_gps <- estimate_gps(Y_subset,
                               pred_model = "sl",
                               gps_model = "parametric",
                               sl_lib = c("m_xgboost"),
-                              params = list(xgb_nrounds = c(10, 20, 30, 50)),
+                              params = list(xgb_nrounds = seq(10, 50),
+                                            xgb_eta = seq(0.1, 0.4, 0.01)),
                               nthread = n_cores - 1,
                               internal_use = FALSE)
 estimated_gps <- estimating_gps$dataset
 estimated_gps$counter <- NULL # irrelevant to adjusting approach
 estimated_gps$row_index <- NULL # irrelevant to adjusting approach
+saveRDS(estimated_gps, file = paste0(dir_proj, "code/analysis/pseudopops/estimated_gps_", n_rows, "rows", modifications, ".rds"))
+
 
 # check ZIP-level covariate balance (note: this is the original, unchanged population)
 # i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
@@ -241,7 +249,7 @@ abs_cor_orig <- data.frame(cov = names(abs_cor_orig), abs_cor = abs_cor_orig)
 ggplot(abs_cor_orig, aes(x = cov, y = abs_cor)) +
   geom_point() +
   geom_line() +
-  labs(title = paste("Random set of", format(n_random_rows, scientific = F), "observations"), x = "Covariate", y = "Absolute Correlation") +
+  labs(title = paste("Set of", format(n_rows, scientific = F), "observations"), x = "Covariate", y = "Absolute Correlation") +
   theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
 
 
