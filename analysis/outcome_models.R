@@ -109,42 +109,42 @@ summary(bam_all_covariates_matched)
 saveRDS(summary(bam_all_covariates_matched), file = paste0(dir_proj, "code/results/parametric_results/bam_matched_all_covariates_", n_rows, "rows", modifications, ".rds"))
 
 
-### GPS weighting
-# bam_exposure_only_weighted <- bam(Y ~ w + any_dual + ADRD_age + sexM + race_cat,
-#                                   data = weighted_data,
-#                                   offset = log(person_years),
-#                                   family = poisson(link = "log"),
-#                                   weights = ipw,
-#                                   samfrac = 0.05,
-#                                   chunk.size = 5000,
-#                                   control = gam.control(trace = TRUE))
-# summary(bam_exposure_only_weighted)
+### GPS weighting - UNCAPPED
+bam_exposure_only_weighted <- bam(Y ~ w + any_dual + ADRD_age + sexM + race_cat,
+                                  data = weighted_data,
+                                  offset = log(person_years),
+                                  family = poisson(link = "log"),
+                                  weights = ipw,
+                                  samfrac = 0.05,
+                                  chunk.size = 5000,
+                                  control = gam.control(trace = TRUE))
+summary(bam_exposure_only_weighted)
+
+bam_exposures_controlled_weighted <- bam(Y ~ w + no2 + ozone_summer +
+                                           any_dual + ADRD_age + sexM + race_cat,
+                                         data = weighted_data,
+                                         offset = log(person_years),
+                                         family = poisson(link = "log"),
+                                         weights = ipw,
+                                         samfrac = 0.05,
+                                         chunk.size = 5000,
+                                         control = gam.control(trace = TRUE))
+summary(bam_exposures_controlled_weighted)
 # 
-# bam_exposures_controlled_weighted <- bam(Y ~ w + no2 + ozone_summer +
-#                                            any_dual + ADRD_age + sexM + race_cat,
-#                                          data = weighted_data,
-#                                          offset = log(person_years),
-#                                          family = poisson(link = "log"),
-#                                          weights = ipw,
-#                                          samfrac = 0.05,
-#                                          chunk.size = 5000,
-#                                          control = gam.control(trace = TRUE))
-# summary(bam_exposures_controlled_weighted)
-# 
-# bam_all_covariates_weighted <- bam(Y ~ w + no2 + ozone_summer +
-#                                     any_dual + ADRD_age + sexM + race_cat +
-#                                     summer_tmmx + summer_rmax + region + ADRD_year +
-#                                     mean_bmi + smoke_rate + hispanic + pct_blk +
-#                                     medhouseholdincome + medianhousevalue + PIR + poverty +
-#                                     education + popdensity + pct_owner_occ,
-#                                   data = weighted_data,
-#                                   offset = log(person_years),
-#                                   family = poisson(link = "log"),
-#                                   weights = ipw,
-#                                   samfrac = 0.05,
-#                                   chunk.size = 5000,
-#                                   control = gam.control(trace = TRUE))
-# summary(bam_all_covariates_weighted)
+bam_all_covariates_weighted <- bam(Y ~ w + no2 + ozone_summer +
+                                    any_dual + ADRD_age + sexM + race_cat +
+                                    summer_tmmx + summer_rmax + region + ADRD_year +
+                                    mean_bmi + smoke_rate + hispanic + pct_blk +
+                                    medhouseholdincome + medianhousevalue + PIR + poverty +
+                                    education + popdensity + pct_owner_occ,
+                                  data = weighted_data,
+                                  offset = log(person_years),
+                                  family = poisson(link = "log"),
+                                  weights = ipw,
+                                  samfrac = 0.05,
+                                  chunk.size = 5000,
+                                  control = gam.control(trace = TRUE))
+summary(bam_all_covariates_weighted)
 
 ### Capped GPS weighting
 bam_exposure_only_weighted <- bam(Y ~ w + any_dual + ADRD_age + sexM + race_cat,
