@@ -19,18 +19,16 @@ source(paste0(dir_proj, "pm_no2_o3-adrd_hospitalization-medicare-causalgps/analy
 ADRD_agg_lagged <- ADRD_agg[ADRD_year - ffs_entry_year >= 2, ]
 
 
-##### 1. Examine aggregated covariates #####
+##### 1. Explore covariate distributions of aggregated dataset #####
 
-table(ADRD_agg_lagged$statecode) # Not in dataset: AK, HI, PR
+# disaggregate <- function(var){
+#   return(unlist(map2(ADRD_agg_lagged[[var]], ADRD_agg_lagged$n_persons, rep))) 
+# }
 
+# Not in dataset: AK, HI, PR
+table(ADRD_agg_lagged$statecode)
 
-##### 2. Explore covariate distributions at individual level #####
-
-disaggregate <- function(var){
-  return(unlist(map2(ADRD_agg_lagged[[var]], ADRD_agg_lagged$n_persons, rep))) 
-}
-
-# Check correlations
+# Check correlations of variables (NOT included in final dataset)
 ADRD_agg_lagged[, entry_age := ADRD_age - ADRD_year + ffs_entry_year]
 entry_age <- unlist(map2(ADRD_agg_lagged$entry_age, ADRD_agg_lagged$n_persons, rep))
 ADRD_age <- unlist(map2(ADRD_agg_lagged$ADRD_age, ADRD_agg_lagged$n_persons, rep))
@@ -41,6 +39,10 @@ plot(entry_age[random_rows], ADRD_age[random_rows])
 # cor(disaggregate("entry_age"), disaggregate("ADRD_age"))
 # plot(disaggregate("entry_age"), disaggregate("ADRD_age"))
 ADRD_agg_lagged[, entry_age := NULL]
+
+# Check correlations of quantitative confounders included in final dataset
+confounder_correlations <- cor(subset(ADRD_agg_lagged_subset, select = zip_quant_var_names))
+which((confounder_correlations < 1 & confounder_correlations > 0.5) | confounder_correlations < -0.5, arr.ind = T)
 
 # Explore categorical variables used to stratify
 cat("Number of individuals:", sum(ADRD_agg_lagged$n_persons))
@@ -76,7 +78,7 @@ hist(ADRD_agg_lagged$popdensity, main = "Population Density in ZIP code in year 
 hist(ADRD_agg_lagged$hispanic, main = "Proportion Hispanic in ZIP code in year before event", xlab="")
 hist(ADRD_agg_lagged$pct_owner_occ, main = "Proportion of residents who own their home in ZIP code in year before event", xlab="")
 hist(ADRD_agg_lagged$poverty, main = "Proportion of residents living below poverty line in year before event", xlab="")
-hist(ADRD_agg_lagged$pir, main = "Median Price-Income Ratio (PIR) in ZIP code in year before event", xlab="")
+hist(ADRD_agg_lagged$PIR, main = "Median Price-Income Ratio (PIR) in ZIP code in year before event", xlab="")
 hist(ADRD_agg_lagged$pr, main = "Mean annual precipitation in year before event", xlab="Inches")
 
 logit <- function(x){
@@ -91,7 +93,7 @@ hist(logit(ADRD_agg_lagged$hispanic), main = "Logit(Proportion Hispanic in ZIP c
 hist(log(ADRD_agg_lagged$popdensity), main = "Log(Population Density in ZIP code in year before event)", xlab="Log(People/Mile^2)")
 hist(logit(ADRD_agg_lagged$pct_owner_occ), main = "Logit(Proportion of residents who own their home in ZIP code in year before event)", xlab="")
 hist(logit(ADRD_agg_lagged$poverty), main = "Logit(Proportion of residents living below poverty line in ZIP code in year before event)", xlab="")
-hist(log(ADRD_agg_lagged$pir), main = "Log(Mean Poverty-Income Ratio (PIR) in ZIP code in year before event)", xlab="") # skew left after log transformation
+hist(log(ADRD_agg_lagged$PIR), main = "Log(Mean Poverty-Income Ratio (PIR) in ZIP code in year before event)", xlab="") # skew left after log transformation
 
 # Summarize ZIP-level exposures
 mean(ADRD_agg_lagged$pm25)

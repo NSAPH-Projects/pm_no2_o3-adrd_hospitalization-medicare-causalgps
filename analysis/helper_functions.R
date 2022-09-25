@@ -1,7 +1,7 @@
 # Classify variables in dataset
 offset_var_names <- c("n_persons", "n_years")
-zip_quant_var_names <- c("mean_bmi", "smoke_rate", "hispanic", "pct_blk", "medhouseholdincome",
-                         "medianhousevalue", "PIR", "poverty", "education", "popdensity", "pct_owner_occ",
+zip_quant_var_names <- c("mean_bmi", "smoke_rate", "hispanic", "pct_blk",
+                         "PIR", "poverty", "education", "popdensity", "pct_owner_occ",
                          "summer_tmmx", "summer_rmax", "no2", "ozone_summer")
 zip_unordered_cat_var_names <- c("region", "ADRD_year")
 indiv_quant_var_names <- c("ADRD_age")
@@ -154,8 +154,6 @@ explore_zip_covs <- function(df){
   cat("\nMax of popdensity:", max(df$popdensity))
   cat("\nMin of poverty:", min(df$poverty))
   cat("\nMax of poverty:", max(df$poverty))
-  cat("\nMin of medhouseholdincome:", min(df$medhouseholdincome))
-  cat("\nMax of medhouseholdincome:", max(df$medhouseholdincome))
   cat("\nMin of PIR:", min(df$PIR))
   cat("\nMax of PIR:", max(df$PIR))
   cat("\nMin of pct_owner_occ:", min(df$pct_owner_occ))

@@ -6,7 +6,7 @@ bam_naive <- bam(Y_subset ~ w_subset + no2 + ozone_summer +
                    any_dual + ADRD_age + sexM + race_cat +
                    summer_tmmx + summer_rmax + region + ADRD_year +
                    mean_bmi + smoke_rate + hispanic + pct_blk +
-                   medhouseholdincome + medianhousevalue + PIR + poverty +
+                   PIR + poverty +
                    education + popdensity + pct_owner_occ,
                  data = data_subset,
                  offset = log(person_years),
@@ -50,7 +50,7 @@ bam_all_covariates_adjusted <- bam(Y_subset ~ w_subset + no2 + ozone_summer +
                           any_dual + ADRD_age + sexM + race_cat +
                           summer_tmmx + summer_rmax + region + ADRD_year +
                           mean_bmi + smoke_rate + hispanic + pct_blk +
-                          medhouseholdincome + medianhousevalue + PIR + poverty +
+                          PIR + poverty +
                           education + popdensity + pct_owner_occ + gps,
                         data = data_with_gps,
                         offset = log(person_years),
@@ -96,7 +96,7 @@ bam_all_covariates_matched <- bam(Y ~ w + no2 + ozone_summer +
                                    any_dual + ADRD_age + sexM + race_cat +
                                    summer_tmmx + summer_rmax + region + ADRD_year +
                                    mean_bmi + smoke_rate + hispanic + pct_blk +
-                                   medhouseholdincome + medianhousevalue + PIR + poverty +
+                                   PIR + poverty +
                                    education + popdensity + pct_owner_occ,
                                  data = matched_data,
                                  offset = log(person_years),
@@ -135,7 +135,7 @@ bam_all_covariates_weighted <- bam(Y ~ w + no2 + ozone_summer +
                                     any_dual + ADRD_age + sexM + race_cat +
                                     summer_tmmx + summer_rmax + region + ADRD_year +
                                     mean_bmi + smoke_rate + hispanic + pct_blk +
-                                    medhouseholdincome + medianhousevalue + PIR + poverty +
+                                    PIR + poverty +
                                     education + popdensity + pct_owner_occ,
                                   data = weighted_data,
                                   offset = log(person_years),
@@ -174,7 +174,7 @@ bam_all_covariates_weighted <- bam(Y ~ w + no2 + ozone_summer +
                                     any_dual + ADRD_age + sexM + race_cat +
                                     summer_tmmx + summer_rmax + region + ADRD_year +
                                     mean_bmi + smoke_rate + hispanic + pct_blk +
-                                    medhouseholdincome + medianhousevalue + PIR + poverty +
+                                    PIR + poverty +
                                     education + popdensity + pct_owner_occ,
                                   data = capped_weighted_data,
                                   offset = log(person_years),
@@ -194,7 +194,7 @@ gnm_all_covariates <- gnm(Y ~ w + no2 + ozone_summer +
                            any_dual + ADRD_age + sexM + race_cat +
                            summer_tmmx + summer_rmax + region + ADRD_year +
                            mean_bmi + smoke_rate + hispanic + pct_blk +
-                           medhouseholdincome + medianhousevalue + PIR + poverty +
+                           PIR + poverty +
                            education + popdensity + pct_owner_occ,
                          eliminate = (as.factor(sexM):as.factor(race_cat):as.factor(any_dual):ADRD_age),
                          data = matched_data,

@@ -104,7 +104,7 @@ matched_pop_subset <- generate_pseudo_pop(Y_subset,
                                   matching_fun = "matching_l1",
                                   delta_n = 0.2,
                                   scale = 1)
-saveRDS(matched_pop_subset, file = paste0(dir_proj, "code/analysis/pseudopops/matched_pop_", n_rows, "rows", modifications, ".rds"))
+saveRDS(matched_pop_subset, file = paste0(dir_proj, "data/pseudopops/matched_pop_", n_rows, "rows", modifications, ".rds"))
 
 # check ZIP-level covariate balance
 # i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
@@ -157,7 +157,7 @@ weighted_pop_subset <- generate_pseudo_pop(Y_subset,
                                           matching_fun = "matching_l1",
                                           delta_n = 0.2, # std dev of pm2.5 is 2.87, so I'll set delta_n = 0.2? parameters may depend on if state-level or national
                                           scale = 1)
-saveRDS(weighted_pop_subset, file = paste0(dir_proj, "code/analysis/pseudopops/weighted_pop_", n_rows, "rows", modifications, ".rds"))
+saveRDS(weighted_pop_subset, file = paste0(dir_proj, "data/pseudopops/weighted_pop_", n_rows, "rows", modifications, ".rds"))
 
 # check ZIP-level covariate balance
 # i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
@@ -243,7 +243,7 @@ estimating_gps <- estimate_gps(Y_subset,
 estimated_gps <- estimating_gps$dataset
 estimated_gps$counter <- NULL # irrelevant to adjusting approach
 estimated_gps$row_index <- NULL # irrelevant to adjusting approach
-saveRDS(estimated_gps, file = paste0(dir_proj, "code/analysis/pseudopops/estimated_gps_", n_rows, "rows", modifications, ".rds"))
+saveRDS(estimated_gps, file = paste0(dir_proj, "data/pseudopops/estimated_gps_", n_rows, "rows", modifications, ".rds"))
 
 
 # check ZIP-level covariate balance (note: this is the original, unchanged population)
