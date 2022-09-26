@@ -26,6 +26,7 @@ modifications <- "" # to be used in names of output files, for instance "delta0.
 # read in full data
 ADRD_agg <- read_fst(paste0(dir_proj, "data/analysis/ADRD_complete_corrected.fst"), as.data.table = TRUE)
 ADRD_agg_lagged <- ADRD_agg[ADRD_year - ffs_entry_year >= 2, ] # Approximate first ADRD hospitalization by requiring no ADRD hosps for 2 years
+# bin ages into 5-year increments (except first/last bin are smaller/larger)
 # ADRD_agg_lagged[, ADRD_age := ifelse(ADRD_age < 70, 1, ifelse(ADRD_age < 75, 2, ifelse(ADRD_age < 80, 3, ifelse(ADRD_age < 85, 4, ifelse(ADRD_age < 90, 5, ifelse(ADRD_age < 95, 6, 7))))))]
 
 source(paste0(dir_proj, "code/analysis/helper_functions.R"))
@@ -110,7 +111,7 @@ saveRDS(matched_pop_subset, file = paste0(dir_proj, "data/pseudopops/matched_pop
 # i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
 matched_cov_bal_plot <- all_cov_bal(matched_pop_subset, w_subset, c_unordered_vars = subset(c_subset, select = zip_unordered_cat_var_names),
             ci_appr = "matching", all_cov_names = colnames(c_subset), title = paste("Set of", format(n_rows, scientific = F), "observations"))
-ggsave(paste0(dir_proj, "code/results/covariate_balance/matched_pop_", n_rows, "rows", modifications, ".png"), matched_cov_bal_plot)
+ggsave(paste0(dir_proj, "results/covariate_balance/matched_pop_", n_rows, "rows", modifications, ".png"), matched_cov_bal_plot)
 
 # print summary statistics for pseudopopulation counter
 summarize_pseudo_counter(matched_pop_subset)
@@ -163,7 +164,7 @@ saveRDS(weighted_pop_subset, file = paste0(dir_proj, "data/pseudopops/weighted_p
 # i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
 weighted_cov_bal_plot <- all_cov_bal(weighted_pop_subset, w_subset, c_unordered_vars = subset(c_subset, select = zip_unordered_cat_var_names),
             "weighting", all_cov_names = colnames(c_subset), title = paste("Set of", format(n_rows, scientific = F), "observations"))
-ggsave(paste0(dir_proj, "code/results/covariate_balance/weighted_pop_", n_rows, "rows", modifications, ".png"), weighted_cov_bal_plot)
+ggsave(paste0(dir_proj, "results/covariate_balance/weighted_pop_", n_rows, "rows", modifications, ".png"), weighted_cov_bal_plot)
 
 # print summary statistics for pseudopopulation weights
 summarize_pseudo_weights(weighted_pop_subset)
@@ -208,7 +209,7 @@ cat("ESS of capped weighted pseudopopulation:", ess(capped_weighted_pop_subset$p
 # i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
 capped_weighted_cov_bal_plot <- all_cov_bal(capped_weighted_pop_subset, w_subset, c_unordered_vars = subset(c_subset, select = zip_unordered_cat_var_names),
             "weighting", all_cov_names = colnames(c_subset), title = paste("Set of", format(n_rows, scientific = F), "observations, weights capped at", cutoff_weight))
-ggsave(paste0(dir_proj, "code/results/covariate_balance/capped_weighted_pop_", n_rows, "rows", modifications, ".png"), capped_weighted_cov_bal_plot)
+ggsave(paste0(dir_proj, "results/covariate_balance/capped_weighted_pop_", n_rows, "rows", modifications, ".png"), capped_weighted_cov_bal_plot)
 
 # pseudopopulation, including individual-level covariates (i.e., strata), trimming away unmatched data
 capped_weighted_obs <- capped_weighted_pop_subset$pseudo_pop$row_index

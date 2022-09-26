@@ -15,8 +15,8 @@ bam_naive <- bam(Y_subset ~ w_subset + no2 + ozone_summer +
                  chunk.size = 5000,
                  control = gam.control(trace = TRUE))
 summary(bam_naive)
-saveRDS(summary(bam_naive), file = paste0(dir_proj, "code/results/parametric_results/bam_naive_", n_rows, "rows", modifications, ".rds"))
-# readRDS(paste0(dir_proj, "code/results/parametric_results/bam_naive_", n_rows, "rows.rds"))
+saveRDS(summary(bam_naive), file = paste0(dir_proj, "results/parametric_results/bam_naive_", n_rows, "rows_", modifications, ".rds"))
+# readRDS(paste0(dir_proj, "results/parametric_results/bam_naive_", n_rows, "rows.rds"))
 
 
 ##### Poisson regression adjusting for GPS #####
@@ -33,7 +33,7 @@ bam_exposure_only_adjusted <- bam(Y_subset ~ w_subset + gps +
                  chunk.size = 5000,
                  control = gam.control(trace = TRUE))
 summary(bam_exposure_only_adjusted)
-saveRDS(summary(bam_exposure_only_adjusted), file = paste0(dir_proj, "code/results/parametric_results/bam_adjusted_exposure_only_", n_rows, "rows", modifications, ".rds"))
+saveRDS(summary(bam_exposure_only_adjusted), file = paste0(dir_proj, "results/parametric_results/bam_adjusted_exposure_only_", n_rows, "rows_", modifications, ".rds"))
 
 bam_exposures_controlled_adjusted <- bam(Y_subset ~ w_subset + no2 + ozone_summer + gps +
                                            any_dual + ADRD_age + sexM + race_cat,
@@ -44,7 +44,7 @@ bam_exposures_controlled_adjusted <- bam(Y_subset ~ w_subset + no2 + ozone_summe
                         chunk.size = 5000,
                         control = gam.control(trace = TRUE))
 summary(bam_exposures_controlled_adjusted)
-saveRDS(summary(bam_exposures_controlled_adjusted), file = paste0(dir_proj, "code/results/parametric_results/bam_adjusted_all_exposures_", n_rows, "rows", modifications, ".rds"))
+saveRDS(summary(bam_exposures_controlled_adjusted), file = paste0(dir_proj, "results/parametric_results/bam_adjusted_all_exposures_", n_rows, "rows_", modifications, ".rds"))
 
 bam_all_covariates_adjusted <- bam(Y_subset ~ w_subset + no2 + ozone_summer +
                           any_dual + ADRD_age + sexM + race_cat +
@@ -59,10 +59,10 @@ bam_all_covariates_adjusted <- bam(Y_subset ~ w_subset + no2 + ozone_summer +
                         chunk.size = 5000,
                         control = gam.control(trace = TRUE))
 summary(bam_all_covariates_adjusted)
-saveRDS(summary(bam_all_covariates_adjusted), file = paste0(dir_proj, "code/results/parametric_results/bam_adjusted_all_covariates_", n_rows, "rows", modifications, ".rds"))
+saveRDS(summary(bam_all_covariates_adjusted), file = paste0(dir_proj, "results/parametric_results/bam_adjusted_all_covariates_", n_rows, "rows_", modifications, ".rds"))
 
 
-##### (Poisson) Parametric outcome models #####
+##### Poisson regression matching on GPS #####
 
 # method 1: gam package
 # To do: rd rest of Kevin's code (https://github.com/kevjosey/erc-strata/blob/master/R/match_estimate.R)
@@ -78,7 +78,7 @@ bam_exposure_only_matched <- bam(Y ~ w + any_dual + ADRD_age + sexM + race_cat,
                                  chunk.size = 5000,
                                  control = gam.control(trace = TRUE))
 summary(bam_exposure_only_matched)
-saveRDS(summary(bam_exposure_only_matched), file = paste0(dir_proj, "code/results/parametric_results/bam_matched_exposure_only_", n_rows, "rows", modifications, ".rds"))
+saveRDS(summary(bam_exposure_only_matched), file = paste0(dir_proj, "results/parametric_results/bam_matched_exposure_only_", n_rows, "rows_", modifications, ".rds"))
 
 bam_exposures_controlled_matched <- bam(Y ~ w + no2 + ozone_summer +
                                           any_dual + ADRD_age + sexM + race_cat,
@@ -90,7 +90,7 @@ bam_exposures_controlled_matched <- bam(Y ~ w + no2 + ozone_summer +
                                         chunk.size = 5000,
                                         control = gam.control(trace = TRUE))
 summary(bam_exposures_controlled_matched)
-saveRDS(summary(bam_exposures_controlled_matched), file = paste0(dir_proj, "code/results/parametric_results/bam_matched_all_exposures_", n_rows, "rows", modifications, ".rds"))
+saveRDS(summary(bam_exposures_controlled_matched), file = paste0(dir_proj, "results/parametric_results/bam_matched_all_exposures_", n_rows, "rows_", modifications, ".rds"))
 
 bam_all_covariates_matched <- bam(Y ~ w + no2 + ozone_summer +
                                    any_dual + ADRD_age + sexM + race_cat +
@@ -106,10 +106,10 @@ bam_all_covariates_matched <- bam(Y ~ w + no2 + ozone_summer +
                                  chunk.size = 5000,
                                  control = gam.control(trace = TRUE))
 summary(bam_all_covariates_matched)
-saveRDS(summary(bam_all_covariates_matched), file = paste0(dir_proj, "code/results/parametric_results/bam_matched_all_covariates_", n_rows, "rows", modifications, ".rds"))
+saveRDS(summary(bam_all_covariates_matched), file = paste0(dir_proj, "results/parametric_results/bam_matched_all_covariates_", n_rows, "rows_", modifications, ".rds"))
 
 
-### GPS weighting - UNCAPPED
+##### Poisson regression weighting (UNCAPPED) on GPS #####
 bam_exposure_only_weighted <- bam(Y ~ w + any_dual + ADRD_age + sexM + race_cat,
                                   data = weighted_data,
                                   offset = log(person_years),
@@ -146,7 +146,8 @@ bam_all_covariates_weighted <- bam(Y ~ w + no2 + ozone_summer +
                                   control = gam.control(trace = TRUE))
 summary(bam_all_covariates_weighted)
 
-### Capped GPS weighting
+
+##### Poisson regression weighting (CAPPED) on GPS #####
 bam_exposure_only_weighted <- bam(Y ~ w + any_dual + ADRD_age + sexM + race_cat,
                                   data = capped_weighted_data,
                                   offset = log(person_years),
@@ -156,7 +157,7 @@ bam_exposure_only_weighted <- bam(Y ~ w + any_dual + ADRD_age + sexM + race_cat,
                                   chunk.size = 5000,
                                   control = gam.control(trace = TRUE))
 summary(bam_exposure_only_weighted)
-saveRDS(summary(bam_exposure_only_weighted), file = paste0(dir_proj, "code/results/parametric_results/bam_weighted_exposure_only_", n_rows, "rows", modifications, ".rds"))
+saveRDS(summary(bam_exposure_only_weighted), file = paste0(dir_proj, "results/parametric_results/bam_weighted_exposure_only_", n_rows, "rows_", modifications, ".rds"))
 
 bam_exposures_controlled_weighted <- bam(Y ~ w + no2 + ozone_summer +
                                            any_dual + ADRD_age + sexM + race_cat,
@@ -168,7 +169,7 @@ bam_exposures_controlled_weighted <- bam(Y ~ w + no2 + ozone_summer +
                                          chunk.size = 5000,
                                          control = gam.control(trace = TRUE))
 summary(bam_exposures_controlled_weighted)
-saveRDS(summary(bam_exposures_controlled_weighted), file = paste0(dir_proj, "code/results/parametric_results/bam_weighted_all_exposures_", n_rows, "rows", modifications, ".rds"))
+saveRDS(summary(bam_exposures_controlled_weighted), file = paste0(dir_proj, "results/parametric_results/bam_weighted_all_exposures_", n_rows, "rows_", modifications, ".rds"))
 
 bam_all_covariates_weighted <- bam(Y ~ w + no2 + ozone_summer +
                                     any_dual + ADRD_age + sexM + race_cat +
@@ -184,9 +185,10 @@ bam_all_covariates_weighted <- bam(Y ~ w + no2 + ozone_summer +
                                   chunk.size = 5000,
                                   control = gam.control(trace = TRUE))
 summary(bam_all_covariates_weighted)
-saveRDS(summary(bam_all_covariates_weighted), file = paste0(dir_proj, "code/results/parametric_results/bam_weighted_all_covariates_", n_rows, "rows", modifications, ".rds"))
+saveRDS(summary(bam_all_covariates_weighted), file = paste0(dir_proj, "results/parametric_results/bam_weighted_all_covariates_", n_rows, "rows_", modifications, ".rds"))
 
 
+##### Old code: Poisson regression using gnm and estimate_pmetric_erf #####
 # method 2: gnm package
 # To do: fix error: only first element used
 # rd rest of Xiao's code (https://github.com/wxwx1993/National_Causal/blob/master/statistical_models.R)
@@ -219,18 +221,18 @@ summary(outcome)
 
 iqr <- IQR(ADRD_agg_lagged$pm25)
 iqr
-coef_bam_all_covariates <- bam_all_covariates$coefficients[2]
-coef_bam_exposures_controlled <- bam_exposures_controlled$coefficients[2]
-coef_bam_exposure_only <- bam_exposure_only$coefficients[2]
-coef_bam_all_covariates
-coef_bam_exposures_controlled
-coef_bam_exposure_only
-cat("Hazard ratio per 1 IQR increase in PM2.5:", exp(coef_bam_all_covariates*iqr))
-cat("Hazard ratio per 1 IQR increase in PM2.5:", exp(coef_bam_exposures_controlled*iqr))
-cat("Hazard ratio per 1 IQR increase in PM2.5:", exp(coef_bam_exposure_only*iqr))
+# coef_bam_all_covariates <- bam_all_covariates$coefficients[2]
+# coef_bam_exposures_controlled <- bam_exposures_controlled$coefficients[2]
+# coef_bam_exposure_only <- bam_exposure_only$coefficients[2]
+# coef_bam_all_covariates
+# coef_bam_exposures_controlled
+# coef_bam_exposure_only
+# cat("Hazard ratio per 1 IQR increase in PM2.5:", exp(coef_bam_all_covariates*iqr))
+# cat("Hazard ratio per 1 IQR increase in PM2.5:", exp(coef_bam_exposures_controlled*iqr))
+# cat("Hazard ratio per 1 IQR increase in PM2.5:", exp(coef_bam_exposure_only*iqr))
 
 
-##### Non-parametric model on matched and weighted data ##### 
+##### To be updated: Non-parametric model on matched and weighted data ##### 
 
 # model rate log(Y/offset) instead of Y, to incorporate offset
 matched_erf <- estimate_npmetric_erf(as.double(log(matched_data$Y / matched_data$person_years + 0.001)),
@@ -255,7 +257,7 @@ plot(matched_erf) # plot rate
 #summary(weighted_erf)
 
 
-##### Semi-parametric model on matched and weighted data ##### 
+##### To be updated: Semi-parametric model on matched and weighted data ##### 
 
 # to do: fix error
 # to do: try Y~s(w,df=3)
@@ -268,8 +270,6 @@ matched_semi_erf_plot$erf <- exp(matched_semi_erf_plot$erf)
 plot(matched_semi_erf_plot)
 
 
-
-#### To Do: use transformed variables created in explore_covariate_distributions.R ####
 
 
 ##### Old Code #####
