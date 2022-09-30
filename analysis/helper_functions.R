@@ -4,10 +4,14 @@ zip_quant_var_names <- c("mean_bmi", "smoke_rate", "hispanic", "pct_blk",
                          "PIR", "poverty", "education", "popdensity", "pct_owner_occ",
                          "summer_tmmx", "summer_rmax", "no2", "ozone_summer")
 zip_unordered_cat_var_names <- c("region", "ADRD_year")
-indiv_quant_var_names <- c("ADRD_age")
-indiv_unordered_cat_var_names <- c("sexM", "race_cat", "any_dual")
+# indiv_quant_var_names <- c("ADRD_age")
+indiv_quant_var_names <- NULL
+indiv_unordered_cat_var_names <- c("sexM", "race_cat", "any_dual", "ADRD_age_binned")
 zip_var_names <- c(zip_quant_var_names, zip_unordered_cat_var_names)
 indiv_var_names <- c(indiv_unordered_cat_var_names, indiv_quant_var_names) # note: for now, using ADRD_age as a quantitative variable (not binned)
+
+# Formulas for Poisson regression, including covariate names
+
 
 # Functions to transform variables in generate_pseudo_pop()
 log_nonneg <- function(x){

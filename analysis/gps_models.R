@@ -19,15 +19,14 @@ dir_proj <- "~/nsaph_projects/pm_no2_o3-adrd_hosp-medicare-causalgps/"
 n_cores <- 48
 n_gb <- 184
 # n_rows <- 5000000
-n_rows <- 17640610 # Full data
-modifications <- "" # to be used in names of output files, for instance "delta0.3_"
+total_n_rows <- 11854151 # With 2-year lag: full data pre-age-binning: 17640610; full data after age-binning: 11854151
+n_rows <- total_n_rows
+modifications <- "" # to be used in names of output files, for instance "delta0.3"
 
 
 # read in full data
-ADRD_agg <- read_fst(paste0(dir_proj, "data/analysis/ADRD_complete_corrected.fst"), as.data.table = TRUE)
+ADRD_agg <- read_fst(paste0(dir_proj, "data/analysis/ADRD_complete_age_binned.fst"), as.data.table = TRUE)
 ADRD_agg_lagged <- ADRD_agg[ADRD_year - ffs_entry_year >= 2, ] # Approximate first ADRD hospitalization by requiring no ADRD hosps for 2 years
-# bin ages into 5-year increments (except first/last bin are smaller/larger)
-# ADRD_agg_lagged[, ADRD_age := ifelse(ADRD_age < 70, 1, ifelse(ADRD_age < 75, 2, ifelse(ADRD_age < 80, 3, ifelse(ADRD_age < 85, 4, ifelse(ADRD_age < 90, 5, ifelse(ADRD_age < 95, 6, 7))))))]
 
 source(paste0(dir_proj, "code/analysis/helper_functions.R"))
 
@@ -47,17 +46,17 @@ for (var in c(zip_unordered_cat_var_names, indiv_unordered_cat_var_names)){
 
 ##### Use full data or (random) subset of data to make code run faster than full data #####
 
-if (n_rows < 17640610){ # if analyzing subset of data
+if (n_rows < total_n_rows){ # if analyzing subset of data
   set.seed(100)
   selected_rows <- sample(1:nrow(ADRD_agg_lagged_subset), n_rows)
-} else selected_rows <- 1:17640610 # if full data
+} else selected_rows <- 1:total_n_rows # if full data
 
 Y_subset <- ADRD_agg_lagged_subset[selected_rows, n_ADRDhosp]
 w_subset <- ADRD_agg_lagged_subset[selected_rows, pm25]
 c_subset <- as.data.frame(subset(ADRD_agg_lagged_subset[selected_rows,], select = zip_var_names))
 
 # Not used in GPS matching, but used in outcome model
-indiv_vars_subset <- ADRD_agg_lagged_subset[selected_rows, .(sexM, race_cat, any_dual, ADRD_age)] # To Do: consider including ffs_entry_year/ADRD_year in GPS or outcome model
+indiv_vars_subset <- subset(ADRD_agg_lagged_subset[selected_rows, ], select = indiv_var_names) # To Do: consider including ffs_entry_year/ADRD_year in GPS or outcome model
 offset_subset <- ADRD_agg_lagged_subset[selected_rows, .(person_years = n_persons * n_years)]
 data_subset <- cbind(Y_subset, w_subset, indiv_vars_subset, c_subset, offset_subset)
 
