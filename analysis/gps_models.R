@@ -50,11 +50,9 @@ if (n_rows < total_n_rows){ # if analyzing subset of data
   selected_rows <- sample(1:nrow(ADRD_agg_lagged_subset), n_rows)
 } else selected_rows <- 1:total_n_rows # if full data
 
-Y <- as.data.frame(subset(ADRD_agg_lagged_subset[selected_rows, ], select = outcome_name))
-w <- as.data.frame(subset(ADRD_agg_lagged_subset[selected_rows, ], select = exposure_name))
+Y <- as.data.frame(ADRD_agg_lagged_subset)[selected_rows, outcome_name]
+w <- as.data.frame(ADRD_agg_lagged_subset)[selected_rows, exposure_name]
 c <- as.data.frame(subset(ADRD_agg_lagged_subset[selected_rows,], select = c(other_expos_names, zip_var_names)))
-colnames(Y)[1] <- "Y"
-colnames(w)[1] <- "w"
 
 # Not used in GPS matching, but used in outcome model
 indiv_vars <- subset(ADRD_agg_lagged_subset[selected_rows, ], select = indiv_var_names)
