@@ -46,8 +46,7 @@ saveRDS(summary(bam_naive_expos_only), file = paste0(dir_proj, "results/parametr
 data_with_gps <- copy(all_data)
 data_with_gps$gps <- estimated_gps$gps
 
-bam_exposure_only_adjusted <- bam(Y ~ w + gps +
-                                    any_dual + ADRD_age + sexM + race_cat,
+bam_exposure_only_adjusted <- bam(update(formula_expos_only, ~ . + gps),
                  data = data_with_gps,
                  offset = log(person_years),
                  family = poisson(link = "log"),
@@ -57,8 +56,7 @@ bam_exposure_only_adjusted <- bam(Y ~ w + gps +
 summary(bam_exposure_only_adjusted)
 saveRDS(summary(bam_exposure_only_adjusted), file = paste0(dir_proj, "results/parametric_results/bam_adjusted_exposure_only_", n_rows, "rows_", modifications, ".rds"))
 
-bam_exposures_controlled_adjusted <- bam(Y ~ w + no2 + ozone_summer + gps +
-                                           any_dual + ADRD_age + sexM + race_cat,
+bam_exposures_controlled_adjusted <- bam(update(formula_all_expos, ~ . + gps),
                         data = data_with_gps,
                         offset = log(person_years),
                         family = poisson(link = "log"),
@@ -68,12 +66,7 @@ bam_exposures_controlled_adjusted <- bam(Y ~ w + no2 + ozone_summer + gps +
 summary(bam_exposures_controlled_adjusted)
 saveRDS(summary(bam_exposures_controlled_adjusted), file = paste0(dir_proj, "results/parametric_results/bam_adjusted_all_exposures_", n_rows, "rows_", modifications, ".rds"))
 
-bam_all_covariates_adjusted <- bam(Y ~ w + no2 + ozone_summer +
-                          any_dual + ADRD_age + sexM + race_cat +
-                          summer_tmmx + summer_rmax + region + ADRD_year +
-                          mean_bmi + smoke_rate + hispanic + pct_blk +
-                          PIR + poverty +
-                          education + popdensity + pct_owner_occ + gps,
+bam_all_covariates_adjusted <- bam(update(formula_all_covars, ~ . + gps),
                         data = data_with_gps,
                         offset = log(person_years),
                         family = poisson(link = "log"),
@@ -91,7 +84,7 @@ saveRDS(summary(bam_all_covariates_adjusted), file = paste0(dir_proj, "results/p
 # to see if there's anything extra I should do to account for matching
 
 # GPS matching
-bam_exposure_only_matched <- bam(Y ~ w + any_dual + ADRD_age + sexM + race_cat,
+bam_exposure_only_matched <- bam(formula_expos_only,
                                  data = matched_data,
                                  offset = log(person_years),
                                  family = poisson(link = "log"),
@@ -102,8 +95,7 @@ bam_exposure_only_matched <- bam(Y ~ w + any_dual + ADRD_age + sexM + race_cat,
 summary(bam_exposure_only_matched)
 saveRDS(summary(bam_exposure_only_matched), file = paste0(dir_proj, "results/parametric_results/bam_matched_exposure_only_", n_rows, "rows_", modifications, ".rds"))
 
-bam_exposures_controlled_matched <- bam(Y ~ w + no2 + ozone_summer +
-                                          any_dual + ADRD_age + sexM + race_cat,
+bam_exposures_controlled_matched <- bam(formula_all_expos,
                                         data = matched_data,
                                         offset = log(person_years),
                                         family = poisson(link = "log"),
@@ -114,12 +106,7 @@ bam_exposures_controlled_matched <- bam(Y ~ w + no2 + ozone_summer +
 summary(bam_exposures_controlled_matched)
 saveRDS(summary(bam_exposures_controlled_matched), file = paste0(dir_proj, "results/parametric_results/bam_matched_all_exposures_", n_rows, "rows_", modifications, ".rds"))
 
-bam_all_covariates_matched <- bam(Y ~ w + no2 + ozone_summer +
-                                   any_dual + ADRD_age + sexM + race_cat +
-                                   summer_tmmx + summer_rmax + region + ADRD_year +
-                                   mean_bmi + smoke_rate + hispanic + pct_blk +
-                                   PIR + poverty +
-                                   education + popdensity + pct_owner_occ,
+bam_all_covariates_matched <- bam(formula_all_covars,
                                  data = matched_data,
                                  offset = log(person_years),
                                  family = poisson(link = "log"),
@@ -132,46 +119,8 @@ saveRDS(summary(bam_all_covariates_matched), file = paste0(dir_proj, "results/pa
 
 
 ##### Poisson regression weighting (UNCAPPED) on GPS #####
-bam_exposure_only_weighted <- bam(Y ~ w + any_dual + ADRD_age + sexM + race_cat,
+bam_exposure_only_weighted <- bam(formula_expos_only,
                                   data = weighted_data,
-                                  offset = log(person_years),
-                                  family = poisson(link = "log"),
-                                  weights = ipw,
-                                  samfrac = 0.05,
-                                  chunk.size = 5000,
-                                  control = gam.control(trace = TRUE))
-summary(bam_exposure_only_weighted)
-
-bam_exposures_controlled_weighted <- bam(Y ~ w + no2 + ozone_summer +
-                                           any_dual + ADRD_age + sexM + race_cat,
-                                         data = weighted_data,
-                                         offset = log(person_years),
-                                         family = poisson(link = "log"),
-                                         weights = ipw,
-                                         samfrac = 0.05,
-                                         chunk.size = 5000,
-                                         control = gam.control(trace = TRUE))
-summary(bam_exposures_controlled_weighted)
-# 
-bam_all_covariates_weighted <- bam(Y ~ w + no2 + ozone_summer +
-                                    any_dual + ADRD_age + sexM + race_cat +
-                                    summer_tmmx + summer_rmax + region + ADRD_year +
-                                    mean_bmi + smoke_rate + hispanic + pct_blk +
-                                    PIR + poverty +
-                                    education + popdensity + pct_owner_occ,
-                                  data = weighted_data,
-                                  offset = log(person_years),
-                                  family = poisson(link = "log"),
-                                  weights = ipw,
-                                  samfrac = 0.05,
-                                  chunk.size = 5000,
-                                  control = gam.control(trace = TRUE))
-summary(bam_all_covariates_weighted)
-
-
-##### Poisson regression weighting (CAPPED) on GPS #####
-bam_exposure_only_weighted <- bam(Y ~ w + any_dual + ADRD_age + sexM + race_cat,
-                                  data = capped_weighted_data,
                                   offset = log(person_years),
                                   family = poisson(link = "log"),
                                   weights = ipw,
@@ -181,9 +130,8 @@ bam_exposure_only_weighted <- bam(Y ~ w + any_dual + ADRD_age + sexM + race_cat,
 summary(bam_exposure_only_weighted)
 saveRDS(summary(bam_exposure_only_weighted), file = paste0(dir_proj, "results/parametric_results/bam_weighted_exposure_only_", n_rows, "rows_", modifications, ".rds"))
 
-bam_exposures_controlled_weighted <- bam(Y ~ w + no2 + ozone_summer +
-                                           any_dual + ADRD_age + sexM + race_cat,
-                                         data = capped_weighted_data,
+bam_exposures_controlled_weighted <- bam(formula_all_expos,
+                                         data = weighted_data,
                                          offset = log(person_years),
                                          family = poisson(link = "log"),
                                          weights = ipw,
@@ -193,13 +141,8 @@ bam_exposures_controlled_weighted <- bam(Y ~ w + no2 + ozone_summer +
 summary(bam_exposures_controlled_weighted)
 saveRDS(summary(bam_exposures_controlled_weighted), file = paste0(dir_proj, "results/parametric_results/bam_weighted_all_exposures_", n_rows, "rows_", modifications, ".rds"))
 
-bam_all_covariates_weighted <- bam(Y ~ w + no2 + ozone_summer +
-                                    any_dual + ADRD_age + sexM + race_cat +
-                                    summer_tmmx + summer_rmax + region + ADRD_year +
-                                    mean_bmi + smoke_rate + hispanic + pct_blk +
-                                    PIR + poverty +
-                                    education + popdensity + pct_owner_occ,
-                                  data = capped_weighted_data,
+bam_all_covariates_weighted <- bam(formula_all_covars,
+                                  data = weighted_data,
                                   offset = log(person_years),
                                   family = poisson(link = "log"),
                                   weights = ipw,
@@ -208,6 +151,41 @@ bam_all_covariates_weighted <- bam(Y ~ w + no2 + ozone_summer +
                                   control = gam.control(trace = TRUE))
 summary(bam_all_covariates_weighted)
 saveRDS(summary(bam_all_covariates_weighted), file = paste0(dir_proj, "results/parametric_results/bam_weighted_all_covariates_", n_rows, "rows_", modifications, ".rds"))
+
+
+##### Poisson regression weighting (CAPPED) on GPS #####
+bam_exposure_only_capped_weighted <- bam(formula_expos_only,
+                                  data = capped_weighted_data,
+                                  offset = log(person_years),
+                                  family = poisson(link = "log"),
+                                  weights = ipw,
+                                  samfrac = 0.05,
+                                  chunk.size = 5000,
+                                  control = gam.control(trace = TRUE))
+summary(bam_exposure_only_capped_weighted)
+saveRDS(summary(bam_exposure_only_capped_weighted), file = paste0(dir_proj, "results/parametric_results/bam_capped_weighted_exposure_only_", n_rows, "rows_", modifications, ".rds"))
+
+bam_exposures_controlled_capped_weighted <- bam(formula_all_expos,
+                                         data = capped_weighted_data,
+                                         offset = log(person_years),
+                                         family = poisson(link = "log"),
+                                         weights = ipw,
+                                         samfrac = 0.05,
+                                         chunk.size = 5000,
+                                         control = gam.control(trace = TRUE))
+summary(bam_exposures_controlled_capped_weighted)
+saveRDS(summary(bam_exposures_controlled_capped_weighted), file = paste0(dir_proj, "results/parametric_results/bam_capped_weighted_all_exposures_", n_rows, "rows_", modifications, ".rds"))
+
+bam_all_covariates_capped_weighted <- bam(formula_all_covars,
+                                  data = capped_weighted_data,
+                                  offset = log(person_years),
+                                  family = poisson(link = "log"),
+                                  weights = ipw,
+                                  samfrac = 0.05,
+                                  chunk.size = 5000,
+                                  control = gam.control(trace = TRUE))
+summary(bam_all_covariates_capped_weighted)
+saveRDS(summary(bam_all_covariates_capped_weighted), file = paste0(dir_proj, "results/parametric_results/bam_weighted_all_covariates_", n_rows, "rows_", modifications, ".rds"))
 
 
 ##### Old code: Poisson regression using gnm and estimate_pmetric_erf #####
