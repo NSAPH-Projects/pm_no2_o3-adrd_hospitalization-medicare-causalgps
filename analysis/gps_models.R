@@ -15,27 +15,26 @@ dir_proj <- "~/nsaph_projects/pm_no2_o3-adrd_hosp-medicare-causalgps/"
 # dir_data <- paste0(dir_proj, "data/")
 # dir_code <- paste0(dir_proj, "code/")
 
-# parameters for this computing job
-n_cores <- 48
-n_gb <- 184
-# n_rows <- 5000000
-total_n_rows <- 11854151 # With 2-year lag: full data pre-age-binning: 17640610; full data after age-binning: 11854151
-n_rows <- total_n_rows
-modifications <- "" # to be used in names of output files, for instance "delta0.3"
-
-
 # read in full data
 ADRD_agg <- read_fst(paste0(dir_proj, "data/analysis/ADRD_complete_age_binned.fst"), as.data.table = TRUE)
 ADRD_agg_lagged <- ADRD_agg[ADRD_year - ffs_entry_year >= 2, ] # Approximate first ADRD hospitalization by requiring no ADRD hosps for 2 years
 
 source(paste0(dir_proj, "code/analysis/helper_functions.R"))
 
+# parameters for this computing job
+n_cores <- 48
+n_gb <- 184
+total_n_rows <- nrow(ADRD_agg_lagged) # With 2-year lag: full data pre-age-binning: 17640610; full data after age-binning: 11854151
+n_rows <- total_n_rows # previously: n_rows <- 5000000
+modifications <- "bin_age_rm_medinc_medhouse" # to be used in names of output files, for instance "delta0.3"
+
 
 ##### Get data for exposure, outcome, and covariates of interest #####
 
 exposure_name <- "pm25"
+other_expos_names <- zip_expos_names[zip_expos_names != exposure_name]
 outcome_name <- "n_ADRDhosp"
-ADRD_agg_lagged_subset <- subset(ADRD_agg_lagged, select = c(exposure_name, outcome_name, zip_var_names, indiv_var_names, offset_var_names))
+ADRD_agg_lagged_subset <- subset(ADRD_agg_lagged, select = c(exposure_name, outcome_name, other_expos_names, zip_var_names, indiv_var_names, offset_var_names))
 for (var in c(zip_unordered_cat_var_names, indiv_unordered_cat_var_names)){
   ADRD_agg_lagged_subset[[var]] <- as.factor(ADRD_agg_lagged_subset[[var]])
 }
@@ -51,18 +50,20 @@ if (n_rows < total_n_rows){ # if analyzing subset of data
   selected_rows <- sample(1:nrow(ADRD_agg_lagged_subset), n_rows)
 } else selected_rows <- 1:total_n_rows # if full data
 
-Y_subset <- ADRD_agg_lagged_subset[selected_rows, n_ADRDhosp]
-w_subset <- ADRD_agg_lagged_subset[selected_rows, pm25]
-c_subset <- as.data.frame(subset(ADRD_agg_lagged_subset[selected_rows,], select = zip_var_names))
+Y <- as.data.frame(subset(ADRD_agg_lagged_subset[selected_rows, ], select = outcome_name))
+w <- as.data.frame(subset(ADRD_agg_lagged_subset[selected_rows, ], select = exposure_name))
+c <- as.data.frame(subset(ADRD_agg_lagged_subset[selected_rows,], select = c(other_expos_names, zip_var_names)))
+colnames(Y)[1] <- "Y"
+colnames(w)[1] <- "w"
 
 # Not used in GPS matching, but used in outcome model
-indiv_vars_subset <- subset(ADRD_agg_lagged_subset[selected_rows, ], select = indiv_var_names) # To Do: consider including ffs_entry_year/ADRD_year in GPS or outcome model
-offset_subset <- ADRD_agg_lagged_subset[selected_rows, .(person_years = n_persons * n_years)]
-data_subset <- cbind(Y_subset, w_subset, indiv_vars_subset, c_subset, offset_subset)
+indiv_vars <- subset(ADRD_agg_lagged_subset[selected_rows, ], select = indiv_var_names)
+offset <- ADRD_agg_lagged_subset[selected_rows, .(person_years = n_persons * n_years)]
+all_data <- cbind(Y, w, indiv_vars, c, offset)
 
 # Examine distribution of exposure and ZIP-level covariates in sample
-summary(w_subset)
-explore_zip_covs(c_subset)
+summary(w)
+explore_zip_covs(c)
 
 # To Do at later stage: Full data
 # Y <- ADRD_agg_lagged$n_ADRDhosp
@@ -83,9 +84,9 @@ set_logger(logger_file_path = paste0(dir_proj, "code/analysis/CausalGPS_logs/Cau
 
 # GPS matching by ZIP-level covariates
 set.seed(200)
-matched_pop_subset <- generate_pseudo_pop(Y_subset,
-                                 w_subset,
-                                 c_subset,
+matched_pop_subset <- generate_pseudo_pop(Y,
+                                 w,
+                                 c,
                                   ci_appr = "matching",
                                   pred_model = "sl",
                                   gps_model = "parametric",
@@ -108,8 +109,8 @@ saveRDS(matched_pop_subset, file = paste0(dir_proj, "data/pseudopops/matched_pop
 
 # check ZIP-level covariate balance
 # i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
-matched_cov_bal_plot <- all_cov_bal(matched_pop_subset, w_subset, c_unordered_vars = subset(c_subset, select = zip_unordered_cat_var_names),
-            ci_appr = "matching", all_cov_names = colnames(c_subset), title = paste("Set of", format(n_rows, scientific = F), "observations"))
+matched_cov_bal_plot <- all_cov_bal(matched_pop_subset, w, c_unordered_vars = subset(c, select = zip_unordered_cat_var_names),
+            ci_appr = "matching", all_cov_names = colnames(c), title = paste("Set of", format(n_rows, scientific = F), "observations"))
 ggsave(paste0(dir_proj, "results/covariate_balance/matched_pop_", n_rows, "rows", modifications, ".png"), matched_cov_bal_plot)
 
 # print summary statistics for pseudopopulation counter
@@ -117,8 +118,8 @@ summarize_pseudo_counter(matched_pop_subset)
 
 # pseudopopulation, including individual-level covariates (i.e., strata), trimming away unmatched data
 matched_obs <- matched_pop_subset$pseudo_pop$row_index[matched_pop_subset$pseudo_pop$counter > 0]
-matched_indiv_vars <- indiv_vars_subset[matched_obs] # To Do: consider including ffs_entry_year/ADRD_year in GPS or outcome model
-matched_offset <- offset_subset[matched_obs]
+matched_indiv_vars <- indiv_vars[matched_obs] # To Do: consider including ffs_entry_year/ADRD_year in GPS or outcome model
+matched_offset <- offset[matched_obs]
 matched_data <- cbind(matched_pop_subset$pseudo_pop[matched_pop_subset$pseudo_pop$counter > 0, ], matched_indiv_vars, matched_offset) # to do: check that rows are in same order
 matched_data <- as.data.frame(matched_data)
 
@@ -136,9 +137,9 @@ set_logger(logger_file_path = paste0(dir_proj, "code/analysis/CausalGPS_logs/Cau
 
 # GPS weighting on ZIP-level covariates
 set.seed(200)
-weighted_pop_subset <- generate_pseudo_pop(Y_subset,
-                                          w_subset,
-                                          c_subset,
+weighted_pop_subset <- generate_pseudo_pop(Y,
+                                          w,
+                                          c,
                                           ci_appr = "weighting",
                                           pred_model = "sl",
                                           gps_model = "parametric",
@@ -161,8 +162,8 @@ saveRDS(weighted_pop_subset, file = paste0(dir_proj, "data/pseudopops/weighted_p
 
 # check ZIP-level covariate balance
 # i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
-weighted_cov_bal_plot <- all_cov_bal(weighted_pop_subset, w_subset, c_unordered_vars = subset(c_subset, select = zip_unordered_cat_var_names),
-            "weighting", all_cov_names = colnames(c_subset), title = paste("Set of", format(n_rows, scientific = F), "observations"))
+weighted_cov_bal_plot <- all_cov_bal(weighted_pop_subset, w, c_unordered_vars = subset(c, select = zip_unordered_cat_var_names),
+            "weighting", all_cov_names = colnames(c), title = paste("Set of", format(n_rows, scientific = F), "observations"))
 ggsave(paste0(dir_proj, "results/covariate_balance/weighted_pop_", n_rows, "rows", modifications, ".png"), weighted_cov_bal_plot)
 
 # print summary statistics for pseudopopulation weights
@@ -170,8 +171,8 @@ summarize_pseudo_weights(weighted_pop_subset)
 
 # pseudopopulation, including individual-level covariates (i.e., strata), trimming away unmatched data
 weighted_obs <- weighted_pop_subset$pseudo_pop$row_index
-weighted_indiv_vars <- indiv_vars_subset[weighted_obs] # To Do: consider including ffs_entry_year/ADRD_year in GPS or outcome model
-weighted_offset <- offset_subset[weighted_obs]
+weighted_indiv_vars <- indiv_vars[weighted_obs] # To Do: consider including ffs_entry_year/ADRD_year in GPS or outcome model
+weighted_offset <- offset[weighted_obs]
 weighted_data <- cbind(weighted_pop_subset$pseudo_pop, weighted_indiv_vars, weighted_offset) # to do: check that rows are in same order
 weighted_data <- as.data.frame(weighted_data)
 
@@ -206,14 +207,14 @@ cat("ESS of capped weighted pseudopopulation:", ess(capped_weighted_pop_subset$p
 
 # check ZIP-level covariate balance
 # i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
-capped_weighted_cov_bal_plot <- all_cov_bal(capped_weighted_pop_subset, w_subset, c_unordered_vars = subset(c_subset, select = zip_unordered_cat_var_names),
-            "weighting", all_cov_names = colnames(c_subset), title = paste("Set of", format(n_rows, scientific = F), "observations, weights capped at", cutoff_weight))
+capped_weighted_cov_bal_plot <- all_cov_bal(capped_weighted_pop_subset, w, c_unordered_vars = subset(c, select = zip_unordered_cat_var_names),
+            "weighting", all_cov_names = colnames(c), title = paste("Set of", format(n_rows, scientific = F), "observations, weights capped at", cutoff_weight))
 ggsave(paste0(dir_proj, "results/covariate_balance/capped_weighted_pop_", n_rows, "rows", modifications, ".png"), capped_weighted_cov_bal_plot)
 
 # pseudopopulation, including individual-level covariates (i.e., strata), trimming away unmatched data
 capped_weighted_obs <- capped_weighted_pop_subset$pseudo_pop$row_index
-capped_weighted_indiv_vars <- indiv_vars_subset[capped_weighted_obs] # To Do: consider including ffs_entry_year/ADRD_year in GPS or outcome model
-capped_weighted_offset <- offset_subset[capped_weighted_obs]
+capped_weighted_indiv_vars <- indiv_vars[capped_weighted_obs] # To Do: consider including ffs_entry_year/ADRD_year in GPS or outcome model
+capped_weighted_offset <- offset[capped_weighted_obs]
 capped_weighted_data <- cbind(capped_weighted_pop_subset$pseudo_pop, capped_weighted_indiv_vars, capped_weighted_offset) # to do: check that rows are in same order
 capped_weighted_data <- as.data.frame(capped_weighted_data)
 
@@ -230,9 +231,9 @@ set_logger(logger_file_path = paste0(dir_proj, "code/analysis/CausalGPS_logs/Cau
 
 # GPS estimation on ZIP-level covariates
 set.seed(200)
-estimating_gps <- estimate_gps(Y_subset,
-                              w_subset,
-                              c_subset,
+estimating_gps <- estimate_gps(Y,
+                              w,
+                              c,
                               pred_model = "sl",
                               gps_model = "parametric",
                               sl_lib = c("m_xgboost"),
@@ -248,13 +249,13 @@ saveRDS(estimated_gps, file = paste0(dir_proj, "data/pseudopops/estimated_gps_",
 
 # check ZIP-level covariate balance (note: this is the original, unchanged population)
 # i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
-abs_cor_orig <- rep(NA, ncol(c_subset))
-names(abs_cor_orig) <- colnames(c_subset)
+abs_cor_orig <- rep(NA, ncol(c))
+names(abs_cor_orig) <- colnames(c)
 for (ordered_var in zip_quant_var_names){
-  abs_cor_orig[ordered_var] <- abs(cor(w_subset, c_subset[[ordered_var]]))
+  abs_cor_orig[ordered_var] <- abs(cor(w, c[[ordered_var]]))
 }
 for (unordered_var in zip_unordered_cat_var_names){
-  abs_cor_orig[unordered_var] <- abs(cor_unordered_var(w_subset, c_subset[[unordered_var]]))
+  abs_cor_orig[unordered_var] <- abs(cor_unordered_var(w, c[[unordered_var]]))
 }
 abs_cor_orig <- data.frame(cov = names(abs_cor_orig), abs_cor = abs_cor_orig)
 ggplot(abs_cor_orig, aes(x = cov, y = abs_cor)) +

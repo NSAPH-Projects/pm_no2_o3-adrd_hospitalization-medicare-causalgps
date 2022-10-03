@@ -1,30 +1,52 @@
 library(mgcv)
 
+# Formulas for Poisson regression, including covariate names
+formula_all_covars <- as.formula(paste("Y ~", paste(c("w", indiv_var_names, other_expos_names, zip_var_names), collapse = "+", sep = "")))
+formula_all_expos <- as.formula(paste("Y ~", paste(c("w", indiv_var_names, other_expos_names), collapse = "+", sep = "")))
+formula_expos_only <- as.formula(paste("Y ~", paste(c("w", indiv_var_names), collapse = "+", sep = "")))
+
 ##### Naive (associational) Poisson regression #####
 
-bam_naive <- bam(Y_subset ~ w_subset + no2 + ozone_summer +
-                   any_dual + ADRD_age + sexM + race_cat +
-                   summer_tmmx + summer_rmax + region + ADRD_year +
-                   mean_bmi + smoke_rate + hispanic + pct_blk +
-                   PIR + poverty +
-                   education + popdensity + pct_owner_occ,
-                 data = data_subset,
+bam_naive_all_covars <- bam(formula_all_covars,
+                 data = all_data,
                  offset = log(person_years),
                  family = poisson(link = "log"),
                  samfrac = 0.05,
                  chunk.size = 5000,
                  control = gam.control(trace = TRUE))
-summary(bam_naive)
-saveRDS(summary(bam_naive), file = paste0(dir_proj, "results/parametric_results/bam_naive_", n_rows, "rows_", modifications, ".rds"))
+summary(bam_naive_all_covars)
+saveRDS(summary(bam_naive_all_covars), file = paste0(dir_proj, "results/parametric_results/bam_naive_all_covariates_", n_rows, "rows_", modifications, ".rds"))
 # readRDS(paste0(dir_proj, "results/parametric_results/bam_naive_", n_rows, "rows.rds"))
+
+bam_naive_all_expos <- bam(formula_all_expos,
+                 data = all_data,
+                 offset = log(person_years),
+                 family = poisson(link = "log"),
+                 samfrac = 0.05,
+                 chunk.size = 5000,
+                 control = gam.control(trace = TRUE))
+summary(bam_naive_all_expos)
+saveRDS(summary(bam_naive_all_expos), file = paste0(dir_proj, "results/parametric_results/bam_naive_all_exposures_", n_rows, "rows_", modifications, ".rds"))
+
+bam_naive_expos_only <- bam(formula_expos_only,
+                 data = all_data,
+                 offset = log(person_years),
+                 family = poisson(link = "log"),
+                 samfrac = 0.05,
+                 chunk.size = 5000,
+                 control = gam.control(trace = TRUE))
+summary(bam_naive_expos_only)
+saveRDS(summary(bam_naive_expos_only), file = paste0(dir_proj, "results/parametric_results/bam_naive_exposure_only_", n_rows, "rows_", modifications, ".rds"))
+
+
 
 
 ##### Poisson regression adjusting for GPS #####
 
-data_with_gps <- copy(data_subset)
+data_with_gps <- copy(all_data)
 data_with_gps$gps <- estimated_gps$gps
 
-bam_exposure_only_adjusted <- bam(Y_subset ~ w_subset + gps +
+bam_exposure_only_adjusted <- bam(Y ~ w + gps +
                                     any_dual + ADRD_age + sexM + race_cat,
                  data = data_with_gps,
                  offset = log(person_years),
@@ -35,7 +57,7 @@ bam_exposure_only_adjusted <- bam(Y_subset ~ w_subset + gps +
 summary(bam_exposure_only_adjusted)
 saveRDS(summary(bam_exposure_only_adjusted), file = paste0(dir_proj, "results/parametric_results/bam_adjusted_exposure_only_", n_rows, "rows_", modifications, ".rds"))
 
-bam_exposures_controlled_adjusted <- bam(Y_subset ~ w_subset + no2 + ozone_summer + gps +
+bam_exposures_controlled_adjusted <- bam(Y ~ w + no2 + ozone_summer + gps +
                                            any_dual + ADRD_age + sexM + race_cat,
                         data = data_with_gps,
                         offset = log(person_years),
@@ -46,7 +68,7 @@ bam_exposures_controlled_adjusted <- bam(Y_subset ~ w_subset + no2 + ozone_summe
 summary(bam_exposures_controlled_adjusted)
 saveRDS(summary(bam_exposures_controlled_adjusted), file = paste0(dir_proj, "results/parametric_results/bam_adjusted_all_exposures_", n_rows, "rows_", modifications, ".rds"))
 
-bam_all_covariates_adjusted <- bam(Y_subset ~ w_subset + no2 + ozone_summer +
+bam_all_covariates_adjusted <- bam(Y ~ w + no2 + ozone_summer +
                           any_dual + ADRD_age + sexM + race_cat +
                           summer_tmmx + summer_rmax + region + ADRD_year +
                           mean_bmi + smoke_rate + hispanic + pct_blk +

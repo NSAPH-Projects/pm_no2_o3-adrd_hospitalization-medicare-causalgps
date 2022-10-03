@@ -1,16 +1,15 @@
 # Classify variables in dataset
 offset_var_names <- c("n_persons", "n_years")
-zip_quant_var_names <- c("mean_bmi", "smoke_rate", "hispanic", "pct_blk",
-                         "PIR", "poverty", "education", "popdensity", "pct_owner_occ",
-                         "summer_tmmx", "summer_rmax", "no2", "ozone_summer")
+zip_expos_names <- c("pm25", "no2", "ozone_summer")
+zip_quant_var_names <- c("mean_bmi", "smoke_rate", "hispanic", "prop_blk",
+                         "PIR", "poverty", "education", "popdensity", "prop_owner_occ",
+                         "summer_tmmx", "summer_rmax")
 zip_unordered_cat_var_names <- c("region", "ADRD_year")
 # indiv_quant_var_names <- c("ADRD_age")
 indiv_quant_var_names <- NULL
-indiv_unordered_cat_var_names <- c("sexM", "race_cat", "any_dual", "ADRD_age_binned")
+indiv_unordered_cat_var_names <- c("sexM", "race_cat", "any_dual", "ADRD_age_binned", "ffs_entry_year")
 zip_var_names <- c(zip_quant_var_names, zip_unordered_cat_var_names)
 indiv_var_names <- c(indiv_unordered_cat_var_names, indiv_quant_var_names) # note: for now, using ADRD_age as a quantitative variable (not binned)
-
-# Formulas for Poisson regression, including covariate names
 
 
 # Functions to transform variables in generate_pseudo_pop()
@@ -148,8 +147,8 @@ explore_zip_covs <- function(df){
   cat("\nMax of mean_bmi:", max(df$mean_bmi))
   cat("\nMin of smoke_rate:", min(df$smoke_rate))
   cat("\nMax of smoke_rate:", max(df$smoke_rate))
-  cat("\nMin of pct_blk:", min(df$pct_blk))
-  cat("\nMax of pct_blk:", max(df$pct_blk))
+  cat("\nMin of prop_blk:", min(df$prop_blk))
+  cat("\nMax of prop_blk:", max(df$prop_blk))
   cat("\nMin of hispanic:", min(df$hispanic))
   cat("\nMax of hispanic:", max(df$hispanic))
   cat("\nMin of education:", min(df$education))
@@ -160,8 +159,8 @@ explore_zip_covs <- function(df){
   cat("\nMax of poverty:", max(df$poverty))
   cat("\nMin of PIR:", min(df$PIR))
   cat("\nMax of PIR:", max(df$PIR))
-  cat("\nMin of pct_owner_occ:", min(df$pct_owner_occ))
-  cat("\nMax of pct_owner_occ:", max(df$pct_owner_occ))
+  cat("\nMin of prop_owner_occ:", min(df$prop_owner_occ))
+  cat("\nMax of prop_owner_occ:", max(df$prop_owner_occ))
   cat("\nMin of summer_tmmx:", min(df$summer_tmmx))
   cat("\nMax of summer_tmmx:", max(df$summer_tmmx))
   cat("\nMin of summer_rmax:", min(df$summer_rmax))
@@ -176,8 +175,8 @@ explore_zip_covs <- function(df){
   # cat("\nSD of mean_bmi:", sd(df$mean_bmi))
   # cat("\nMean of smoke_rate:", mean(df$smoke_rate))
   # cat("\nSD of smoke_rate:", sd(df$smoke_rate))
-  # cat("\nMean of pct_blk:", mean(df$pct_blk))
-  # cat("\nSD of pct_blk:", sd(df$pct_blk))
+  # cat("\nMean of prop_blk:", mean(df$prop_blk))
+  # cat("\nSD of prop_blk:", sd(df$prop_blk))
   # cat("\nMean of hispanic:", mean(df$hispanic))
   # cat("\nSD of hispanic:", sd(df$hispanic))
   # cat("\nMean of education:", mean(df$education))
@@ -190,8 +189,8 @@ explore_zip_covs <- function(df){
   # cat("\nSD of medhouseholdincome:", sd(df$medhouseholdincome))
   # cat("\nMean of PIR:", mean(df$PIR))
   # cat("\nSD of PIR:", sd(df$PIR))
-  # cat("\nMean of pct_owner_occ:", mean(df$pct_owner_occ))
-  # cat("\nSD of pct_owner_occ:", sd(df$pct_owner_occ))
+  # cat("\nMean of prop_owner_occ:", mean(df$prop_owner_occ))
+  # cat("\nSD of prop_owner_occ:", sd(df$prop_owner_occ))
 }
 
 # Explore distribution of individual-level covariates

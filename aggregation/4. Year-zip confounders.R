@@ -30,14 +30,14 @@ setDT(aggregate_data)
 ad <- aggregate_data[, .(mean_bmi = mean(mean_bmi), 
                          smoke_rate = mean(smoke_rate), 
                          hispanic = mean(hispanic),
-                         pct_blk = mean(pct_blk), 
+                         prop_blk = mean(pct_blk), # between 0 and 1
                          medhouseholdincome = mean(medhouseholdincome), 
                          medianhousevalue = mean(medianhousevalue),
                          PIR = mean(medianhousevalue) / mean(medhouseholdincome),
                          poverty = mean(poverty), 
                          education = mean(education), 
                          popdensity = mean(popdensity),
-                         pct_owner_occ = mean(pct_owner_occ), 
+                         prop_owner_occ = mean(pct_owner_occ), # between 0 and 1
                          summer_tmmx = mean(summer_tmmx), 
                          winter_tmmx = mean(winter_tmmx),
                          summer_rmax = mean(summer_rmax), 
