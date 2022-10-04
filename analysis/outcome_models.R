@@ -56,15 +56,15 @@ bam_exposure_only_adjusted <- bam(update(formula_expos_only, ~ . + gps),
 summary(bam_exposure_only_adjusted)
 saveRDS(summary(bam_exposure_only_adjusted), file = paste0(dir_proj, "results/parametric_results/bam_adjusted_exposure_only_", n_rows, "rows_", modifications, ".rds"))
 
-bam_exposures_controlled_adjusted <- bam(update(formula_all_expos, ~ . + gps),
+bam_all_exposures_adjusted <- bam(update(formula_all_expos, ~ . + gps),
                         data = data_with_gps,
                         offset = log(person_years),
                         family = poisson(link = "log"),
                         samfrac = 0.05,
                         chunk.size = 5000,
                         control = gam.control(trace = TRUE))
-summary(bam_exposures_controlled_adjusted)
-saveRDS(summary(bam_exposures_controlled_adjusted), file = paste0(dir_proj, "results/parametric_results/bam_adjusted_all_exposures_", n_rows, "rows_", modifications, ".rds"))
+summary(bam_all_exposures_adjusted)
+saveRDS(summary(bam_all_exposures_adjusted), file = paste0(dir_proj, "results/parametric_results/bam_adjusted_all_exposures_", n_rows, "rows_", modifications, ".rds"))
 
 bam_all_covariates_adjusted <- bam(update(formula_all_covars, ~ . + gps),
                         data = data_with_gps,

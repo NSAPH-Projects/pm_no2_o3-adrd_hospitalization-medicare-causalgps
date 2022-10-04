@@ -18,13 +18,13 @@ library(NSAPHutils)
 options(stringsAsFactors = FALSE)
 setDTthreads(threads = 16)
 
-dir_data <- "/nfs/home/D/dam9096/shared_space/ci3_analysis/dmork/Data/Causal_ADRD/"
-dir_denominator <- "/nfs/home/D/dam9096/shared_space/ci3_health_data/medicare/mortality/1999_2016/wu/cache_data/merged_by_year_v2/"
+dir_data <- "/n/dominici_nsaph_l3/Lab/projects/pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
+dir_denominator <- "/n/dominici_nsaph_l3/Lab/projects/analytic/denom_by_year/"
 
 ##### Read denom files ##### 
 cat("Reading denominator files...")
 f <- list.files(dir_denominator, pattern = "\\.fst", full.names = TRUE)
-myvars <- c("qid", "year", "zip", "hmo_mo", "age", "race", "sex", "dual", "dead")
+myvars <- c("qid", "year", "zip", "hmo_mo", "age", "race", "sex", "dual", "dead", "fips")
 dt <- rbindlist(lapply(f[2:18], read_fst, columns = myvars, as.data.table = TRUE))
 setkey(dt, year, qid) 
 dt[,.N]# 651691916 total person years of data
