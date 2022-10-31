@@ -7,16 +7,15 @@ formula_expos_only <- as.formula(paste("Y ~", paste(c("w", indiv_var_names), col
 
 ##### Naive (associational) Poisson regression #####
 
-bam_naive_all_covars <- bam(formula_all_covars,
-                 data = all_data,
-                 offset = log(person_years),
-                 family = poisson(link = "log"),
-                 samfrac = 0.05,
-                 chunk.size = 5000,
-                 control = gam.control(trace = TRUE))
-summary(bam_naive_all_covars)
-saveRDS(summary(bam_naive_all_covars), file = paste0(dir_proj, "results/parametric_results/bam_naive_all_covariates_", n_rows, "rows_", modifications, ".rds"))
-# readRDS(paste0(dir_proj, "results/parametric_results/bam_naive_", n_rows, "rows.rds"))
+bam_naive_expos_only <- bam(formula_expos_only,
+                            data = all_data,
+                            offset = log(person_years),
+                            family = poisson(link = "log"),
+                            samfrac = 0.05,
+                            chunk.size = 5000,
+                            control = gam.control(trace = TRUE))
+summary(bam_naive_expos_only)
+saveRDS(summary(bam_naive_expos_only), file = paste0(dir_proj, "results/parametric_results/bam_naive_exposure_only_", n_rows, "rows_", modifications, ".rds"))
 
 bam_naive_all_expos <- bam(formula_all_expos,
                  data = all_data,
@@ -28,16 +27,15 @@ bam_naive_all_expos <- bam(formula_all_expos,
 summary(bam_naive_all_expos)
 saveRDS(summary(bam_naive_all_expos), file = paste0(dir_proj, "results/parametric_results/bam_naive_all_exposures_", n_rows, "rows_", modifications, ".rds"))
 
-bam_naive_expos_only <- bam(formula_expos_only,
-                 data = all_data,
-                 offset = log(person_years),
-                 family = poisson(link = "log"),
-                 samfrac = 0.05,
-                 chunk.size = 5000,
-                 control = gam.control(trace = TRUE))
-summary(bam_naive_expos_only)
-saveRDS(summary(bam_naive_expos_only), file = paste0(dir_proj, "results/parametric_results/bam_naive_exposure_only_", n_rows, "rows_", modifications, ".rds"))
-
+bam_naive_all_covars <- bam(formula_all_covars,
+                            data = all_data,
+                            offset = log(person_years),
+                            family = poisson(link = "log"),
+                            samfrac = 0.05,
+                            chunk.size = 5000,
+                            control = gam.control(trace = TRUE))
+summary(bam_naive_all_covars)
+saveRDS(summary(bam_naive_all_covars), file = paste0(dir_proj, "results/parametric_results/bam_naive_all_covariates_", n_rows, "rows_", modifications, ".rds"))
 
 
 
@@ -88,7 +86,7 @@ bam_exposure_only_matched <- bam(formula_expos_only,
                                  data = matched_data,
                                  offset = log(person_years),
                                  family = poisson(link = "log"),
-                                 weights = counter,
+                                 weights = counter_weight,
                                  samfrac = 0.05,
                                  chunk.size = 5000,
                                  control = gam.control(trace = TRUE))
@@ -99,7 +97,7 @@ bam_exposures_controlled_matched <- bam(formula_all_expos,
                                         data = matched_data,
                                         offset = log(person_years),
                                         family = poisson(link = "log"),
-                                        weights = counter,
+                                        weights = counter_weight,
                                         samfrac = 0.05,
                                         chunk.size = 5000,
                                         control = gam.control(trace = TRUE))
@@ -110,7 +108,7 @@ bam_all_covariates_matched <- bam(formula_all_covars,
                                  data = matched_data,
                                  offset = log(person_years),
                                  family = poisson(link = "log"),
-                                 weights = counter,
+                                 weights = counter_weight,
                                  samfrac = 0.05,
                                  chunk.size = 5000,
                                  control = gam.control(trace = TRUE))
@@ -123,7 +121,7 @@ bam_exposure_only_weighted <- bam(formula_expos_only,
                                   data = weighted_data,
                                   offset = log(person_years),
                                   family = poisson(link = "log"),
-                                  weights = ipw,
+                                  weights = counter_weight,
                                   samfrac = 0.05,
                                   chunk.size = 5000,
                                   control = gam.control(trace = TRUE))
@@ -134,7 +132,7 @@ bam_exposures_controlled_weighted <- bam(formula_all_expos,
                                          data = weighted_data,
                                          offset = log(person_years),
                                          family = poisson(link = "log"),
-                                         weights = ipw,
+                                         weights = counter_weight,
                                          samfrac = 0.05,
                                          chunk.size = 5000,
                                          control = gam.control(trace = TRUE))
@@ -145,7 +143,7 @@ bam_all_covariates_weighted <- bam(formula_all_covars,
                                   data = weighted_data,
                                   offset = log(person_years),
                                   family = poisson(link = "log"),
-                                  weights = ipw,
+                                  weights = counter_weight,
                                   samfrac = 0.05,
                                   chunk.size = 5000,
                                   control = gam.control(trace = TRUE))
@@ -158,7 +156,7 @@ bam_exposure_only_capped_weighted <- bam(formula_expos_only,
                                   data = capped_weighted_data,
                                   offset = log(person_years),
                                   family = poisson(link = "log"),
-                                  weights = ipw,
+                                  weights = counter_weight,
                                   samfrac = 0.05,
                                   chunk.size = 5000,
                                   control = gam.control(trace = TRUE))
@@ -169,7 +167,7 @@ bam_exposures_controlled_capped_weighted <- bam(formula_all_expos,
                                          data = capped_weighted_data,
                                          offset = log(person_years),
                                          family = poisson(link = "log"),
-                                         weights = ipw,
+                                         weights = counter_weight,
                                          samfrac = 0.05,
                                          chunk.size = 5000,
                                          control = gam.control(trace = TRUE))
@@ -180,7 +178,7 @@ bam_all_covariates_capped_weighted <- bam(formula_all_covars,
                                   data = capped_weighted_data,
                                   offset = log(person_years),
                                   family = poisson(link = "log"),
-                                  weights = ipw,
+                                  weights = counter_weight,
                                   samfrac = 0.05,
                                   chunk.size = 5000,
                                   control = gam.control(trace = TRUE))
@@ -202,13 +200,13 @@ gnm_all_covariates <- gnm(Y ~ w + no2 + ozone_summer +
                          data = matched_data,
                          offset = log(person_years),
                          family = poisson(link = "log"),
-                         weights = counter)
+                         weights = counter_weight)
 summary(gnm_all_covariates)
 
 # method 3: CausalGPS package
 # To do: wrong right now cuz offset should be constant not various in the regression; to do - fix
 
-outcome <- estimate_pmetric_erf(formula = Y ~ . -row_index -gps -counter, # w or .?
+outcome <- estimate_pmetric_erf(formula = Y ~ . -row_index -gps -counter_weight, # w or .?
                                 family = poisson, # poisson(link = "log")
                                 data = matched_data, # To Do: check if this must be a data.frame
                                 ci_appr = "matching")
@@ -237,7 +235,7 @@ iqr
 # model rate log(Y/offset) instead of Y, to incorporate offset
 matched_erf <- estimate_npmetric_erf(as.double(log(matched_data$Y / matched_data$person_years + 0.001)),
                                      as.double(matched_data$w),
-                                     matched_data$counter,
+                                     matched_data$counter_weight,
                                      bw_seq=seq(0.1, 10, length.out = 15),
                                      w_vals = seq(0, range(matched_data$w)[2], length.out = 100),
                                      nthread = 16)
@@ -247,7 +245,7 @@ plot(matched_erf) # plot rate
 
 weighted_erf <- estimate_npmetric_erf(as.double(log(weighted_data$Y / weighted_data$person_years + 0.001)),
                                       as.double(weighted_data$w),
-                                      round(weighted_data$ipw * 50),
+                                      round(weighted_data$counter_weight * 50),
                                       bw_seq=seq(0.1, 10, length.out = 15),
                                       w_vals = seq(0, range(weighted_data$w)[2], length.out = 100),
                                       nthread = 16)

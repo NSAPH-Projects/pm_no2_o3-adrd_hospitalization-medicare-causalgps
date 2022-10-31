@@ -4,10 +4,9 @@ zip_expos_names <- c("pm25", "no2", "ozone_summer")
 zip_quant_var_names <- c("mean_bmi", "smoke_rate", "hispanic", "prop_blk",
                          "PIR", "poverty", "education", "popdensity", "prop_owner_occ",
                          "summer_tmmx", "summer_rmax")
-zip_unordered_cat_var_names <- c("region", "ADRD_year")
-# indiv_quant_var_names <- c("ADRD_age")
+zip_unordered_cat_var_names <- c("region")
 indiv_quant_var_names <- NULL
-indiv_unordered_cat_var_names <- c("sexM", "race_cat", "any_dual", "ADRD_age_binned", "ffs_entry_year")
+indiv_unordered_cat_var_names <- c("sex", "race", "dual", "age_grp", "cohort", "year") # consider if year should be here: like zip, it is a zip-level covariate and is already incorporated into time-/zip-varying exposures (so should we include it in the model at all?)
 zip_var_names <- c(zip_quant_var_names, zip_unordered_cat_var_names)
 indiv_var_names <- c(indiv_unordered_cat_var_names, indiv_quant_var_names) # note: for now, using ADRD_age as a quantitative variable (not binned)
 
@@ -70,11 +69,7 @@ all_cov_bal <- function(pseudo_pop, w, c_unordered_vars, ci_appr, all_cov_names,
   cor_val_pseudo <- pseudo_pop$adjusted_corr_results$absolute_corr
   cor_val_orig <- pseudo_pop$original_corr_results$absolute_corr
   
-  if (ci_appr == "matching"){
-    weights <- pseudo_pop$pseudo_pop$counter
-  } else if (ci_appr == "weighting"){
-    weights <- pseudo_pop$pseudo_pop$ipw
-  } else stop("ci_appr must be 'matching' or 'weighting'")
+  weights <- pseudo_pop$pseudo_pop$counter_weight
   
   # correct abs corr values for unordered categorical variables
   for (unordered_var in colnames(c_unordered_vars)){
@@ -103,8 +98,8 @@ all_cov_bal <- function(pseudo_pop, w, c_unordered_vars, ci_appr, all_cov_names,
 
 # Check ZIP-level covariate balance in matched data: abs correlation for quantitative or ordered categorical variables
 quant_cov_bal <- function(pseudo_pop, ci_appr, var_names, title){
-  cor_val_pseudo <- pseudo_pop$original_corr_results$absolute_corr[var_names] # remove non-ordinal categorical variables; can include zip_ordered_cat_var_names if exists
-  cor_val_orig <- pseudo_pop$adjusted_corr_results$absolute_corr[var_names]
+  cor_val_pseudo <- pseudo_pop$adjusted_corr_results$absolute_corr[var_names] # remove non-ordinal categorical variables; can include zip_ordered_cat_var_names if exists
+  cor_val_orig <- pseudo_pop$original_corr_results$absolute_corr[var_names]
   
   if (ci_appr == "matching"){
     abs_cor = data.frame(Covariate = var_names,
@@ -127,9 +122,7 @@ quant_cov_bal <- function(pseudo_pop, ci_appr, var_names, title){
 
 # Check ZIP-level covariate balance in matched data via boxplot: unordered categorical variables
 cat_cov_bal_boxplot <- function(pseudo_pop, ci_appr, var_names, title){
-  if (ci_appr == "matching") weights = "counter"
-  else if (ci_appr == "weighting") weights = "ipw"
-  else stop("ci_appr must be 'matching' or 'weighting'")
+  weights <- "counter_weight"
   
   for (var in var_names){
     ggplot(pseudo_pop$pseudo_pop, aes_string(x = var, y = "w", weight = weights)) +
@@ -206,7 +199,7 @@ explore_indiv_covs <- function(df){
 
 # For GPS-matched pseudopopulation, print summary statistics for counter
 summarize_pseudo_counter <- function(pseudo_pop){
-  counter <- pseudo_pop$pseudo_pop$counter
+  counter <- pseudo_pop$pseudo_pop$counter_weight
   cat("Number of observations UNTRIMMED by GPS matching algorithm:", length(pseudo_pop$pseudo_pop$row_index))
   cat("\nNumber of observations matched:", sum(counter > 0), "\n")
   cat("\nNumber of matches:", sum(counter), "\n")
@@ -217,7 +210,7 @@ summarize_pseudo_counter <- function(pseudo_pop){
 
 # For GPS-weighted pseudopopulation, print summary statistics for weights
 summarize_pseudo_weights <- function(pseudo_pop){
-  weights <- pseudo_pop$pseudo_pop$ipw
+  weights <- pseudo_pop$pseudo_pop$counter_weight
   cat("Number of observations UNTRIMMED by GPS weighting algorithm:", length(pseudo_pop$pseudo_pop$row_index))
   cat("\nNumber of observations with non-zero weight:", sum(weights > 0), "\n")
   cat("\nSum of weights:", sum(weights), "\n")
@@ -228,9 +221,7 @@ summarize_pseudo_weights <- function(pseudo_pop){
 
 # Cap counts or weights if desired
 cap_weights <- function(pseudo_pop, ci_appr, nthread, quant_var_names, cat_var_names, title){
-  if (ci_appr == "matching") weights = "counter"
-  else if (ci_appr == "weighting") weights = "ipw"
-  else stop("ci_appr must be 'matching' or 'weighting'")
+  weights <- "counter_weight"
   
   cutoff <- quantile(pseudo_pop$pseudo_pop[[weights]], 0.95)
   pseudo_pop$pseudo_pop[[weights]] <- ifelse(pseudo_pop$pseudo_pop[[weights]] > cutoff, cutoff, pseudo_pop$pseudo_pop[[weights]])

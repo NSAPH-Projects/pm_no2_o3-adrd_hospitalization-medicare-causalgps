@@ -16,24 +16,25 @@ dir_proj <- "~/nsaph_projects/pm_no2_o3-adrd_hosp-medicare-causalgps/"
 # dir_code <- paste0(dir_proj, "code/")
 
 # read in full data
-ADRD_agg <- read_fst(paste0(dir_proj, "data/analysis/ADRD_complete_age_binned.fst"), as.data.table = TRUE)
-ADRD_agg_lagged <- ADRD_agg[ADRD_year - ffs_entry_year >= 2, ] # Approximate first ADRD hospitalization by requiring no ADRD hosps for 2 years
+ADRD_agg_lagged <- read_fst(paste0(dir_proj, "data/analysis/ADRD_complete_tv.fst"), as.data.table = TRUE)
+setnames(ADRD_agg_lagged, old = c("pct_blk", "pct_owner_occ"), new = c("prop_blk", "prop_owner_occ"))
+ADRD_agg_lagged[, `:=`(zip = as.factor(zip), year = as.factor(year), cohort = as.factor(cohort), age_grp = as.factor(age_grp), sex = as.factor(sex), race = as.factor(race), dual = as.factor(dual))]
 
 source(paste0(dir_proj, "code/analysis/helper_functions.R"))
 
 # parameters for this computing job
 n_cores <- 48
 n_gb <- 184
-total_n_rows <- nrow(ADRD_agg_lagged) # With 2-year lag: full data pre-age-binning: 17640610; full data after age-binning: 11854151
-n_rows <- total_n_rows # previously: n_rows <- 5000000
-modifications <- "bin_age_rm_medinc_medhouse" # to be used in names of output files, for instance "delta0.3"
+total_n_rows <- nrow(ADRD_agg_lagged)
+n_rows <- total_n_rows # how many rows of the data you want to analyze (random subset implemented later)
+modifications <- "bin_age_tv" # to be used in names of output files, to record how you're tuning the models
 
 
 ##### Get data for exposure, outcome, and covariates of interest #####
 
 exposure_name <- "pm25"
 other_expos_names <- zip_expos_names[zip_expos_names != exposure_name]
-outcome_name <- "n_ADRDhosp"
+outcome_name <- "n_hosp"
 ADRD_agg_lagged_subset <- subset(ADRD_agg_lagged, select = c(exposure_name, outcome_name, other_expos_names, zip_var_names, indiv_var_names, offset_var_names))
 for (var in c(zip_unordered_cat_var_names, indiv_unordered_cat_var_names)){
   ADRD_agg_lagged_subset[[var]] <- as.factor(ADRD_agg_lagged_subset[[var]])
@@ -261,6 +262,56 @@ ggplot(abs_cor_orig, aes(x = cov, y = abs_cor)) +
   geom_line() +
   labs(title = paste("Set of", format(n_rows, scientific = F), "observations"), x = "Covariate", y = "Absolute Correlation") +
   theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
+
+
+##### Estimate GPS using lm() #####
+
+# estimate GPS using lm()
+formula_lm_gps <- as.formula(paste("w ~", paste(c(other_expos_names, zip_var_names), collapse = "+", sep = "")))
+lm_gps <- bam(formula_lm_gps, data = all_data)
+
+# calculate raw GPS and IPW for data
+lm_gps_data <- copy(all_data)
+lm_gps_data[, gps := dnorm(w, lm_gps$fitted.values, sqrt(mean(lm_gps$residuals^2)))]
+lm_gps_data[, ipw := 1/gps]
+
+# stabilize GPS and IPW
+w_mean <- mean(all_data$w)
+w_sd <- sd(all_data$w)
+lm_gps_data[, stab_gps := gps / dnorm(w, w_mean, w_sd)]
+lm_gps_data[, stab_ipw := 1/stab_gps]
+quantile(lm_gps_data$stab_ipw, c(0, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99, 1))
+
+# truncate IPW at 10
+lm_gps_data[, trunc_ipw := ifelse(stab_ipw > 10, 10, stab_ipw)]
+
+# for UNTRUNCATED IPW, check absolute correlation for quantitative covariates # to do: other covariates
+cor_val_pseudo <- sapply(subset(lm_gps_data, select = c(other_expos_names, zip_quant_var_names)), weightedCorr, y = lm_gps_data$w, method = "Pearson", weights = lm_gps_data$stab_ipw)
+cor_val_orig <- sapply(subset(lm_gps_data, select = c(other_expos_names, zip_quant_var_names)), cor, lm_gps_data$w)
+abs_cor = data.frame(Covariate = c(other_expos_names, zip_quant_var_names),
+                     Unweighted = cor_val_orig,
+                     Weighted = cor_val_pseudo) %>%
+  gather(c(Unweighted, Weighted), key = 'Dataset', value = 'Absolute Correlation')
+weighted_cov_bal_plot <- ggplot(abs_cor, aes(x = Covariate, y = `Absolute Correlation`, color = Dataset, group = Dataset)) +
+  geom_point() +
+  geom_line() +
+  ggtitle(paste("Set of", format(n_rows, scientific = F), "observations, weights UNTRUNCATED")) +
+  theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
+ggsave(paste0(dir_proj, "results/covariate_balance/weighted_pop_", n_rows, "rows", modifications, ".png"), weighted_cov_bal_plot)
+
+# for truncated IPW, check absolute correlation for quantitative covariates # to do: other covariates
+cor_val_pseudo <- sapply(subset(lm_gps_data, select = c(other_expos_names, zip_quant_var_names)), weightedCorr, y = lm_gps_data$w, method = "Pearson", weights = lm_gps_data$trunc_ipw)
+cor_val_orig <- sapply(subset(lm_gps_data, select = c(other_expos_names, zip_quant_var_names)), cor, lm_gps_data$w)
+abs_cor = data.frame(Covariate = c(other_expos_names, zip_quant_var_names),
+                     Unweighted = cor_val_orig,
+                     Weighted = cor_val_pseudo) %>%
+  gather(c(Unweighted, Weighted), key = 'Dataset', value = 'Absolute Correlation')
+capped_weighted_cov_bal_plot <- ggplot(abs_cor, aes(x = Covariate, y = `Absolute Correlation`, color = Dataset, group = Dataset)) +
+  geom_point() +
+  geom_line() +
+  ggtitle(paste("Set of", format(n_rows, scientific = F), "observations, weights truncated at 10")) +
+  theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
+ggsave(paste0(dir_proj, "results/covariate_balance/capped_weighted_pop_", n_rows, "rows", modifications, ".png"), capped_weighted_cov_bal_plot)
 
 
 ##### Old code #####
