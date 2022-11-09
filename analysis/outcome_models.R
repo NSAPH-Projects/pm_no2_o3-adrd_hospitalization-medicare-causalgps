@@ -1,9 +1,15 @@
 library(mgcv)
 
-# Formulas for Poisson regression, including covariate names
+# Formulas for Poisson regression
 formula_all_covars <- as.formula(paste("Y ~", paste(c("w", indiv_var_names, other_expos_names, zip_var_names), collapse = "+", sep = "")))
 formula_all_expos <- as.formula(paste("Y ~", paste(c("w", indiv_var_names, other_expos_names), collapse = "+", sep = "")))
 formula_expos_only <- as.formula(paste("Y ~", paste(c("w", indiv_var_names), collapse = "+", sep = "")))
+
+# Formulas for Poisson regression, with thin-plate spline for exposure
+formula_all_covars_smooth <- as.formula(paste("Y ~", paste(c("s(w, bs = 'ts')", indiv_var_names, other_expos_names, zip_var_names), collapse = "+", sep = "")))
+formula_all_expos_smooth <- as.formula(paste("Y ~", paste(c("s(w, bs = 'ts')", indiv_var_names, other_expos_names), collapse = "+", sep = "")))
+formula_expos_only_smooth <- as.formula(paste("Y ~", paste(c("s(w, bs = 'ts')", indiv_var_names), collapse = "+", sep = "")))
+
 
 ##### Naive (associational) Poisson regression #####
 
@@ -39,12 +45,45 @@ saveRDS(summary(bam_naive_all_covars), file = paste0(dir_proj, "results/parametr
 
 
 
+##### Naive (associational) Poisson regression - smoothed exposure #####
+
+bam_naive_smoothed_expos_only <- bam(formula_expos_only_smooth,
+                            data = all_data,
+                            offset = log(person_years),
+                            family = poisson(link = "log"),
+                            samfrac = 0.05,
+                            chunk.size = 5000,
+                            control = gam.control(trace = TRUE))
+summary(bam_naive_smoothed_expos_only)
+saveRDS(summary(bam_naive_smoothed_expos_only), file = paste0(dir_proj, "results/parametric_results/bam_smooth_naive_exposure_only_", n_rows, "rows_", modifications, ".rds"))
+
+bam_smooth_naive_all_expos <- bam(formula_all_expos_smooth,
+                           data = all_data,
+                           offset = log(person_years),
+                           family = poisson(link = "log"),
+                           samfrac = 0.05,
+                           chunk.size = 5000,
+                           control = gam.control(trace = TRUE))
+summary(bam_smooth_naive_all_expos)
+saveRDS(summary(bam_smooth_naive_all_expos), file = paste0(dir_proj, "results/parametric_results/bam_smooth_naive_all_exposures_", n_rows, "rows_", modifications, ".rds"))
+
+bam_smooth_naive_all_covars <- bam(formula_all_covars_smooth,
+                            data = all_data,
+                            offset = log(person_years),
+                            family = poisson(link = "log"),
+                            samfrac = 0.05,
+                            chunk.size = 5000,
+                            control = gam.control(trace = TRUE))
+summary(bam_smooth_naive_all_covars)
+saveRDS(summary(bam_smooth_naive_all_covars), file = paste0(dir_proj, "results/parametric_results/bam_smooth_naive_all_covariates_", n_rows, "rows_", modifications, ".rds"))
+
+
 ##### Poisson regression adjusting for GPS #####
 
 data_with_gps <- copy(all_data)
 data_with_gps$gps <- estimated_gps$gps
 
-bam_exposure_only_adjusted <- bam(update(formula_expos_only, ~ . + w*gps + gps + gps^2),
+bam_exposure_only_adjusted <- bam(update(formula_expos_only, ~ . + gps),
                  data = data_with_gps,
                  offset = log(person_years),
                  family = poisson(link = "log"),
@@ -54,7 +93,7 @@ bam_exposure_only_adjusted <- bam(update(formula_expos_only, ~ . + w*gps + gps +
 summary(bam_exposure_only_adjusted)
 saveRDS(summary(bam_exposure_only_adjusted), file = paste0(dir_proj, "results/parametric_results/bam_adjusted_exposure_only_", n_rows, "rows_", modifications, ".rds"))
 
-bam_all_exposures_adjusted <- bam(update(formula_all_expos, ~ . + w*gps + gps + gps^2),
+bam_all_exposures_adjusted <- bam(update(formula_all_expos, ~ . + gps),
                         data = data_with_gps,
                         offset = log(person_years),
                         family = poisson(link = "log"),
@@ -64,7 +103,7 @@ bam_all_exposures_adjusted <- bam(update(formula_all_expos, ~ . + w*gps + gps + 
 summary(bam_all_exposures_adjusted)
 saveRDS(summary(bam_all_exposures_adjusted), file = paste0(dir_proj, "results/parametric_results/bam_adjusted_all_exposures_", n_rows, "rows_", modifications, ".rds"))
 
-bam_all_covariates_adjusted <- bam(update(formula_all_covars, ~ . + w*gps + gps + gps^2),
+bam_all_covariates_adjusted <- bam(update(formula_all_covars, ~ . + gps),
                         data = data_with_gps,
                         offset = log(person_years),
                         family = poisson(link = "log"),
