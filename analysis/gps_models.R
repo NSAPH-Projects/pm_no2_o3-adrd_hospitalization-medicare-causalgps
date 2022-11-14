@@ -54,6 +54,8 @@ if (n_rows < total_n_rows){ # if analyzing subset of data
 Y <- as.data.frame(ADRD_agg_lagged_subset)[selected_rows, outcome_name]
 w <- as.data.frame(ADRD_agg_lagged_subset)[selected_rows, exposure_name]
 c <- as.data.frame(subset(ADRD_agg_lagged_subset[selected_rows,], select = c(other_expos_names, zip_var_names)))
+w.vals <- seq(min(w), max(w), length.out = 50)
+delta_n <- (w.vals[2] - w.vals[1])
 
 # Not used in GPS matching, but used in outcome model
 indiv_vars <- subset(ADRD_agg_lagged_subset[selected_rows, ], select = indiv_var_names)
@@ -96,13 +98,13 @@ matched_pop_subset <- generate_pseudo_pop(Y,
                                                 xgb_eta = seq(0.1, 0.4, 0.01)),
                                   nthread = n_cores - 1,
                                   covar_bl_method = "absolute",
-                                  covar_bl_trs = 0.2,
+                                  covar_bl_trs = 0.1,
                                   covar_bl_trs_type = "maximal",
                                  optimized_compile = TRUE,
                                   trim_quantiles = c(0.01,0.99),
                                   max_attempt = 10,
                                   matching_fun = "matching_l1",
-                                  delta_n = 0.2,
+                                  delta_n = delta_n,
                                   scale = 1)
 saveRDS(matched_pop_subset, file = paste0(dir_proj, "data/pseudopops/matched_pop_", n_rows, "rows", modifications, ".rds"))
 
@@ -155,7 +157,7 @@ weighted_pop_subset <- generate_pseudo_pop(Y,
                                           trim_quantiles = c(0.01,0.99), # c(0.05, 0.95) or c(0.01, 0.99)
                                           max_attempt = 10,
                                           matching_fun = "matching_l1",
-                                          delta_n = 0.2, # std dev of pm2.5 is 2.87, so I'll set delta_n = 0.2? parameters may depend on if state-level or national
+                                          delta_n = delta_n,
                                           scale = 1)
 saveRDS(weighted_pop_subset, file = paste0(dir_proj, "data/pseudopops/weighted_pop_", n_rows, "rows", modifications, ".rds"))
 
@@ -220,48 +222,6 @@ capped_weighted_data <- as.data.frame(capped_weighted_data)
 # Examine distribution of exposure and ZIP-level covariates (which were used to match) in pseudopopulation
 summary(capped_weighted_data$w)
 explore_zip_covs(capped_weighted_data)
-
-
-##### Adjusting by GPS using CausalGPS package #####
-
-# create log file to see internal processes of CausalGPS
-set_logger(logger_file_path = paste0(dir_proj, "code/analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_adjust_", modifications, n_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
-           logger_level = "DEBUG")
-
-# GPS estimation on ZIP-level covariates
-set.seed(200)
-estimating_gps <- estimate_gps(Y,
-                              w,
-                              c,
-                              pred_model = "sl",
-                              gps_model = "parametric",
-                              sl_lib = c("m_xgboost"),
-                              params = list(xgb_nrounds = seq(10, 50),
-                                            xgb_eta = seq(0.1, 0.4, 0.01)),
-                              nthread = n_cores - 1,
-                              internal_use = FALSE)
-estimated_gps <- estimating_gps$dataset
-estimated_gps$counter <- NULL # irrelevant to adjusting approach
-estimated_gps$row_index <- NULL # irrelevant to adjusting approach
-saveRDS(estimated_gps, file = paste0(dir_proj, "data/pseudopops/estimated_gps_", n_rows, "rows", modifications, ".rds"))
-
-
-# check ZIP-level covariate balance (note: this is the original, unchanged population)
-# i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
-abs_cor_orig <- rep(NA, ncol(c))
-names(abs_cor_orig) <- colnames(c)
-for (ordered_var in zip_quant_var_names){
-  abs_cor_orig[ordered_var] <- abs(cor(w, c[[ordered_var]]))
-}
-for (unordered_var in zip_unordered_cat_var_names){
-  abs_cor_orig[unordered_var] <- abs(cor_unordered_var(w, c[[unordered_var]]))
-}
-abs_cor_orig <- data.frame(cov = names(abs_cor_orig), abs_cor = abs_cor_orig)
-ggplot(abs_cor_orig, aes(x = cov, y = abs_cor)) +
-  geom_point() +
-  geom_line() +
-  labs(title = paste("Set of", format(n_rows, scientific = F), "observations"), x = "Covariate", y = "Absolute Correlation") +
-  theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
 
 
 ##### Estimate GPS using lm() #####
