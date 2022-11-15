@@ -24,9 +24,3 @@ These five files create the dataset to be analyzed.
 - *helper_functions.R*: hard-code exposure name and covariates (classified as quantitative or categorical) as vectors, define some useful functions for transforming variables, checking covariate balance, etc.   
 - *gps_models.R*: model the GPS using CausalGPS package and other methods
 - *outcome_models.R*: model the outcome using Poisson regression and (to do) semiparametric and nonparametric models
-
-The following is not updated. For now, see files in aggregation to see what data files there are.
-
-Data descriptions:
-
-TODO: Update data description.
