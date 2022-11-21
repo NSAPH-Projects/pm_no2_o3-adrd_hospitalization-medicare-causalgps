@@ -2,11 +2,11 @@ rm(list = ls())
 gc()
 
 ##### 0. Setup #####
+# devtools::install_github("fasrc/CausalGPS", ref="develop")
 library(data.table)
 library(fst)
 library(CausalGPS)
 library(mgcv)
-# library(gnm)
 library(ggplot2)
 library(tidyr)
 
@@ -23,11 +23,10 @@ ADRD_agg_lagged[, `:=`(zip = as.factor(zip), year = as.factor(year), cohort = as
 source(paste0(dir_proj, "code/analysis/helper_functions.R"))
 
 # parameters for this computing job
-n_cores <- 48
-n_gb <- 184
-total_n_rows <- nrow(ADRD_agg_lagged)
-n_rows <- total_n_rows # how many rows of the data you want to analyze (random subset implemented later)
-modifications <- "bin_age_tv" # to be used in names of output files, to record how you're tuning the models
+n_cores <- 64 # 48
+n_gb <- 499 # 184
+# total_n_rows <- nrow(ADRD_agg_lagged)
+modifications <- "bin_age_tv_trimmed_1_99" # to be used in names of output files, to record how you're tuning the models
 
 
 ##### Get data for exposure, outcome, and covariates of interest #####
@@ -44,18 +43,24 @@ for (var in c(zip_unordered_cat_var_names, indiv_unordered_cat_var_names)){
 # }
 
 
-##### Use full data or (random) subset of data to make code run faster than full data #####
+##### Trim exposures outside the 1st and 99th percentiles, for all analyses (associational and causal) #####
 
-if (n_rows < total_n_rows){ # if analyzing subset of data
-  set.seed(100)
-  selected_rows <- sample(1:nrow(ADRD_agg_lagged_subset), n_rows)
-} else selected_rows <- 1:total_n_rows # if full data
+trim_1_99 <- quantile(ADRD_agg_lagged_subset[[exposure_name]], c(0.01, 0.99))
+rows_within_range <- ADRD_agg_lagged_subset[[exposure_name]] >= trim_1_99[1] & ADRD_agg_lagged_subset[[exposure_name]] <= trim_1_99[2]
+ADRD_agg_lagged_trimmed_1_99 <- ADRD_agg_lagged_subset[rows_within_range, ]
+n_rows <- nrow(ADRD_agg_lagged_trimmed_1_99)
 
-Y <- as.data.frame(ADRD_agg_lagged_subset)[selected_rows, outcome_name]
-w <- as.data.frame(ADRD_agg_lagged_subset)[selected_rows, exposure_name]
-c <- as.data.frame(subset(ADRD_agg_lagged_subset[selected_rows,], select = c(other_expos_names, zip_var_names)))
-w.vals <- seq(min(w), max(w), length.out = 50)
-delta_n <- (w.vals[2] - w.vals[1])
+
+##### Use trimmed data or (random) subset of data to make code run faster than full data, classify variables #####
+
+selected_rows <- 1:n_rows # if full data; alternative is to sample rows
+
+Y <- as.data.frame(ADRD_agg_lagged_trimmed_1_99)[selected_rows, outcome_name]
+w <- as.data.frame(ADRD_agg_lagged_trimmed_1_99)[selected_rows, exposure_name]
+c <- as.data.frame(subset(ADRD_agg_lagged_trimmed_1_99[selected_rows,], select = c(other_expos_names, zip_var_names)))
+# w.vals <- seq(min(w), max(w), length.out = 50)
+# delta_n <- (w.vals[2] - w.vals[1])
+delta_n <- 0.6
 
 # Not used in GPS matching, but used in outcome model
 indiv_vars <- subset(ADRD_agg_lagged_subset[selected_rows, ], select = indiv_var_names)
