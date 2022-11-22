@@ -196,20 +196,22 @@ cutoff_weight <- 10
 
 # to do: write function for this, taking cutoff as input
 if (cap_weights){
-  ipw <- weighted_pop_subset$pseudo_pop$ipw
+  ipw <- weighted_pop_subset$pseudo_pop$counter_weight
   capped_weighted_pop_subset <- copy(weighted_pop_subset)
-  capped_weighted_pop_subset$pseudo_pop$ipw <- ifelse(ipw > cutoff_weight, cutoff_weight, ipw)
-  adjusted_corr_obj <- check_covar_balance(capped_weighted_pop_subset$pseudo_pop,
+  capped_weighted_pop_subset$pseudo_pop$counter_weight <- ifelse(ipw > cutoff_weight, cutoff_weight, ipw)
+  adjusted_corr_obj <- check_covar_balance(w = as.data.table(capped_weighted_pop_subset$pseudo_pop$w),
+                                           c = subset(capped_weighted_pop_subset$pseudo_pop, select = c(other_expos_names, zip_quant_var_names)),
                                            ci_appr = "weighting",
+                                           counter_weight = as.data.table(capped_weighted_pop_subset$pseudo_pop$counter_weight),
                                            nthread = n_cores - 1,
                                            covar_bl_method = "absolute",
-                                           covar_bl_trs = 0.2, # or 0.1
+                                           covar_bl_trs = 0.1, # or 0.1
                                            covar_bl_trs_type = "maximal",
                                            optimized_compile = T)
   capped_weighted_pop_subset$adjusted_corr_results <- adjusted_corr_obj$corr_results
 }
 
-cat("ESS of capped weighted pseudopopulation:", ess(capped_weighted_pop_subset$pseudo_pop$ipw))
+cat("ESS of capped weighted pseudopopulation:", ess(capped_weighted_pop_subset$pseudo_pop$counter_weight))
 
 # check ZIP-level covariate balance
 # i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
