@@ -1,9 +1,15 @@
 library(mgcv)
 
-# Formulas for Poisson regression, including covariate names
+# Formulas for Poisson regression
 formula_all_covars <- as.formula(paste("Y ~", paste(c("w", indiv_var_names, other_expos_names, zip_var_names), collapse = "+", sep = "")))
 formula_all_expos <- as.formula(paste("Y ~", paste(c("w", indiv_var_names, other_expos_names), collapse = "+", sep = "")))
 formula_expos_only <- as.formula(paste("Y ~", paste(c("w", indiv_var_names), collapse = "+", sep = "")))
+
+# Formulas for Poisson regression, with thin-plate spline for exposure
+formula_all_covars_smooth <- as.formula(paste("Y ~", paste(c("s(w, bs = 'ts')", indiv_var_names, other_expos_names, zip_var_names), collapse = "+", sep = "")))
+formula_all_expos_smooth <- as.formula(paste("Y ~", paste(c("s(w, bs = 'ts')", indiv_var_names, other_expos_names), collapse = "+", sep = "")))
+formula_expos_only_smooth <- as.formula(paste("Y ~", paste(c("s(w, bs = 'ts')", indiv_var_names), collapse = "+", sep = "")))
+
 
 ##### Naive (associational) Poisson regression #####
 
@@ -39,40 +45,43 @@ saveRDS(summary(bam_naive_all_covars), file = paste0(dir_proj, "results/parametr
 
 
 
-##### Poisson regression adjusting for GPS #####
+##### Smoothed naive (associational) Poisson regression #####
 
-data_with_gps <- copy(all_data)
-data_with_gps$gps <- estimated_gps$gps
+bam_smooth_naive_expos_only <- bam(formula_expos_only_smooth,
+                            data = all_data,
+                            offset = log(person_years),
+                            family = poisson(link = "log"),
+                            samfrac = 0.05,
+                            chunk.size = 5000,
+                            control = gam.control(trace = TRUE),
+                            nthreads = n_cores - 1)
+png(paste0(dir_proj, "results/semi_parametric_results/ERFs/bam_smooth_naive_exposure_only_", n_rows, "rows_", modifications, ".png"))
+plot(bam_smooth_naive_expos_only, main = "Naive Poisson, exposure only (PM2.5)")
+dev.off()
 
-bam_exposure_only_adjusted <- bam(update(formula_expos_only, ~ . + w*gps + gps + gps^2),
-                 data = data_with_gps,
-                 offset = log(person_years),
-                 family = poisson(link = "log"),
-                 samfrac = 0.05,
-                 chunk.size = 5000,
-                 control = gam.control(trace = TRUE))
-summary(bam_exposure_only_adjusted)
-saveRDS(summary(bam_exposure_only_adjusted), file = paste0(dir_proj, "results/parametric_results/bam_adjusted_exposure_only_", n_rows, "rows_", modifications, ".rds"))
+bam_smooth_naive_all_expos <- bam(formula_all_expos_smooth,
+                           data = all_data,
+                           offset = log(person_years),
+                           family = poisson(link = "log"),
+                           samfrac = 0.05,
+                           chunk.size = 5000,
+                           control = gam.control(trace = TRUE),
+                           nthreads = n_cores - 1)
+png(paste0(dir_proj, "results/semi_parametric_results/ERFs/bam_smooth_naive_all_exposures_", n_rows, "rows_", modifications, ".png"))
+plot(bam_smooth_naive_all_expos, main = "Naive Poisson, PM2.5 as exposure, all exposures")
+dev.off()
 
-bam_all_exposures_adjusted <- bam(update(formula_all_expos, ~ . + w*gps + gps + gps^2),
-                        data = data_with_gps,
-                        offset = log(person_years),
-                        family = poisson(link = "log"),
-                        samfrac = 0.05,
-                        chunk.size = 5000,
-                        control = gam.control(trace = TRUE))
-summary(bam_all_exposures_adjusted)
-saveRDS(summary(bam_all_exposures_adjusted), file = paste0(dir_proj, "results/parametric_results/bam_adjusted_all_exposures_", n_rows, "rows_", modifications, ".rds"))
-
-bam_all_covariates_adjusted <- bam(update(formula_all_covars, ~ . + w*gps + gps + gps^2),
-                        data = data_with_gps,
-                        offset = log(person_years),
-                        family = poisson(link = "log"),
-                        samfrac = 0.05,
-                        chunk.size = 5000,
-                        control = gam.control(trace = TRUE))
-summary(bam_all_covariates_adjusted)
-saveRDS(summary(bam_all_covariates_adjusted), file = paste0(dir_proj, "results/parametric_results/bam_adjusted_all_covariates_", n_rows, "rows_", modifications, ".rds"))
+bam_smooth_naive_all_covars <- bam(formula_all_covars_smooth,
+                            data = all_data,
+                            offset = log(person_years),
+                            family = poisson(link = "log"),
+                            samfrac = 0.05,
+                            chunk.size = 5000,
+                            control = gam.control(trace = TRUE),
+                            nthreads = n_cores - 1)
+png(paste0(dir_proj, "results/semi_parametric_results/ERFs/bam_smooth_naive_all_covariates_", n_rows, "rows_", modifications, ".png"))
+plot(bam_smooth_naive_all_covars, main = "Naive Poisson, PM2.5 as exposure, all covariates")
+dev.off()
 
 
 ##### Poisson regression matching on GPS #####
@@ -116,41 +125,6 @@ summary(bam_all_covariates_matched)
 saveRDS(summary(bam_all_covariates_matched), file = paste0(dir_proj, "results/parametric_results/bam_matched_all_covariates_", n_rows, "rows_", modifications, ".rds"))
 
 
-##### Poisson regression weighting (UNCAPPED) on GPS #####
-bam_exposure_only_weighted <- bam(formula_expos_only,
-                                  data = weighted_data,
-                                  offset = log(person_years),
-                                  family = poisson(link = "log"),
-                                  weights = counter_weight,
-                                  samfrac = 0.05,
-                                  chunk.size = 5000,
-                                  control = gam.control(trace = TRUE))
-summary(bam_exposure_only_weighted)
-saveRDS(summary(bam_exposure_only_weighted), file = paste0(dir_proj, "results/parametric_results/bam_weighted_exposure_only_", n_rows, "rows_", modifications, ".rds"))
-
-bam_exposures_controlled_weighted <- bam(formula_all_expos,
-                                         data = weighted_data,
-                                         offset = log(person_years),
-                                         family = poisson(link = "log"),
-                                         weights = counter_weight,
-                                         samfrac = 0.05,
-                                         chunk.size = 5000,
-                                         control = gam.control(trace = TRUE))
-summary(bam_exposures_controlled_weighted)
-saveRDS(summary(bam_exposures_controlled_weighted), file = paste0(dir_proj, "results/parametric_results/bam_weighted_all_exposures_", n_rows, "rows_", modifications, ".rds"))
-
-bam_all_covariates_weighted <- bam(formula_all_covars,
-                                  data = weighted_data,
-                                  offset = log(person_years),
-                                  family = poisson(link = "log"),
-                                  weights = counter_weight,
-                                  samfrac = 0.05,
-                                  chunk.size = 5000,
-                                  control = gam.control(trace = TRUE))
-summary(bam_all_covariates_weighted)
-saveRDS(summary(bam_all_covariates_weighted), file = paste0(dir_proj, "results/parametric_results/bam_weighted_all_covariates_", n_rows, "rows_", modifications, ".rds"))
-
-
 ##### Poisson regression weighting (CAPPED) on GPS #####
 bam_exposure_only_capped_weighted <- bam(formula_expos_only,
                                   data = capped_weighted_data,
@@ -186,153 +160,69 @@ summary(bam_all_covariates_capped_weighted)
 saveRDS(summary(bam_all_covariates_capped_weighted), file = paste0(dir_proj, "results/parametric_results/bam_weighted_all_covariates_", n_rows, "rows_", modifications, ".rds"))
 
 
-##### Old code: Poisson regression using gnm and estimate_pmetric_erf #####
-# method 2: gnm package
-# To do: fix error: only first element used
-# rd rest of Xiao's code (https://github.com/wxwx1993/National_Causal/blob/master/statistical_models.R)
-gnm_all_covariates <- gnm(Y ~ w + no2 + ozone_summer +
-                           any_dual + ADRD_age + sexM + race_cat +
-                           summer_tmmx + summer_rmax + region + ADRD_year +
-                           mean_bmi + smoke_rate + hispanic + pct_blk +
-                           PIR + poverty +
-                           education + popdensity + pct_owner_occ,
-                         eliminate = (as.factor(sexM):as.factor(race_cat):as.factor(any_dual):ADRD_age),
-                         data = matched_data,
-                         offset = log(person_years),
-                         family = poisson(link = "log"),
-                         weights = counter_weight)
-summary(gnm_all_covariates)
+##### Smoothed Poisson regression weighting (CAPPED) on GPS
 
-# method 3: CausalGPS package
-# To do: wrong right now cuz offset should be constant not various in the regression; to do - fix
+bam_smooth_exposure_only_capped_weighted <- bam(formula_expos_only_smooth,
+                                   data = capped_weighted_data,
+                                   offset = log(person_years),
+                                   family = poisson(link = "log"),
+                                   weights = counter_weight,
+                                   samfrac = 0.05,
+                                   chunk.size = 5000,
+                                   control = gam.control(trace = TRUE),
+                                   nthreads = n_cores - 1)
+png(paste0(dir_proj, "results/semi_parametric_results/ERFs/bam_smooth_exposure_only_capped_weighted_", n_rows, "rows_", modifications, ".png"))
+plot(bam_smooth_exposure_only_capped_weighted, main = "GPS-Weighted, Capped at 10, Poisson regression, exposure only (PM2.5)")
+dev.off()
+saveRDS(bam_smooth_exposure_only_capped_weighted, file = paste0(dir_proj, "results/semi_parametric_results/spline_objects/bam_smooth_exposure_only_capped_weighted_", n_rows, "rows_", modifications, ".rds"))
 
-outcome <- estimate_pmetric_erf(formula = Y ~ . -row_index -gps -counter_weight, # w or .?
-                                family = poisson, # poisson(link = "log")
-                                data = matched_data, # To Do: check if this must be a data.frame
-                                ci_appr = "matching")
-summary(outcome)
+bam_smooth_exposures_controlled_capped_weighted <- bam(formula_all_expos_smooth,
+                                                data = capped_weighted_data,
+                                                offset = log(person_years),
+                                                family = poisson(link = "log"),
+                                                weights = counter_weight,
+                                                samfrac = 0.05,
+                                                chunk.size = 5000,
+                                                control = gam.control(trace = TRUE),
+                                                nthreads = n_cores - 1)
+png(paste0(dir_proj, "results/semi_parametric_results/ERFs/bam_smooth_all_expos_capped_weighted_", n_rows, "rows_", modifications, ".png"))
+plot(bam_smooth_exposures_controlled_capped_weighted, main = "GPS-Weighted, Capped at 10, Poisson regression\nPM2.5 as exposure, other exposures controlled")
+dev.off()
+saveRDS(bam_smooth_exposures_controlled_capped_weighted, file = paste0(dir_proj, "results/semi_parametric_results/spline_objects/bam_smooth_all_expos_capped_weighted_", n_rows, "rows_", modifications, ".rds"))
 
-
-
-
-##### Print results from (Poisson) parametric outcome models #####
-
-iqr <- IQR(ADRD_agg_lagged$pm25)
-iqr
-# coef_bam_all_covariates <- bam_all_covariates$coefficients[2]
-# coef_bam_exposures_controlled <- bam_exposures_controlled$coefficients[2]
-# coef_bam_exposure_only <- bam_exposure_only$coefficients[2]
-# coef_bam_all_covariates
-# coef_bam_exposures_controlled
-# coef_bam_exposure_only
-# cat("Hazard ratio per 1 IQR increase in PM2.5:", exp(coef_bam_all_covariates*iqr))
-# cat("Hazard ratio per 1 IQR increase in PM2.5:", exp(coef_bam_exposures_controlled*iqr))
-# cat("Hazard ratio per 1 IQR increase in PM2.5:", exp(coef_bam_exposure_only*iqr))
-
-
-##### To be updated: Non-parametric model on matched and weighted data ##### 
-
-# model rate log(Y/offset) instead of Y, to incorporate offset
-matched_erf <- estimate_npmetric_erf(as.double(log(matched_data$Y / matched_data$person_years + 0.001)),
-                                     as.double(matched_data$w),
-                                     matched_data$counter_weight,
-                                     bw_seq=seq(0.1, 10, length.out = 15),
-                                     w_vals = seq(0, range(matched_data$w)[2], length.out = 100),
-                                     nthread = 16)
-matched_erf_plot <- plot(matched_erf) # plot log_rate
-matched_erf_plot$erf <- exp(matched_erf_plot$erf)
-plot(matched_erf) # plot rate
-
-weighted_erf <- estimate_npmetric_erf(as.double(log(weighted_data$Y / weighted_data$person_years + 0.001)),
-                                      as.double(weighted_data$w),
-                                      round(weighted_data$counter_weight * 50),
-                                      bw_seq=seq(0.1, 10, length.out = 15),
-                                      w_vals = seq(0, range(weighted_data$w)[2], length.out = 100),
-                                      nthread = 16)
-weighted_erf_plot <- plot(weighted_erf) # plot log_rate
-weighted_erf_plot$erf <- exp(weighted_erf_plot$erf)
-plot(matched_erf) # plot rate
-#summary(weighted_erf)
-
-
-##### To be updated: Semi-parametric model on matched and weighted data ##### 
-
-# to do: fix error
-# to do: try Y~s(w,df=3)
-semipmetric_exposure_only <- estimate_semipmetric_erf(log(Y/person_years + 0.001) ~ w + any_dual + ADRD_age + sexM + race_cat,
-                                                      data = matched_data,
-                                                      family = poisson(link = "log"),
-                                                      ci_appr = "matching")
-matched_semi_erf_plot <- plot(semipmetric_exposure_only) # plot log_rate
-matched_semi_erf_plot$erf <- exp(matched_semi_erf_plot$erf)
-plot(matched_semi_erf_plot)
+bam_smooth_all_covariates_capped_weighted <- bam(formula_all_covars_smooth,
+                                                       data = capped_weighted_data,
+                                                       offset = log(person_years),
+                                                       family = poisson(link = "log"),
+                                                       weights = counter_weight,
+                                                       samfrac = 0.05,
+                                                       chunk.size = 5000,
+                                                       control = gam.control(trace = TRUE),
+                                                       nthreads = n_cores - 1)
+png(paste0(dir_proj, "results/semi_parametric_results/ERFs/bam_smooth_all_covars_capped_weighted_", n_rows, "rows_", modifications, ".png"))
+plot(bam_smooth_all_covariates_capped_weighted, main = "GPS-Weighted, Capped at 10, Poisson regression\nPM2.5 as exposure, all covariates controlled")
+dev.off()
+saveRDS(bam_smooth_all_covariates_capped_weighted, file = paste0(dir_proj, "results/semi_parametric_results/spline_objects/bam_smooth_all_covars_capped_weighted_", n_rows, "rows_", modifications, ".rds"))
 
 
 
+##### Old code #####
 
-##### Old Code #####
+# cat("IQR of PM2.5 (micrograms/m^3):", IQR(ADRD_agg_lagged$pm25))
+# cat("IQR of NO2 (ppb):", IQR(ADRD_agg_lagged$no2))
+# cat("IQR of summer ozone (ppb):", IQR(ADRD_agg_lagged$ozone_summer))
 
-# Outcome models
+# cat("Hazard ratio per 1 IQR increase in PM2.5:", exp(model_pm25$coefficients[2]*IQR(ADRD_agg_lagged$pm25)))
+# cat("Hazard ratio per 1 IQR increase in NO2:", exp(model_no2$coefficients[2]*IQR(ADRD_agg_lagged$no2)))
+# cat("Hazard ratio per 1 IQR increase in summer ozone:", exp(model_ozone$coefficients[2]*IQR(ADRD_agg_lagged$ozone_summer)))
 
-model_pm25 <- bam(n_ADRDhosp ~ offset(log(n_persons * n_years)) +
-                    pm25 + no2 + ozone_summer + tmmx + rmax +
-                    factor(ffs_entry_year) + factor(n_years) + factor(any_dual) +
-                    ADRD_age + factor(sexM) + factor(race_cat) +
-                    mean_bmi + smoke_rate + hispanic + pct_blk +
-                    PIR + poverty +
-                    education + popdensity + pct_owner_occ,
-                  data = ADRD_agg_lagged,
-                  weights = ADRD_agg_lagged[, ipw_pm25],
-                  family = poisson, 
-                  samfrac = 0.05, chunk.size = 5000,
-                  control = gam.control(trace = TRUE))
+# print("To compare with Shi et al 2021 preprint")
+# cat("Hazard ratio per 3.2 micrograms/m^3 increase in PM2.5:", exp(model_pm25$coefficients[2]*3.2))
+# cat("Hazard ratio per 11.6 ppb increase in NO2:", exp(model_no2$coefficients[2]*11.6))
+# cat("Hazard ratio per 5.3 ppb increase in summer ozone:", exp(model_ozone$coefficients[2]*5.3))
 
-model_no2 <- bam(n_ADRDhosp ~ offset(log(n_persons * n_years)) +
-                   pm25 + no2 + ozone_summer + tmmx + rmax +
-                   factor(ffs_entry_year) + factor(n_years) + factor(any_dual) +
-                   ADRD_age + factor(sexM) + factor(race_cat) +
-                   mean_bmi + smoke_rate + hispanic + pct_blk +
-                   PIR + poverty +
-                   education + popdensity + pct_owner_occ,
-                 data = ADRD_agg_lagged,
-                 weights = ADRD_agg_lagged[, ipw_no2],
-                 family = poisson, 
-                 samfrac = 0.05, chunk.size = 5000,
-                 control = gam.control(trace = TRUE))
-
-model_ozone <- bam(n_ADRDhosp ~ offset(log(n_persons * n_years)) +
-                     pm25 + no2 + ozone_summer + tmmx + rmax +
-                     factor(ffs_entry_year) + factor(n_years) + factor(any_dual) +
-                     ADRD_age + factor(sexM) + factor(race_cat) +
-                     mean_bmi + smoke_rate + hispanic + pct_blk +
-                     PIR + poverty +
-                     education + popdensity + pct_owner_occ,
-                   data = ADRD_agg_lagged,
-                   weights = ADRD_agg_lagged[, ipw_ozone],
-                   family = poisson, 
-                   samfrac = 0.05, chunk.size = 5000,
-                   control = gam.control(trace = TRUE))
-
-# Results
-
-cat("IQR of PM2.5 (micrograms/m^3):", IQR(ADRD_agg_lagged$pm25))
-cat("IQR of NO2 (ppb):", IQR(ADRD_agg_lagged$no2))
-cat("IQR of summer ozone (ppb):", IQR(ADRD_agg_lagged$ozone_summer))
-
-cat("Hazard ratio per 1 IQR increase in PM2.5:", exp(model_pm25$coefficients[2]*IQR(ADRD_agg_lagged$pm25)))
-cat("Hazard ratio per 1 IQR increase in NO2:", exp(model_no2$coefficients[2]*IQR(ADRD_agg_lagged$no2)))
-cat("Hazard ratio per 1 IQR increase in summer ozone:", exp(model_ozone$coefficients[2]*IQR(ADRD_agg_lagged$ozone_summer)))
-
-print("To compare with Shi et al 2021 preprint")
-cat("Hazard ratio per 3.2 micrograms/m^3 increase in PM2.5:", exp(model_pm25$coefficients[2]*3.2))
-cat("Hazard ratio per 11.6 ppb increase in NO2:", exp(model_no2$coefficients[2]*11.6))
-cat("Hazard ratio per 5.3 ppb increase in summer ozone:", exp(model_ozone$coefficients[2]*5.3))
-
-print("To compare with Shi et al 2020")
-cat("Hazard ratio per 5 micrograms/m^3 increase in PM2.5:", exp(model_pm25$coefficients[2]*5))
+# print("To compare with Shi et al 2020")
+# cat("Hazard ratio per 5 micrograms/m^3 increase in PM2.5:", exp(model_pm25$coefficients[2]*5))
 
 
-# model.matrix(y~-1+as.factor(year)+age,data)
-# c <- as.matrix(c) # don't use this
-# c <- as.data.frame(c)
 
