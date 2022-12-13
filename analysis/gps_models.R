@@ -11,7 +11,7 @@ library(ggplot2)
 library(tidyr)
 
 # directory
-dir_proj <- "~/nsaph_projects/pm_no2_o3-adrd_hosp-medicare-causalgps/"
+dir_proj <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/"
 # dir_data <- paste0(dir_proj, "data/")
 # dir_code <- paste0(dir_proj, "code/")
 
@@ -26,7 +26,7 @@ source(paste0(dir_proj, "code/analysis/helper_functions.R"))
 n_cores <- 64 # 48
 n_gb <- 499 # 184
 # total_n_rows <- nrow(ADRD_agg_lagged)
-modifications <- "bin_age_tv_trimmed_1_99" # to be used in names of output files, to record how you're tuning the models
+modifications <- "bin_age_tv_trimmed_1_99_delta0.6_15attempts" # to be used in names of output files, to record how you're tuning the models
 
 
 ##### Get data for exposure, outcome, and covariates of interest #####
@@ -80,7 +80,7 @@ explore_zip_covs(c)
 ##### Match on GPS using CausalGPS package #####
 
 # create log file to see internal processes of CausalGPS
-set_logger(logger_file_path = paste0(dir_proj, "code/analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_match_", modifications, n_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
+set_logger(logger_file_path = paste0(dir_proj, "code/analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_match_", modifications, "_", n_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
            logger_level = "DEBUG")
 
 # if using SL.gam, remove mgcv library and allow custom parameters
@@ -107,7 +107,7 @@ matched_pop_subset <- generate_pseudo_pop(Y,
                                   covar_bl_trs_type = "maximal",
                                  optimized_compile = TRUE,
                                   trim_quantiles = c(0,1),
-                                  max_attempt = 10,
+                                  max_attempt = 15,
                                   matching_fun = "matching_l1",
                                   delta_n = delta_n,
                                   scale = 1)
@@ -138,7 +138,7 @@ explore_zip_covs(matched_data)
 ##### IPTW by GPS using CausalGPS package #####
 
 # create log file to see internal processes of CausalGPS
-set_logger(logger_file_path = paste0(dir_proj, "code/analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_weight_", modifications, n_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
+set_logger(logger_file_path = paste0(dir_proj, "code/analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_weight_", modifications, "_", n_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
            logger_level = "DEBUG")
 
 # GPS weighting on ZIP-level covariates
@@ -231,7 +231,7 @@ summary(capped_weighted_data$w)
 explore_zip_covs(capped_weighted_data)
 
 
-##### Estimate GPS using lm() #####
+##### Old code: Estimate GPS using lm() #####
 
 # estimate GPS using lm()
 formula_lm_gps <- as.formula(paste("w ~", paste(c(other_expos_names, zip_var_names), collapse = "+", sep = "")))
