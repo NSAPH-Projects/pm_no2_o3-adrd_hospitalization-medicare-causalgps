@@ -55,8 +55,8 @@ bam_smooth_naive_expos_only <- bam(formula_expos_only_smooth,
                             chunk.size = 5000,
                             control = gam.control(trace = TRUE),
                             nthreads = n_cores - 1)
-png(paste0(dir_proj, "results/semi_parametric_results/ERFs/bam_smooth_naive_exposure_only_", n_rows, "rows_", modifications, ".png"))
-plot(bam_smooth_naive_expos_only, main = "Naive Poisson, exposure only (PM2.5)")
+png(paste0(dir_proj, "results/semiparametric_results/ERFs/bam_smooth_naive_exposure_only_", n_rows, "rows_", modifications, ".png"))
+plot(bam_smooth_naive_expos_only, main = paste0("Naive Poisson, exposure only (", exposure_name, ")"))
 dev.off()
 
 bam_smooth_naive_all_expos <- bam(formula_all_expos_smooth,
@@ -67,8 +67,8 @@ bam_smooth_naive_all_expos <- bam(formula_all_expos_smooth,
                            chunk.size = 5000,
                            control = gam.control(trace = TRUE),
                            nthreads = n_cores - 1)
-png(paste0(dir_proj, "results/semi_parametric_results/ERFs/bam_smooth_naive_all_exposures_", n_rows, "rows_", modifications, ".png"))
-plot(bam_smooth_naive_all_expos, main = "Naive Poisson, PM2.5 as exposure, all exposures")
+png(paste0(dir_proj, "results/semiparametric_results/ERFs/bam_smooth_naive_all_exposures_", n_rows, "rows_", modifications, ".png"))
+plot(bam_smooth_naive_all_expos, main = paste("Naive Poisson,", exposure_name, "as exposure, all exposures"))
 dev.off()
 
 bam_smooth_naive_all_covars <- bam(formula_all_covars_smooth,
@@ -79,8 +79,8 @@ bam_smooth_naive_all_covars <- bam(formula_all_covars_smooth,
                             chunk.size = 5000,
                             control = gam.control(trace = TRUE),
                             nthreads = n_cores - 1)
-png(paste0(dir_proj, "results/semi_parametric_results/ERFs/bam_smooth_naive_all_covariates_", n_rows, "rows_", modifications, ".png"))
-plot(bam_smooth_naive_all_covars, main = "Naive Poisson, PM2.5 as exposure, all covariates")
+png(paste0(dir_proj, "results/semiparametric_results/ERFs/bam_smooth_naive_all_covariates_", n_rows, "rows_", modifications, ".png"))
+plot(bam_smooth_naive_all_covars, main = paste("Naive Poisson,", exposure_name, "as exposure, all covariates"))
 dev.off()
 
 
@@ -123,6 +123,47 @@ bam_all_covariates_matched <- bam(formula_all_covars,
                                  control = gam.control(trace = TRUE))
 summary(bam_all_covariates_matched)
 saveRDS(summary(bam_all_covariates_matched), file = paste0(dir_proj, "results/parametric_results/bam_matched_all_covariates_", n_rows, "rows_", modifications, ".rds"))
+
+##### Smoothed Poisson regression matching on GPS
+
+bam_smooth_exposure_only_matched <- bam(formula_expos_only_smooth,
+                                                data = matched_data,
+                                                offset = log(person_years),
+                                                family = poisson(link = "log"),
+                                                weights = counter_weight,
+                                                samfrac = 0.05,
+                                                chunk.size = 5000,
+                                                control = gam.control(trace = TRUE),
+                                                nthreads = n_cores - 1)
+png(paste0(dir_proj, "results/semiparametric_results/ERFs/bam_smooth_exposure_only_matched_", n_rows, "rows_", modifications, ".png"))
+plot(bam_smooth_exposure_only_matched, main = paste0("GPS-Matched, Poisson regression,\nexposure only (", exposure_name, ")"))
+dev.off()
+
+bam_smooth_exposures_controlled_matched <- bam(formula_all_expos_smooth,
+                                                       data = matched_data,
+                                                       offset = log(person_years),
+                                                       family = poisson(link = "log"),
+                                                       weights = counter_weight,
+                                                       samfrac = 0.05,
+                                                       chunk.size = 5000,
+                                                       control = gam.control(trace = TRUE),
+                                                       nthreads = n_cores - 1)
+png(paste0(dir_proj, "results/semiparametric_results/ERFs/bam_smooth_all_expos_matched_", n_rows, "rows_", modifications, ".png"))
+plot(bam_smooth_exposures_controlled_matched, main = paste0("GPS-Matched, Poisson regression\n", exposure_name, " as exposure, other exposures controlled"))
+dev.off()
+
+bam_smooth_all_covariates_matched <- bam(formula_all_covars_smooth,
+                                                 data = matched_data,
+                                                 offset = log(person_years),
+                                                 family = poisson(link = "log"),
+                                                 weights = counter_weight,
+                                                 samfrac = 0.05,
+                                                 chunk.size = 5000,
+                                                 control = gam.control(trace = TRUE),
+                                                 nthreads = n_cores - 1)
+png(paste0(dir_proj, "results/semiparametric_results/ERFs/bam_smooth_all_covars_matched_", n_rows, "rows_", modifications, ".png"))
+plot(bam_smooth_all_covariates_matched, main = paste0("GPS-Matched, Poisson regression\n", exposure_name, " as exposure, all covariates controlled"))
+dev.off()
 
 
 ##### Poisson regression weighting (CAPPED) on GPS #####
@@ -171,10 +212,10 @@ bam_smooth_exposure_only_capped_weighted <- bam(formula_expos_only_smooth,
                                    chunk.size = 5000,
                                    control = gam.control(trace = TRUE),
                                    nthreads = n_cores - 1)
-png(paste0(dir_proj, "results/semi_parametric_results/ERFs/bam_smooth_exposure_only_capped_weighted_", n_rows, "rows_", modifications, ".png"))
-plot(bam_smooth_exposure_only_capped_weighted, main = "GPS-Weighted, Capped at 10, Poisson regression, exposure only (PM2.5)")
+png(paste0(dir_proj, "results/semiparametric_results/ERFs/bam_smooth_exposure_only_capped_weighted_", n_rows, "rows_", modifications, ".png"))
+plot(bam_smooth_exposure_only_capped_weighted, main = paste0("GPS-Weighted, Capped at 10, Poisson regression,\nexposure only (", exposure_name, ")"))
 dev.off()
-saveRDS(bam_smooth_exposure_only_capped_weighted, file = paste0(dir_proj, "results/semi_parametric_results/spline_objects/bam_smooth_exposure_only_capped_weighted_", n_rows, "rows_", modifications, ".rds"))
+saveRDS(bam_smooth_exposure_only_capped_weighted, file = paste0(dir_proj, "results/semiparametric_results/spline_objects/bam_smooth_exposure_only_capped_weighted_", n_rows, "rows_", modifications, ".rds"))
 
 bam_smooth_exposures_controlled_capped_weighted <- bam(formula_all_expos_smooth,
                                                 data = capped_weighted_data,
@@ -185,10 +226,10 @@ bam_smooth_exposures_controlled_capped_weighted <- bam(formula_all_expos_smooth,
                                                 chunk.size = 5000,
                                                 control = gam.control(trace = TRUE),
                                                 nthreads = n_cores - 1)
-png(paste0(dir_proj, "results/semi_parametric_results/ERFs/bam_smooth_all_expos_capped_weighted_", n_rows, "rows_", modifications, ".png"))
-plot(bam_smooth_exposures_controlled_capped_weighted, main = "GPS-Weighted, Capped at 10, Poisson regression\nPM2.5 as exposure, other exposures controlled")
+png(paste0(dir_proj, "results/semiparametric_results/ERFs/bam_smooth_all_expos_capped_weighted_", n_rows, "rows_", modifications, ".png"))
+plot(bam_smooth_exposures_controlled_capped_weighted, main = paste0("GPS-Weighted, Capped at 10, Poisson regression\n", exposure_name, " as exposure, other exposures controlled"))
 dev.off()
-saveRDS(bam_smooth_exposures_controlled_capped_weighted, file = paste0(dir_proj, "results/semi_parametric_results/spline_objects/bam_smooth_all_expos_capped_weighted_", n_rows, "rows_", modifications, ".rds"))
+saveRDS(bam_smooth_exposures_controlled_capped_weighted, file = paste0(dir_proj, "results/semiparametric_results/spline_objects/bam_smooth_all_expos_capped_weighted_", n_rows, "rows_", modifications, ".rds"))
 
 bam_smooth_all_covariates_capped_weighted <- bam(formula_all_covars_smooth,
                                                        data = capped_weighted_data,
@@ -199,10 +240,10 @@ bam_smooth_all_covariates_capped_weighted <- bam(formula_all_covars_smooth,
                                                        chunk.size = 5000,
                                                        control = gam.control(trace = TRUE),
                                                        nthreads = n_cores - 1)
-png(paste0(dir_proj, "results/semi_parametric_results/ERFs/bam_smooth_all_covars_capped_weighted_", n_rows, "rows_", modifications, ".png"))
-plot(bam_smooth_all_covariates_capped_weighted, main = "GPS-Weighted, Capped at 10, Poisson regression\nPM2.5 as exposure, all covariates controlled")
+png(paste0(dir_proj, "results/semiparametric_results/ERFs/bam_smooth_all_covars_capped_weighted_", n_rows, "rows_", modifications, ".png"))
+plot(bam_smooth_all_covariates_capped_weighted, main = paste0("GPS-Weighted, Capped at 10, Poisson regression\n", exposure_name, " as exposure, all covariates controlled"))
 dev.off()
-saveRDS(bam_smooth_all_covariates_capped_weighted, file = paste0(dir_proj, "results/semi_parametric_results/spline_objects/bam_smooth_all_covars_capped_weighted_", n_rows, "rows_", modifications, ".rds"))
+saveRDS(bam_smooth_all_covariates_capped_weighted, file = paste0(dir_proj, "results/semiparametric_results/spline_objects/bam_smooth_all_covars_capped_weighted_", n_rows, "rows_", modifications, ".rds"))
 
 
 
