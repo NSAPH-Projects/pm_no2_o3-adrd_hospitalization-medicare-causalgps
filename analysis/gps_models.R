@@ -81,7 +81,7 @@ explore_zip_covs(c)
 
 # create log file to see internal processes of CausalGPS
 set_logger(logger_file_path = paste0(dir_proj, "code/analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_match_", modifications, "_", n_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
-           logger_level = "DEBUG")
+           logger_level = "TRACE")
 
 # if using SL.gam, remove mgcv library and allow custom parameters
 # library(SuperLearner)
@@ -139,7 +139,7 @@ explore_zip_covs(matched_data)
 
 # create log file to see internal processes of CausalGPS
 set_logger(logger_file_path = paste0(dir_proj, "code/analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_weight_", modifications, "_", n_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
-           logger_level = "DEBUG")
+           logger_level = "TRACE")
 
 # GPS weighting on ZIP-level covariates
 set.seed(200)
