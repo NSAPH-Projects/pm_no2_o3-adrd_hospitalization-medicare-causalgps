@@ -9,14 +9,13 @@ library(purrr)
 
 setDTthreads(threads = 16)
 
-dir_proj <- "~/nsaph_projects/pm_no2_o3-adrd_hosp-medicare-causalgps/"
-dir_data <- paste0(dir_proj, "data/")
-ADRD_agg <- read_fst(paste0(dir_data, "analysis/ADRD_complete.fst"), as.data.table = TRUE)
+dir_proj <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/"
+# dir_data <- paste0(dir_proj, "data/")
+ADRD_agg_lagged <- read_fst(paste0(dir_proj, "data/analysis/ADRD_complete_tv.fst"), as.data.table = TRUE)
+setnames(ADRD_agg_lagged, old = c("pct_blk", "pct_owner_occ"), new = c("prop_blk", "prop_owner_occ"))
+ADRD_agg_lagged[, `:=`(zip = as.factor(zip), year = as.factor(year), cohort = as.factor(cohort), age_grp = as.factor(age_grp), sex = as.factor(sex), race = as.factor(race), dual = as.factor(dual))]
 
-source(paste0(dir_proj, "pm_no2_o3-adrd_hospitalization-medicare-causalgps/analysis/helper_functions.R"))
-
-# Approximate first ADRD shospitalization by requiring no ADRD hosps for 2 years
-ADRD_agg_lagged <- ADRD_agg[ADRD_year - ffs_entry_year >= 2, ]
+source(paste0(dir_proj, "code/analysis/helper_functions.R"))
 
 
 ##### 1. Explore covariate distributions of aggregated dataset #####
