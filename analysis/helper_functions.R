@@ -6,7 +6,8 @@ zip_quant_var_names <- c("mean_bmi", "smoke_rate", "hispanic", "prop_blk",
                          "summer_tmmx", "summer_rmax")
 zip_unordered_cat_var_names <- c("region")
 indiv_quant_var_names <- NULL
-indiv_unordered_cat_var_names <- c("sex", "race", "dual", "age_grp", "cohort", "year") # consider if year should be here: like zip, it is a zip-level covariate and is already incorporated into time-/zip-varying exposures (so should we include it in the model at all?)
+indiv_unordered_cat_var_names <- c("sex", "race", "dual", "age_grp", "cohort", "year") # to do: age_group is ordered
+strata_vars <- c("year", "sex", "race", "dual", "age_grp") # to do: consider if year should be here
 zip_var_names <- c(zip_quant_var_names, zip_unordered_cat_var_names)
 indiv_var_names <- c(indiv_unordered_cat_var_names, indiv_quant_var_names) # note: for now, using ADRD_age as a quantitative variable (not binned)
 

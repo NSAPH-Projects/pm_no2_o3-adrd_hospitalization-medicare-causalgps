@@ -24,7 +24,8 @@ source(paste0(dir_proj, "code/analysis/helper_functions.R"))
 n_cores <- 16 # 48 or 64 if bigmem
 n_gb <- 128 # 184 or 499 if bigmem
 # total_n_rows <- nrow(ADRD_agg_lagged)
-modifications <- "gps_by_zip_year" # to be used in names of output files, to record how you're tuning the models
+n_attempts <- 10
+modifications <- paste0("gps_by_zip_year_", n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
 
 
 ##### Get data for exposure, outcome, and covariates of interest #####
@@ -50,84 +51,106 @@ ADRD_agg_lagged_trimmed_1_99 <- ADRD_agg_lagged_subset[rows_within_range, ]
 n_rows <- nrow(ADRD_agg_lagged_trimmed_1_99) # 34,068,250
 
 
-##### Estimate GPS for matching and weighting approaches #####
+##### Isolate just the exposure and covariates: 1 observation per ZIP, year #####
 
-# get exposure and covariates, which are at ZIP, year level
 zip_year_data <- subset(ADRD_agg_lagged_trimmed_1_99,
                         select = c("zip", "year", "w", other_expos_names, zip_var_names))
 zip_year_data <- unique(zip_year_data, by = c("zip", "year"))
 n_zip_year_rows <- nrow(zip_year_data) # 475,096
 
-# create log file to see internal processes of CausalGPS
-set_logger(logger_file_path = paste0(dir_proj, "code/analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_estimate_gps_", modifications, "_", n_zip_year_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
-           logger_level = "TRACE")
-
-# estimate GPS
-set.seed(200)
-zip_year_with_gps_obj <- estimate_gps(Y = 0, # fake Y variable since our outcomes are not at the zip-year level; not used in estimate_gps
-                                  w = zip_year_data$w,
-                                  c = subset(zip_year_data, select = c("year", other_expos_names, zip_var_names)),
-                                  gps_model = "parametric", # i.e., model GPS normally, with mean and SD estimated using xgboost
-                                  internal_use = T,
-                                  params = list(xgb_nrounds = seq(10, 50),
-                                                xgb_eta = seq(0.1, 0.4, 0.01)),
-                                  sl_lib = c("m_xgboost"),
-                                  nthread = n_cores)
-zip_year_with_gps <- zip_year_with_gps_obj$dataset
-zip_year_with_gps$zip <- zip_year_data$zip
-
 
 ##### GPS Weighting #####
 
-# for GPS weighting, stabilize GPS using marginal probability of exposure (modeled normally) and cap extreme weights at 10
-marginal_expos_prob <- dnorm(zip_year_data$w,
-                             mean = mean(zip_year_data$w),
-                             sd = sd(zip_year_data$w))
-zip_year_with_gps$stabilized_ipw <- marginal_expos_prob / zip_year_with_gps$gps ## check estimate_gps
-zip_year_with_gps$capped_stabilized_ipw <- ifelse(zip_year_with_gps$stabilized_ipw > 10, 10, zip_year_with_gps$stabilized_ipw)
+# set up dataframe to check covariate balance for each GPS modeling attempt
+### to do: see if zip can be included or if need more memory or something
+vars_for_cov_bal <- c(other_expos_names, zip_var_names, indiv_var_names)
+cov_bal_weighting <- data.table(Attempt = rep(1:n_attempts, each = length(vars_for_cov_bal)*2),
+                      Covariate = rep(vars_for_cov_bal, 2*n_attempts),
+                      Dataset = rep(c(rep("Weighted", length(vars_for_cov_bal)), rep("Unweighted", length(vars_for_cov_bal))), n_attempts),
+                      Absolute_Correlation = 100) # Absolute_Correlation column will be updated
 
-# set up dataframe to check covariate balance
-vars_for_cov_bal <- c("year", other_expos_names, zip_var_names)
-abs_cor <- data.table(Covariate = rep(vars_for_cov_bal, 2),
-                     Dataset = c(rep("Weighted", length(vars_for_cov_bal)), rep("Unweighted", length(vars_for_cov_bal))),
-                     Absolute_Correlation = 100) # Absolute_Correlation column will be updated
+# set up list to store each GPS modeling attempt
+gps_for_weighting_list <- vector("list", n_attempts)
 
-# covariate balance: mean absolute point-biserial correlation for unordered categorical vars
-for (unordered_var in c("year", zip_unordered_cat_var_names)){
-  abs_cor[Covariate == unordered_var & Dataset == "Weighted", Absolute_Correlation := weighted_cor_unordered_var(zip_year_with_gps$w, zip_year_with_gps[[unordered_var]], zip_year_with_gps$capped_stabilized_ipw)]
-  abs_cor[Covariate == unordered_var & Dataset == "Unweighted", Absolute_Correlation := cor_unordered_var(zip_year_with_gps$w, zip_year_with_gps[[unordered_var]])]
+# create log file to see internal processes of CausalGPS
+set_logger(logger_file_path = paste0(dir_proj, "code/analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_estimate_gps_for_weighting_", modifications, "_", n_zip_year_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
+           logger_level = "TRACE")
+
+for (i in 1:n_attempts){
+
+  # estimate GPS
+  set.seed(i*100)
+  temp_zip_year_with_gps <- estimate_gps(Y = 0, # fake Y variable since our outcomes are not at the zip-year level; not used in estimate_gps
+                                        w = zip_year_data$w,
+                                        c = subset(zip_year_data, select = c("year", other_expos_names, zip_var_names)),
+                                        gps_model = "parametric", # i.e., w=f(x)+epsilon, f(x) estimated by xgboost and epsilon is normal
+                                        internal_use = T,
+                                        params = list(xgb_nrounds = seq(10, 50),
+                                                      xgb_eta = seq(0.1, 0.4, 0.01)),
+                                        sl_lib = c("m_xgboost"),
+                                        nthread = n_cores)
+  temp_zip_year_with_gps <- temp_zip_year_with_gps$dataset
+  temp_zip_year_with_gps$zip <- zip_year_data$zip
+  
+  # stabilize GPS using marginal probability of exposure (modeled normally) and cap extreme weights at 10
+  marginal_expos_prob <- dnorm(zip_year_data$w,
+                               mean = mean(zip_year_data$w),
+                               sd = sd(zip_year_data$w))
+  temp_zip_year_with_gps$stabilized_ipw <- marginal_expos_prob / temp_zip_year_with_gps$gps ## check estimate_gps
+  temp_zip_year_with_gps$capped_stabilized_ipw <- ifelse(temp_zip_year_with_gps$stabilized_ipw > 10, 10, temp_zip_year_with_gps$stabilized_ipw)
+  gps_for_weighting_list[[i]] <- temp_zip_year_with_gps
+  
+  ### to do: compare results with create_weighting()
+  
+  
+  # merge with patient data
+  temp_weighted_pseudopop <- merge(ADRD_agg_lagged_trimmed_1_99, subset(temp_zip_year_with_gps,
+                                                                   select = c("zip", "year", "capped_stabilized_ipw")),
+                              by = c("zip", "year"))
+
+  # calculate covariate balance: mean absolute point-biserial correlation for unordered categorical vars
+  for (unordered_var in c(zip_unordered_cat_var_names, indiv_unordered_cat_var_names)){
+    cov_bal_weighting[Attempt == i & Covariate == unordered_var & Dataset == "Weighted", Absolute_Correlation := weighted_cor_unordered_var(temp_weighted_pseudopop$w, temp_weighted_pseudopop[[unordered_var]], temp_weighted_pseudopop$capped_stabilized_ipw)]
+    cov_bal_weighting[Attempt == i & Covariate == unordered_var & Dataset == "Unweighted", Absolute_Correlation := cor_unordered_var(temp_weighted_pseudopop$w, temp_weighted_pseudopop[[unordered_var]])]
+  }
+  
+  # calculate covariate balance: absolute correlation for quantitative covariates
+  for (quant_var in c(other_expos_names, zip_quant_var_names, indiv_quant_var_names)){
+    cov_bal_weighting[Attempt == i & Covariate == quant_var & Dataset == "Weighted", Absolute_Correlation := weightedCorr(temp_weighted_pseudopop$w, temp_weighted_pseudopop[[quant_var]], method = "Pearson", weights = temp_weighted_pseudopop$capped_stabilized_ipw)]
+    cov_bal_weighting[Attempt == i & Covariate == quant_var & Dataset == "Unweighted", Absolute_Correlation := cor(temp_weighted_pseudopop$w, temp_weighted_pseudopop[[quant_var]], method = "pearson")]
+    cov_bal_weighting[Attempt == i & Covariate == quant_var, Absolute_Correlation := abs(Absolute_Correlation)]
+  }
 }
+rm(temp_zip_year_with_gps, temp_weighted_pseudopop)
 
-# covariate balance: absolute correlation for quantitative covariates
-for (quant_var in c(other_expos_names, zip_quant_var_names)){
-  abs_cor[Covariate == quant_var & Dataset == "Weighted", Absolute_Correlation := weightedCorr(zip_year_with_gps$w, zip_year_with_gps[[quant_var]], method = "Pearson", weights = zip_year_with_gps$capped_stabilized_ipw)]
-  abs_cor[Covariate == quant_var & Dataset == "Unweighted", Absolute_Correlation := cor(zip_year_with_gps$w, zip_year_with_gps[[quant_var]])]
-  abs_cor[Covariate == quant_var, Absolute_Correlation := abs(Absolute_Correlation)]
-}
+# find GPS model with best covariate balance
+cov_bal_summary <- cov_bal_weighting[Dataset == "Weighted", .(max_abs_cor = max(Absolute_Correlation)), by = Attempt]
+best_attempt <- cov_bal_summary$Attempt[which.min(cov_bal_summary$max_abs_cor)]
+best_cov_bal <- cov_bal_weighting[Attempt == best_attempt]
 
 # plot covariate balance
-weighted_cov_bal_plot <- ggplot(abs_cor, aes(x = Covariate, y = Absolute_Correlation, color = Dataset, group = Dataset)) +
+weighted_cov_bal_plot <- ggplot(best_cov_bal, aes(x = Covariate, y = Absolute_Correlation, color = Dataset, group = Dataset)) +
   geom_point() +
   geom_line() +
   ylab(paste("Absolute Correlation with", exposure_name)) +
-  ggtitle(paste("Set of", format(n_zip_year_rows, scientific = F, big.mark = ','), "ZIP-years")) +
+  ggtitle(paste0(format(n_rows, scientific = F, big.mark = ','), " units of analysis (Attempt #", best_attempt, ")")) +
   theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
-ggsave(paste0(dir_proj, "results/covariate_balance/weighted_pop_", n_zip_year_rows, "rows", modifications, ".png"), weighted_cov_bal_plot)
+
+ggsave(paste0(dir_proj, "results/covariate_balance/weighted_pop_", n_rows, "rows", modifications, ".png"), weighted_cov_bal_plot)
 
 # print summary statistics for pseudopopulation weights
-ess(zip_year_with_gps$capped_stabilized_ipw) # 102,330.3
+best_weighted_pseudopop <- merge(ADRD_agg_lagged_trimmed_1_99, subset(gps_for_weighting_list[[best_attempt]],
+                                                                      select = c("zip", "year", "capped_stabilized_ipw")),
+                                 by = c("zip", "year"))
+ess(best_weighted_pseudopop$capped_stabilized_ipw) # 7,889,768
 
-# if covariates balanced, model outcome from GPS-weighted pseudo-population
-weighted_pseudopop <- merge(ADRD_agg_lagged_trimmed_1_99, subset(zip_year_with_gps,
-                                                                 select = c("zip", "year", "capped_stabilized_ipw")),
-                            by = c("zip", "year"))
-indiv_var_names <- c("sex", "race", "dual", "age_grp")
-formula_expos_only <- as.formula(paste(outcome_name, "~", paste(c("w", indiv_var_names), collapse = "+", sep = "")))
-formula_expos_only_smooth <- as.formula(paste(outcome_name, "~", paste(c("s(w, bs = 'ts')", indiv_var_names), collapse = "+", sep = "")))
+# model outcome from GPS-weighted pseudo-population
+formula_expos_only <- as.formula(paste(outcome_name, "~", paste(c("w", strata_vars), collapse = "+", sep = "")))
+formula_expos_only_smooth <- as.formula(paste(outcome_name, "~", paste(c("s(w, bs = 'ts')", strata_vars), collapse = "+", sep = "")))
 
 # parametric model (Poisson regression)
 bam_exposure_only_capped_weighted <- bam(formula_expos_only,
-                                         data = weighted_pseudopop,
+                                         data = best_weighted_pseudopop,
                                          offset = log(n_persons * n_years),
                                          family = poisson(link = "log"),
                                          weights = capped_stabilized_ipw,
@@ -139,7 +162,7 @@ saveRDS(summary(bam_exposure_only_capped_weighted), file = paste0(dir_proj, "res
 
 # semi-parametric model (thin-plate spline)
 bam_smooth_exposure_only_capped_weighted <- bam(formula_expos_only_smooth,
-                                                data = weighted_pseudopop,
+                                                data = best_weighted_pseudopop,
                                                 offset = log(n_persons * n_years),
                                                 family = poisson(link = "log"),
                                                 weights = capped_stabilized_ipw,
@@ -156,33 +179,86 @@ saveRDS(bam_smooth_exposure_only_capped_weighted, file = paste0(dir_proj, "resul
 ##### GPS Matching #####
 ##### THE CODE BELOW IS UNFINISHED #####
 
-# apply estimated GPS value to all strata within each ZIP/year
-ADRD_agg_lagged_trimmed_1_99[, zip_year := .GRP, by = .(zip, year)]
-zip_year_sizes <- as.vector(table(ADRD_agg_lagged_trimmed_1_99$zip_year))
+# to do: source create_matching.R
+source(paste0(dir_proj, "code/analysis/matching_l1.R"))
+source(paste0(dir_proj, "code/analysis/create_matching.R"))
 
-expand_gps_values_to_units_of_analysis <- function(vector, gps_sizes){
-  return(rep(vector, gps_sizes))
+# get columns from full data that are useful for matching
+ADRD_agg_for_matching <- copy(ADRD_agg_lagged_trimmed_1_99)
+ADRD_agg_for_matching[, stratum := .GRP, by = strata_vars]
+ADRD_agg_for_matching <- ADRD_agg_for_matching[, .(zip, year, stratum)]
+
+# set up dataframe to check covariate balance for each GPS modeling attempt
+### to do: see if zip can be included or if need more memory or something
+cov_bal_matching <- data.table(Attempt = rep(1:n_attempts, each = length(vars_for_cov_bal)*2),
+                      Covariate = rep(vars_for_cov_bal, 2*n_attempts),
+                      Dataset = rep(c(rep("Matched", length(vars_for_cov_bal)), rep("Unmatched", length(vars_for_cov_bal))), n_attempts),
+                      Absolute_Correlation = 100) # Absolute_Correlation column will be updated
+
+# set up list to store each GPS modeling attempt
+gps_for_matching_list <- vector("list", n_attempts)
+
+# use same exposure bin sequence for all strata's matching
+bin_seq_by_quantile <- quantile(zip_year_data$w, 0:100/100)
+
+for (i in 1:n_attempts){
+  # create log file to see internal processes of CausalGPS
+  set_logger(logger_file_path = paste0(dir_proj, "code/analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_estimate_gps_for_matching_", modifications, "_", n_zip_year_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
+             logger_level = "TRACE")
+  
+  # estimate GPS
+  set.seed(i*100)
+  temp_zip_year_with_gps_obj <- estimate_gps(Y = 0, # fake Y variable since our outcomes are not at the zip-year level; not used in estimate_gps
+                                         w = zip_year_data$w,
+                                         c = subset(zip_year_data, select = c("year", other_expos_names, zip_var_names)),
+                                         gps_model = "parametric", # i.e., w=f(x)+epsilon, f(x) estimated by xgboost and epsilon is normal
+                                         internal_use = T,
+                                         params = list(xgb_nrounds = seq(10, 50),
+                                                       xgb_eta = seq(0.1, 0.4, 0.01)),
+                                         sl_lib = c("m_xgboost"),
+                                         nthread = n_cores)
+  
+  # create a temporary dataset storing all of CausalGPS's internal parameters, to be expanded from ZIP-years to units of analysis (merging with strata by ZIP, year)
+  temp_zip_year_with_gps_dataset_plus_params <- temp_zip_year_with_gps_obj$dataset
+  temp_zip_year_with_gps_dataset_plus_params$e_gps_pred <- temp_zip_year_with_gps_obj$e_gps_pred
+  temp_zip_year_with_gps_dataset_plus_params$w_resid <- temp_zip_year_with_gps_obj$w_resid
+  
+  # apply estimated GPS value to all strata within each ZIP/year
+  temp_zip_year_with_gps_dataset_plus_params$zip <- zip_year_data$zip
+  temp_zip_year_with_gps_dataset_plus_params <- merge(ADRD_agg_for_matching, temp_zip_year_with_gps_dataset_plus_params,
+                                                      by = c("zip", "year"))
+  temp_zip_year_with_gps_dataset_plus_params$row_index = 1:n_rows
+  temp_zip_year_with_gps_dataset_plus_params$zip <- NULL # ZIP is the only free variable for matching, so remove it from the dataset
+  
+  # match within strata
+  strata_list <- split(temp_zip_year_with_gps_dataset_plus_params, temp_zip_year_with_gps_dataset_plus_params$stratum)
+  set_logger(logger_file_path = paste0(dir_proj, "code/analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_matching_by_stratum", modifications, "_", n_zip_year_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
+             logger_level = "TRACE")
+  
+  match_within_stratum <- function(dataset_plus_params){
+    # make cgps_gps object from input ("dataset_plus_params")
+    dataset_as_cgps_gps <- list()
+    class(dataset_as_cgps_gps) <- "cgps_gps"
+    dataset_as_cgps_gps$dataset <- subset(dataset_plus_params,
+                                          select = c("Y", "w", "year", zip_var_names, # note that Y is a fake variable with value 0; not used in matching
+                                                     "gps", "counter_weight", "row_index"))
+    # dataset_as_cgps_gps$used_params <- used_params
+    dataset_as_cgps_gps$e_gps_pred <- dataset_plus_params$e_gps_pred
+    dataset_as_cgps_gps$w_resid <- dataset_plus_params$w_resid
+    
+    dataset_as_cgps_gps$e_gps_std_pred <- temp_zip_year_with_gps_obj$e_gps_std_pred
+    dataset_as_cgps_gps$gps_mx <- temp_zip_year_with_gps_obj$gps_mx
+    dataset_as_cgps_gps$w_mx <- temp_zip_year_with_gps_obj$w_mx
+    
+    return(create_matching(dataset = dataset_as_cgps_gps,
+                           bin_seq = bin_seq_by_quantile,
+                           gps_model = "parametric",
+                           nthread = n_cores,
+                           optimized_compile = T))
+  }
+  # temp_matched_pseudopops <- lapply(strata_list, match_within_stratum)
+  
 }
-zip_year_with_gps_obj$e_gps_pred <- expand_gps_values_to_units_of_analysis(zip_year_with_gps_obj$e_gps_pred, zip_year_sizes)
-zip_year_with_gps_obj$w_resid <- expand_gps_values_to_units_of_analysis(zip_year_with_gps_obj$w_resid, zip_year_sizes)
-
-zip_year_with_gps_obj$dataset <- subset(zip_year_with_gps_obj$dataset,
-                                        select = c("gps", "zip", "year"))
-zip_year_with_gps_obj$dataset <- merge(zip_year_with_gps_obj$dataset, ADRD_agg_lagged_trimmed_1_99,
-                                       by = c("zip", "year"))
-zip_year_with_gps_obj$dataset[, `:=`(counter_weight = 0,
-                                     row_index = 1:nrows,
-                                     zip = NULL,
-                                     zip_year = NULL,
-                                     n_persons = NULL,
-                                     n_years = NULL)]
-# remove: indiv_var_names, "cohort", "year" ### check indiv_var_names (defined twice in this script)
-# no actually, split into strata first? do all this within strata?
-zip_year_with_gps_obj$dataset[[outcome_name]] <- NULL
-
-
-# n_strata <- uniqueN(ADRD_agg_lagged_trimmed_1_99$stratum) # 19,714
-# strata_sizes <- as.vector(table(ADRD_agg_lagged_trimmed_1_99$stratum))
 
 ##### THE CODE BELOW IS OLD #####
 
