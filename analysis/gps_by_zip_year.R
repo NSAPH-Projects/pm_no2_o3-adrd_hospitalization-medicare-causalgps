@@ -10,15 +10,17 @@ library(mgcv)
 library(ggplot2)
 library(tidyr)
 
-# directory
-dir_proj <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/"
+# directories for data, code, and results
+dir_data <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
+dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
+dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
 
 # read in full data; 34,763,397 rows
-ADRD_agg_lagged <- read_fst(paste0(dir_proj, "data/analysis/ADRD_complete_tv.fst"), as.data.table = TRUE)
+ADRD_agg_lagged <- read_fst(paste0(dir_data, "analysis/ADRD_complete_tv.fst"), as.data.table = TRUE)
 setnames(ADRD_agg_lagged, old = c("pct_blk", "pct_owner_occ"), new = c("prop_blk", "prop_owner_occ"))
 ADRD_agg_lagged[, `:=`(zip = as.factor(zip), year = as.factor(year), cohort = as.factor(cohort), age_grp = as.factor(age_grp), sex = as.factor(sex), race = as.factor(race), dual = as.factor(dual))]
 
-source(paste0(dir_proj, "code/analysis/helper_functions.R"))
+source(paste0(dir_code, "analysis/helper_functions.R"))
 
 # parameters for this computing job
 n_cores <- 8 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
@@ -75,7 +77,7 @@ cov_bal_weighting <- as.data.table(cov_bal_weighting)
 gps_for_weighting_list <- vector("list", n_attempts)
 
 # create log file to see internal processes of CausalGPS
-set_logger(logger_file_path = paste0(dir_proj, "code/analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_estimate_gps_for_weighting_", modifications, "_", n_zip_year_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
+set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_estimate_gps_for_weighting_", modifications, "_", n_zip_year_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
            logger_level = "TRACE")
 
 for (i in 1:n_attempts){
@@ -111,7 +113,7 @@ for (i in 1:n_attempts){
                               by = c("zip", "year"))
 
   # calculate covariate balance: mean absolute point-biserial correlation for unordered categorical vars
-  for (unordered_var in c(zip_unordered_cat_var_names, indiv_unordered_cat_var_names)){
+  for (unordered_var in c(zip_unordered_cat_var_names)){
     cov_bal_weighting[Attempt == i & Covariate == unordered_var & Dataset == "Weighted", Absolute_Correlation := weighted_cor_unordered_var(temp_weighted_pseudopop$w, temp_weighted_pseudopop[[unordered_var]], temp_weighted_pseudopop$capped_stabilized_ipw)]
     cov_bal_weighting[Attempt == i & Covariate == unordered_var & Dataset == "Unweighted", Absolute_Correlation := cor_unordered_var(temp_weighted_pseudopop$w, temp_weighted_pseudopop[[unordered_var]])]
   }
@@ -140,7 +142,7 @@ weighted_cov_bal_plot <- ggplot(best_cov_bal, aes(x = Covariate, y = Absolute_Co
   ggtitle(paste0(format(n_rows, scientific = F, big.mark = ','), " units of analysis (Attempt #", best_attempt, " of ", n_total_attempts, ")")) +
   theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
 
-ggsave(paste0(dir_proj, "results/covariate_balance/weighted_pop_", n_rows, "rows_", modifications, ".png"), weighted_cov_bal_plot)
+ggsave(paste0(dir_results, "covariate_balance/weighted_pop_", n_rows, "rows_", modifications, ".png"), weighted_cov_bal_plot)
 
 # print summary statistics for pseudopopulation weights
 best_weighted_pseudopop <- merge(ADRD_agg_lagged_trimmed_1_99, subset(gps_for_weighting_list[[best_attempt]],
@@ -162,7 +164,7 @@ bam_exposure_only_capped_weighted <- bam(formula_expos_only,
                                          chunk.size = 5000,
                                          control = gam.control(trace = TRUE))
 summary(bam_exposure_only_capped_weighted)
-saveRDS(summary(bam_exposure_only_capped_weighted), file = paste0(dir_proj, "results/parametric_results/bam_capped_weighted_exposure_only_", n_rows, "rows_", modifications, ".rds"))
+saveRDS(summary(bam_exposure_only_capped_weighted), file = paste0(dir_results, "parametric_results/bam_capped_weighted_exposure_only_", n_rows, "rows_", modifications, ".rds"))
 
 # semi-parametric model (thin-plate spline)
 bam_smooth_exposure_only_capped_weighted <- bam(formula_expos_only_smooth,
@@ -174,18 +176,14 @@ bam_smooth_exposure_only_capped_weighted <- bam(formula_expos_only_smooth,
                                                 chunk.size = 5000,
                                                 control = gam.control(trace = TRUE),
                                                 nthreads = n_cores - 1)
-png(paste0(dir_proj, "results/semiparametric_results/ERFs/bam_smooth_exposure_only_capped_weighted_", n_rows, "rows_", modifications, ".png"))
+png(paste0(dir_results, "semiparametric_results/ERFs/bam_smooth_exposure_only_capped_weighted_", n_rows, "rows_", modifications, ".png"))
 plot(bam_smooth_exposure_only_capped_weighted, main = paste0("GPS-Weighted, Capped at 10, Smoothed Poisson regression,\nexposure only (", exposure_name, ")"))
 dev.off()
-saveRDS(bam_smooth_exposure_only_capped_weighted, file = paste0(dir_proj, "results/semiparametric_results/spline_objects/bam_smooth_exposure_only_capped_weighted_", n_rows, "rows_", modifications, ".rds"))
+saveRDS(bam_smooth_exposure_only_capped_weighted, file = paste0(dir_results, "semiparametric_results/spline_objects/bam_smooth_exposure_only_capped_weighted_", n_rows, "rows_", modifications, ".rds"))
 
 
 ##### GPS Matching #####
 ##### THE CODE BELOW IS UNFINISHED #####
-
-# these two lines are outdated/wrong
-# source(paste0(dir_proj, "code/analysis/matching_l1.R"))
-# source(paste0(dir_proj, "code/analysis/create_matching.R"))
 
 # get columns from full data that are useful for matching
 ADRD_agg_for_matching <- copy(ADRD_agg_lagged_trimmed_1_99)
@@ -207,12 +205,13 @@ cov_bal_matching <- as.data.table(cov_bal_matching)
 gps_for_matching_list <- vector("list", n_attempts)
 
 # use same exposure bin sequence for all strata's matching
-bin_seq_by_quantile <- quantile(zip_year_data$w, 0:100/100)
-matching_caliper <- mean(diff(bin_seq_by_quantile))
+# bin_seq_by_quantile <- quantile(zip_year_data$w, 0:100/100)
+# matching_caliper <- mean(diff(bin_seq_by_quantile))
+matching_caliper <- 0.6
 
 for (i in 1:n_attempts){
   # create log file to see internal processes of CausalGPS
-  set_logger(logger_file_path = paste0(dir_proj, "code/analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_estimate_gps_for_matching_", modifications, "_", n_zip_year_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
+  set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_estimate_gps_for_matching_", modifications, "_", n_zip_year_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
              logger_level = "TRACE")
   
   # estimate GPS
@@ -243,7 +242,7 @@ for (i in 1:n_attempts){
   
   # match within strata
   strata_list <- split(temp_zip_year_with_gps_dataset_plus_params, temp_zip_year_with_gps_dataset_plus_params$stratum)
-  set_logger(logger_file_path = paste0(dir_proj, "code/analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_matching_by_stratum", modifications, "_", n_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
+  set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_matching_by_stratum", modifications, "_", n_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
              logger_level = "TRACE")
   
   match_within_stratum <- function(dataset_plus_params){
@@ -265,7 +264,7 @@ for (i in 1:n_attempts){
     matched_pop <- compile_pseudo_pop(data_obj = dataset_as_cgps_gps,
                                       ci_appr = "matching",
                                       gps_model = "parametric",
-                                      bin_seq = bin_seq_by_quantile,
+                                      bin_seq = NULL,
                                       nthread = n_cores,
                                       optimized_compile = T,
                                       matching_fun = "matching_l1",
@@ -276,7 +275,7 @@ for (i in 1:n_attempts){
                                       scale = 1) # max_attempt is not a parameter
     
     matched_pop2 <- CausalGPS:::create_matching(dataset = dataset_as_cgps_gps,
-                                                bin_seq = bin_seq_by_quantile,
+                                                bin_seq = NULL,
                                                 gps_model = "parametric",
                                                 nthread = n_cores,
                                                 optimized_compile = T,
@@ -314,13 +313,13 @@ matched_pop_subset <- generate_pseudo_pop(Y,
                                   matching_fun = "matching_l1",
                                   delta_n = delta_n,
                                   scale = 1)
-saveRDS(matched_pop_subset, file = paste0(dir_proj, "data/pseudopops/matched_pop_", n_rows, "rows", modifications, ".rds"))
+saveRDS(matched_pop_subset, file = paste0(dir_data, "pseudopops/matched_pop_", n_rows, "rows", modifications, ".rds"))
 
 # check ZIP-level covariate balance
 # i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
 matched_cov_bal_plot <- all_cov_bal(matched_pop_subset, w, c_unordered_vars = subset(c, select = zip_unordered_cat_var_names),
             ci_appr = "matching", all_cov_names = colnames(c), title = paste("Set of", format(n_rows, scientific = F), "observations"))
-ggsave(paste0(dir_proj, "results/covariate_balance/matched_pop_", n_rows, "rows", modifications, ".png"), matched_cov_bal_plot)
+ggsave(paste0(dir_results, "covariate_balance/matched_pop_", n_rows, "rows", modifications, ".png"), matched_cov_bal_plot)
 
 # print summary statistics for pseudopopulation counter
 summarize_pseudo_counter(matched_pop_subset)
@@ -341,7 +340,7 @@ explore_zip_covs(matched_data)
 ##### IPTW by GPS using CausalGPS package #####
 
 # create log file to see internal processes of CausalGPS
-set_logger(logger_file_path = paste0(dir_proj, "code/analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_weight_", modifications, "_", n_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
+set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_weight_", modifications, "_", n_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
            logger_level = "TRACE")
 
 # GPS weighting on ZIP-level covariates
@@ -367,13 +366,13 @@ weighted_pop_subset <- generate_pseudo_pop(Y,
                                           matching_fun = "matching_l1",
                                           delta_n = delta_n,
                                           scale = 1)
-saveRDS(weighted_pop_subset, file = paste0(dir_proj, "data/pseudopops/weighted_pop_", n_rows, "rows", modifications, ".rds"))
+saveRDS(weighted_pop_subset, file = paste0(dir_data, "pseudopops/weighted_pop_", n_rows, "rows", modifications, ".rds"))
 
 # check ZIP-level covariate balance
 # i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
 weighted_cov_bal_plot <- all_cov_bal(weighted_pop_subset, w, c_unordered_vars = subset(c, select = zip_unordered_cat_var_names),
             "weighting", all_cov_names = colnames(c), title = paste("Set of", format(n_rows, scientific = F), "observations"))
-ggsave(paste0(dir_proj, "results/covariate_balance/weighted_pop_", n_rows, "rows", modifications, ".png"), weighted_cov_bal_plot)
+ggsave(paste0(dir_results, "covariate_balance/weighted_pop_", n_rows, "rows", modifications, ".png"), weighted_cov_bal_plot)
 
 # print summary statistics for pseudopopulation weights
 summarize_pseudo_weights(weighted_pop_subset)
@@ -420,7 +419,7 @@ cat("ESS of capped weighted pseudopopulation:", ess(capped_weighted_pop_subset$p
 # i.e., absolute correlation for quantitative covariates, polyserial correlation for ordered categorical variables, mean absolute point-biserial correlation for unordered categorical vars
 capped_weighted_cov_bal_plot <- all_cov_bal(capped_weighted_pop_subset, w, c_unordered_vars = subset(c, select = zip_unordered_cat_var_names),
             "weighting", all_cov_names = colnames(c), title = paste("Set of", format(n_rows, scientific = F), "observations, weights capped at", cutoff_weight))
-ggsave(paste0(dir_proj, "results/covariate_balance/capped_weighted_pop_", n_rows, "rows", modifications, ".png"), capped_weighted_cov_bal_plot)
+ggsave(paste0(dir_results, "covariate_balance/capped_weighted_pop_", n_rows, "rows", modifications, ".png"), capped_weighted_cov_bal_plot)
 
 # pseudopopulation, including individual-level covariates (i.e., strata), trimming away unmatched data
 capped_weighted_obs <- capped_weighted_pop_subset$pseudo_pop$row_index
@@ -467,7 +466,7 @@ weighted_cov_bal_plot <- ggplot(abs_cor, aes(x = Covariate, y = `Absolute Correl
   geom_line() +
   ggtitle(paste("Set of", format(n_rows, scientific = F), "observations, weights UNTRUNCATED")) +
   theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
-ggsave(paste0(dir_proj, "results/covariate_balance/weighted_pop_", n_rows, "rows", modifications, ".png"), weighted_cov_bal_plot)
+ggsave(paste0(dir_results, "covariate_balance/weighted_pop_", n_rows, "rows", modifications, ".png"), weighted_cov_bal_plot)
 
 # for truncated IPW, check absolute correlation for quantitative covariates # to do: other covariates
 cor_val_pseudo <- sapply(subset(lm_gps_data, select = c(other_expos_names, zip_quant_var_names)), weightedCorr, y = lm_gps_data$w, method = "Pearson", weights = lm_gps_data$trunc_ipw)
@@ -481,7 +480,7 @@ capped_weighted_cov_bal_plot <- ggplot(abs_cor, aes(x = Covariate, y = `Absolute
   geom_line() +
   ggtitle(paste("Set of", format(n_rows, scientific = F), "observations, weights truncated at 10")) +
   theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
-ggsave(paste0(dir_proj, "results/covariate_balance/capped_weighted_pop_", n_rows, "rows", modifications, ".png"), capped_weighted_cov_bal_plot)
+ggsave(paste0(dir_results, "covariate_balance/capped_weighted_pop_", n_rows, "rows", modifications, ".png"), capped_weighted_cov_bal_plot)
 
 
 ##### Old code #####
