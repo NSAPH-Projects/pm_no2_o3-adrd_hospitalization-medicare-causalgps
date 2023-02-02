@@ -1,7 +1,7 @@
 rm(list = ls())
 gc()
 
-##### 0. Setup #####
+## 0. Setup --------------------------------------------------------------------
 # devtools::install_github("fasrc/CausalGPS", ref="develop")
 library(data.table)
 library(fst)
@@ -9,59 +9,193 @@ library(CausalGPS)
 library(mgcv)
 library(ggplot2)
 library(tidyr)
+library(memoise)
 
-# directories for data, code, and results
-dir_data <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
-dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
-dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
+# TODO: Needs a better way to set the working dir.
+setwd("/n/dominici_nsaph_l3/Lab/projects/nkhoshnevis_pm_no2_o3-adrd_hosp-medicare-causalgps/pm_no2_o3-adrd_hospitalization-medicare-causalgps/analysis")
+readRenviron(".Renviron")
+dir_data <- Sys.getenv("ADRD_CAUSALGPS_DATA") 
+dir_code <- Sys.getenv("ADRD_CAUSALGPS_CODE")
 
-# read in full data; 34,763,397 rows
-ADRD_agg_lagged <- read_fst(paste0(dir_data, "analysis/ADRD_complete_tv.fst"), as.data.table = TRUE)
-setnames(ADRD_agg_lagged, old = c("pct_blk", "pct_owner_occ"), new = c("prop_blk", "prop_owner_occ"))
-ADRD_agg_lagged[, `:=`(zip = as.factor(zip), year = as.factor(year), cohort = as.factor(cohort), age_grp = as.factor(age_grp), sex = as.factor(sex), race = as.factor(race), dual = as.factor(dual))]
+sub_proj <- "sp_230202_stratified"
+
+interim_sp_results <- file.path(getwd(), sub_proj)
+if (!dir.exists(interim_sp_results)) {dir.create(interim_sp_results)}
+
+sp_cache <- file.path(interim_sp_results, "cache_files")
+if (!dir.exists(sp_cache)) {dir.create(sp_cache)}
+
+sp_log <- file.path(interim_sp_results, "log_files")
+if (!dir.exists(sp_log)) {dir.create(sp_log)}
 
 source(paste0(dir_code, "analysis/helper_functions.R"))
 
-# parameters for this computing job
-n_cores <- 8 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
-n_gb <- 64 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
+# setup cache on disk
+cdb <- cachem::cache_disk(sp_cache)
+
+## 1. Controlling parameters ---------------------------------------------------
+
+n_cores <- 48 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
+n_gb <- 184 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
 # total_n_rows <- nrow(ADRD_agg_lagged)
-n_attempts <- 30
+n_attempts <- 5
+exposure_name <- "pm25"
+outcome_name <- "n_hosp"
+trim_quantiles <- c(0.01, 0.99)
+
+## 1. Load data ----------------------------------------------------------------
+
+load_data_tmp <- function(data_path){
+  
+  # read in full data; 34,763,397 rows
+  data <- read_fst(data_path, 
+                   as.data.table = TRUE)
+  
+  setnames(data, 
+           old = c("pct_blk", "pct_owner_occ"), 
+           new = c("prop_blk", "prop_owner_occ"))
+  
+  data[, `:=`(zip = as.factor(zip), 
+                         year = as.factor(year), 
+                         cohort = as.factor(cohort), 
+                         age_grp = as.factor(age_grp), 
+                         sex = as.factor(sex), 
+                         race = as.factor(race), 
+                         dual = as.factor(dual))]
+  
+  return(data)
+}
+
+m_load_data_tmp <- memoise(load_data_tmp, cache = cdb)
+
+# # read in full data; 34,763,397 rows
+# ADRD_agg_lagged <- read_fst(file.path(dir_data, 
+#                                       "analysis/ADRD_complete_tv.fst"), 
+#                             as.data.table = TRUE)
+# setnames(ADRD_agg_lagged, 
+#          old = c("pct_blk", "pct_owner_occ"), 
+#          new = c("prop_blk", "prop_owner_occ"))
+# 
+# ADRD_agg_lagged[, `:=`(zip = as.factor(zip), 
+#                        year = as.factor(year), 
+#                        cohort = as.factor(cohort), 
+#                        age_grp = as.factor(age_grp), 
+#                        sex = as.factor(sex), 
+#                        race = as.factor(race), 
+#                        dual = as.factor(dual))]
+
+ADRD_agg_lagged <- m_load_data_tmp(file.path(dir_data,
+                                             "analysis/ADRD_complete_tv.fst"))
+
+# parameters for this computing job
 n_total_attempts <- n_attempts # user can set this to a number larger than n_attempts if some attempts with different seeds have already been tried
 modifications <- paste0("gps_by_zip_year_", n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
 
 
-##### Get data for exposure, outcome, and covariates of interest #####
+## 2. Preprocess data ----------------------------------------------------------
 
-exposure_name <- "pm25"
-other_expos_names <- zip_expos_names[zip_expos_names != exposure_name]
-outcome_name <- "n_hosp"
-ADRD_agg_lagged_subset <- subset(ADRD_agg_lagged, select = c(exposure_name, outcome_name, other_expos_names, zip_var_names, "zip", indiv_var_names, offset_var_names))
-for (var in c(zip_unordered_cat_var_names, indiv_unordered_cat_var_names)){
-  ADRD_agg_lagged_subset[[var]] <- as.factor(ADRD_agg_lagged_subset[[var]])
+prep_data <- function(data,
+                      fields,
+                      zip_expos_names,
+                      other_expos_names,
+                      exposure_name,
+                      outcome_name,
+                      zip_unordered_cat_var_names,
+                      indiv_unordered_cat_var_names,
+                      subset_select,
+                      unique_select,
+                      trim_quantiles
+                      ){
+  
+  #other_expos_names <- zip_expos_names[zip_expos_names != exposure_name]
+  data_subset <- subset(data, 
+                        select = fields)
+  
+  for (var in c(zip_unordered_cat_var_names, indiv_unordered_cat_var_names)){
+    data[[var]] <- as.factor(data[[var]])
+  }
+  
+  colnames(data_subset)[colnames(data_subset) == exposure_name] <- "w"
+  zip_year_data <- subset(data_subset,
+                          select = subset_select)
+  
+  zip_year_data <- unique(zip_year_data, by = unique_select)
+  trim_d_q <- quantile(zip_year_data$w, trim_quantiles)
+  zip_year_rows_within_range <- zip_year_data$w >= trim_d_q[1] & zip_year_data$w <= trim_d_q[2]
+  #zip_year_trimmed <- zip_year_data[zip_year_rows_within_range, ]
+  #n_zip_year_rows <- nrow(zip_year_data) # 486,793
+  
+  data_within_range <- data_subset$w >= trim_d_q[1] & data_subset$w <= trim_d_q[2]
+  data_trimmed <- data_subset[data_within_range, ]
+  #n_rows <- nrow(ADRD_agg_lagged_trimmed_1_99) # 34,141,155 for PM1.5; 34,090,022 for NO2; 33,411,373 for ozone
+  return(data_trimmed)
 }
-colnames(ADRD_agg_lagged_subset)[colnames(ADRD_agg_lagged_subset) == exposure_name] <- "w"
-# for (var in zip_ordered_cat_var_names){
-#   ADRD_agg_lagged_subset[[var]] <- factor(ADRD_agg_lagged_subset[[var]], ordered = TRUE)
+
+m_prep_data <- memoise(prep_data,  cache = cdb)
+
+other_expos_names <- zip_expos_names[zip_expos_names != exposure_name]
+
+fields = c(exposure_name, 
+           outcome_name, 
+           other_expos_names, 
+           zip_var_names, 
+           "zip", 
+           indiv_var_names, 
+           offset_var_names)
+
+subset_select <-  c("zip", "year", "w", 
+                    other_expos_names, zip_var_names)
+unique_select <- c("zip", "year")
+
+ADRD_agg_lagged_trimmed_1_99 <- m_prep_data(data = ADRD_agg_lagged,
+                                            fields = fields,
+                                            zip_expos_names = zip_expos_names,
+                                            other_expos_names = other_expos_names,
+                                            exposure_name = exposure_name,
+                                            outcome_name = outcome_name,
+                                            zip_unordered_cat_var_names = zip_unordered_cat_var_names,
+                                            indiv_unordered_cat_var_names = indiv_unordered_cat_var_names,
+                                            subset_select = subset_select,
+                                            unique_select = unique_select,
+                                            trim_quantiles = trim_quantiles)
+
+
+
+# other_expos_names <- zip_expos_names[zip_expos_names != exposure_name]
+# 
+# ADRD_agg_lagged_subset <- subset(ADRD_agg_lagged, 
+#                                  select = c(exposure_name, 
+#                                             outcome_name, 
+#                                             other_expos_names, 
+#                                             zip_var_names, 
+#                                             "zip", 
+#                                             indiv_var_names, 
+#                                             offset_var_names))
+# 
+# for (var in c(zip_unordered_cat_var_names, indiv_unordered_cat_var_names)){
+#   ADRD_agg_lagged_subset[[var]] <- as.factor(ADRD_agg_lagged_subset[[var]])
 # }
+# colnames(ADRD_agg_lagged_subset)[colnames(ADRD_agg_lagged_subset) == exposure_name] <- "w"
+# 
+# ## Isolate just the exposure and covariates (1 observation per ZIP, year) 
+# # and trim exposure 
+# 
+# zip_year_data <- subset(ADRD_agg_lagged_subset,
+#                         select = c("zip", "year", "w", 
+#                                    other_expos_names, zip_var_names))
+# zip_year_data <- unique(zip_year_data, by = c("zip", "year"))
+# trim_1_99 <- quantile(zip_year_data$w, trim_quantiles)
+# zip_year_rows_within_range <- zip_year_data$w >= trim_1_99[1] & zip_year_data$w <= trim_1_99[2]
+# zip_year_trimmed_1_99 <- zip_year_data[zip_year_rows_within_range, ]
+# n_zip_year_rows <- nrow(zip_year_data) # 486,793
+# 
+# ADRD_agg_rows_within_range <- ADRD_agg_lagged_subset$w >= trim_1_99[1] & ADRD_agg_lagged_subset$w <= trim_1_99[2]
+# ADRD_agg_lagged_trimmed_1_99 <- ADRD_agg_lagged_subset[ADRD_agg_rows_within_range, ]
 
-
-##### Isolate just the exposure and covariates (1 observation per ZIP, year) and trim exposure #####
-
-zip_year_data <- subset(ADRD_agg_lagged_subset,
-                        select = c("zip", "year", "w", other_expos_names, zip_var_names))
-zip_year_data <- unique(zip_year_data, by = c("zip", "year"))
-trim_1_99 <- quantile(zip_year_data$w, c(0.01, 0.99))
-zip_year_rows_within_range <- zip_year_data$w >= trim_1_99[1] & zip_year_data$w <= trim_1_99[2]
-zip_year_trimmed_1_99 <- zip_year_data[zip_year_rows_within_range, ]
-n_zip_year_rows <- nrow(zip_year_data) # 486,793
-
-ADRD_agg_rows_within_range <- ADRD_agg_lagged_subset$w >= trim_1_99[1] & ADRD_agg_lagged_subset$w <= trim_1_99[2]
-ADRD_agg_lagged_trimmed_1_99 <- ADRD_agg_lagged_subset[ADRD_agg_rows_within_range, ]
 n_rows <- nrow(ADRD_agg_lagged_trimmed_1_99) # 34,141,155 for PM1.5; 34,090,022 for NO2; 33,411,373 for ozone
 
 
-##### GPS Weighting #####
+## 3. GPS Weighting ------------------------------------------------------------
 
 # set up dataframe to check covariate balance for each GPS modeling attempt
 ### to do: see if zip can be included or if need more memory or something
@@ -85,22 +219,25 @@ for (i in 1:n_attempts){
   # estimate GPS
   set.seed(i*100)
   temp_zip_year_with_gps <- estimate_gps(Y = 0, # fake Y variable since our outcomes are not at the zip-year level; not used in estimate_gps
-                                        w = zip_year_data$w,
-                                        c = subset(zip_year_data, select = c("year", other_expos_names, zip_var_names)),
-                                        gps_model = "parametric", # i.e., w=f(x)+epsilon, f(x) estimated by xgboost and epsilon is normal
-                                        internal_use = T,
-                                        params = list(xgb_nrounds = seq(10, 50),
-                                                      xgb_eta = seq(0.1, 0.4, 0.01)),
-                                        sl_lib = c("m_xgboost"),
-                                        nthread = n_cores)
+                                         w = zip_year_data$w,
+                                         c = subset(zip_year_data, select = c("year", other_expos_names, zip_var_names)),
+                                         gps_model = "parametric", # i.e., w=f(x)+epsilon, f(x) estimated by xgboost and epsilon is normal
+                                         internal_use = TRUE,
+                                         params = list(xgb_nrounds = seq(10, 50),
+                                                       xgb_eta = seq(0.1, 0.4, 0.01)),
+                                         sl_lib = c("m_xgboost"),
+                                         nthread = n_cores)
+  
   temp_zip_year_with_gps <- temp_zip_year_with_gps$dataset
   temp_zip_year_with_gps$zip <- zip_year_data$zip
   
-  # stabilize GPS using marginal probability of exposure (modeled normally) and cap extreme weights at 10
+  # stabilize GPS using marginal probability of exposure (modeled normally) 
+  # and cap extreme weights at 10
   marginal_expos_prob <- dnorm(zip_year_data$w,
                                mean = mean(zip_year_data$w),
                                sd = sd(zip_year_data$w))
-  temp_zip_year_with_gps$stabilized_ipw <- marginal_expos_prob / temp_zip_year_with_gps$gps ## check estimate_gps
+  temp_zip_year_with_gps$stabilized_ipw <- marginal_expos_prob / 
+                                           temp_zip_year_with_gps$gps ## check estimate_gps
   temp_zip_year_with_gps$capped_stabilized_ipw <- ifelse(temp_zip_year_with_gps$stabilized_ipw > 10, 10, temp_zip_year_with_gps$stabilized_ipw)
   gps_for_weighting_list[[i]] <- temp_zip_year_with_gps
   
@@ -182,7 +319,8 @@ dev.off()
 saveRDS(bam_smooth_exposure_only_capped_weighted, file = paste0(dir_results, "semiparametric_results/spline_objects/bam_smooth_exposure_only_capped_weighted_", n_rows, "rows_", modifications, ".rds"))
 
 
-##### GPS Matching #####
+## 4. GPS Matching -------------------------------------------------------------
+
 ##### THE CODE BELOW IS UNFINISHED #####
 
 # get columns from full data that are useful for matching
