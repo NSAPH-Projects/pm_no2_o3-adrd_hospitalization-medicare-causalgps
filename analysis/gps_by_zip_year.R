@@ -38,12 +38,12 @@ cdb <- cachem::cache_disk(sp_cache)
 n_cores <- 48 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
 n_gb <- 184 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
 # total_n_rows <- nrow(ADRD_agg_lagged)
-n_attempts <- 5
+n_attempts <- 3
 exposure_name <- "pm25"
 outcome_name <- "n_hosp"
 trim_quantiles <- c(0.01, 0.99)
 
-## 1. Load data ----------------------------------------------------------------
+## 2. Load data ----------------------------------------------------------------
 
 load_data_tmp <- function(data_path){
   
@@ -69,21 +69,6 @@ load_data_tmp <- function(data_path){
 m_load_data_tmp <- memoise(load_data_tmp, cache = cdb)
 
 # # read in full data; 34,763,397 rows
-# ADRD_agg_lagged <- read_fst(file.path(dir_data, 
-#                                       "analysis/ADRD_complete_tv.fst"), 
-#                             as.data.table = TRUE)
-# setnames(ADRD_agg_lagged, 
-#          old = c("pct_blk", "pct_owner_occ"), 
-#          new = c("prop_blk", "prop_owner_occ"))
-# 
-# ADRD_agg_lagged[, `:=`(zip = as.factor(zip), 
-#                        year = as.factor(year), 
-#                        cohort = as.factor(cohort), 
-#                        age_grp = as.factor(age_grp), 
-#                        sex = as.factor(sex), 
-#                        race = as.factor(race), 
-#                        dual = as.factor(dual))]
-
 ADRD_agg_lagged <- m_load_data_tmp(file.path(dir_data,
                                              "analysis/ADRD_complete_tv.fst"))
 
@@ -92,7 +77,7 @@ n_total_attempts <- n_attempts # user can set this to a number larger than n_att
 modifications <- paste0("gps_by_zip_year_", n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
 
 
-## 2. Preprocess data ----------------------------------------------------------
+## 3. Preprocess data ----------------------------------------------------------
 
 prep_data <- function(data,
                       fields,
@@ -128,7 +113,7 @@ prep_data <- function(data,
   data_within_range <- data_subset$w >= trim_d_q[1] & data_subset$w <= trim_d_q[2]
   data_trimmed <- data_subset[data_within_range, ]
   #n_rows <- nrow(ADRD_agg_lagged_trimmed_1_99) # 34,141,155 for PM1.5; 34,090,022 for NO2; 33,411,373 for ozone
-  return(data_trimmed)
+  return(list(data_trimmed, zip_year_data))
 }
 
 m_prep_data <- memoise(prep_data,  cache = cdb)
@@ -147,71 +132,47 @@ subset_select <-  c("zip", "year", "w",
                     other_expos_names, zip_var_names)
 unique_select <- c("zip", "year")
 
-ADRD_agg_lagged_trimmed_1_99 <- m_prep_data(data = ADRD_agg_lagged,
-                                            fields = fields,
-                                            zip_expos_names = zip_expos_names,
-                                            other_expos_names = other_expos_names,
-                                            exposure_name = exposure_name,
-                                            outcome_name = outcome_name,
-                                            zip_unordered_cat_var_names = zip_unordered_cat_var_names,
-                                            indiv_unordered_cat_var_names = indiv_unordered_cat_var_names,
-                                            subset_select = subset_select,
-                                            unique_select = unique_select,
-                                            trim_quantiles = trim_quantiles)
+processed_data<- m_prep_data(data = ADRD_agg_lagged,
+                             fields = fields,
+                             zip_expos_names = zip_expos_names,
+                             other_expos_names = other_expos_names,
+                             exposure_name = exposure_name,
+                             outcome_name = outcome_name,
+                             zip_unordered_cat_var_names = zip_unordered_cat_var_names,
+                             indiv_unordered_cat_var_names = indiv_unordered_cat_var_names,
+                             subset_select = subset_select,
+                             unique_select = unique_select,
+                             trim_quantiles = trim_quantiles)
 
-
-
-# other_expos_names <- zip_expos_names[zip_expos_names != exposure_name]
-# 
-# ADRD_agg_lagged_subset <- subset(ADRD_agg_lagged, 
-#                                  select = c(exposure_name, 
-#                                             outcome_name, 
-#                                             other_expos_names, 
-#                                             zip_var_names, 
-#                                             "zip", 
-#                                             indiv_var_names, 
-#                                             offset_var_names))
-# 
-# for (var in c(zip_unordered_cat_var_names, indiv_unordered_cat_var_names)){
-#   ADRD_agg_lagged_subset[[var]] <- as.factor(ADRD_agg_lagged_subset[[var]])
-# }
-# colnames(ADRD_agg_lagged_subset)[colnames(ADRD_agg_lagged_subset) == exposure_name] <- "w"
-# 
-# ## Isolate just the exposure and covariates (1 observation per ZIP, year) 
-# # and trim exposure 
-# 
-# zip_year_data <- subset(ADRD_agg_lagged_subset,
-#                         select = c("zip", "year", "w", 
-#                                    other_expos_names, zip_var_names))
-# zip_year_data <- unique(zip_year_data, by = c("zip", "year"))
-# trim_1_99 <- quantile(zip_year_data$w, trim_quantiles)
-# zip_year_rows_within_range <- zip_year_data$w >= trim_1_99[1] & zip_year_data$w <= trim_1_99[2]
-# zip_year_trimmed_1_99 <- zip_year_data[zip_year_rows_within_range, ]
-# n_zip_year_rows <- nrow(zip_year_data) # 486,793
-# 
-# ADRD_agg_rows_within_range <- ADRD_agg_lagged_subset$w >= trim_1_99[1] & ADRD_agg_lagged_subset$w <= trim_1_99[2]
-# ADRD_agg_lagged_trimmed_1_99 <- ADRD_agg_lagged_subset[ADRD_agg_rows_within_range, ]
+ADRD_agg_lagged_trimmed_1_99 <- processed_data[[1]]
+zip_year_data <- processed_data[[2]]
 
 n_rows <- nrow(ADRD_agg_lagged_trimmed_1_99) # 34,141,155 for PM1.5; 34,090,022 for NO2; 33,411,373 for ozone
 
 
-## 3. GPS Weighting ------------------------------------------------------------
+## 4. GPS Weighting ------------------------------------------------------------
 
-# set up dataframe to check covariate balance for each GPS modeling attempt
+# set up data.frame to check covariate balance for each GPS modeling attempt
 ### to do: see if zip can be included or if need more memory or something
 vars_for_cov_bal <- c(other_expos_names, zip_var_names, indiv_var_names)
 cov_bal_weighting <- expand.grid(1:n_attempts,
                                  vars_for_cov_bal,
-                                 c("Matched", "Unmatched"),
+                                 c("Weighted", "Unweighted"),
                                  100)
-colnames(cov_bal_weighting) <- c("Attempt", "Covariate", "Dataset", "Absolute_Correlation") # Absolute_Correlation column will be updated
+
+# Absolute_Correlation column will be updated
+colnames(cov_bal_weighting) <- c("Attempt", 
+                                 "Covariate", 
+                                 "Dataset", 
+                                 "Absolute_Correlation") 
+
 cov_bal_weighting <- as.data.table(cov_bal_weighting)
 
 # set up list to store each GPS modeling attempt
 gps_for_weighting_list <- vector("list", n_attempts)
 
 # create log file to see internal processes of CausalGPS
-set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_estimate_gps_for_weighting_", modifications, "_", n_zip_year_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
+set_logger(logger_file_path = file.path(sp_log, "CausalGPS.log "),
            logger_level = "TRACE")
 
 for (i in 1:n_attempts){
@@ -238,36 +199,67 @@ for (i in 1:n_attempts){
                                sd = sd(zip_year_data$w))
   temp_zip_year_with_gps$stabilized_ipw <- marginal_expos_prob / 
                                            temp_zip_year_with_gps$gps ## check estimate_gps
-  temp_zip_year_with_gps$capped_stabilized_ipw <- ifelse(temp_zip_year_with_gps$stabilized_ipw > 10, 10, temp_zip_year_with_gps$stabilized_ipw)
+  temp_zip_year_with_gps$capped_stabilized_ipw <- ifelse(temp_zip_year_with_gps$stabilized_ipw > 10, 
+                                                         10, 
+                                                         temp_zip_year_with_gps$stabilized_ipw)
   gps_for_weighting_list[[i]] <- temp_zip_year_with_gps
   
   ### to do: compare results with create_weighting()
   
-  
   # merge with patient data
-  temp_weighted_pseudopop <- merge(ADRD_agg_lagged_trimmed_1_99, subset(temp_zip_year_with_gps,
-                                                                   select = c("zip", "year", "capped_stabilized_ipw")),
-                              by = c("zip", "year"))
+  temp_weighted_pseudopop <- merge(ADRD_agg_lagged_trimmed_1_99, 
+                                   subset(temp_zip_year_with_gps, 
+                                          select = c("zip", 
+                                                     "year", 
+                                                     "capped_stabilized_ipw")), 
+                                   by = c("zip", "year"))
 
   # calculate covariate balance: mean absolute point-biserial correlation for unordered categorical vars
   for (unordered_var in c(zip_unordered_cat_var_names)){
-    cov_bal_weighting[Attempt == i & Covariate == unordered_var & Dataset == "Weighted", Absolute_Correlation := weighted_cor_unordered_var(temp_weighted_pseudopop$w, temp_weighted_pseudopop[[unordered_var]], temp_weighted_pseudopop$capped_stabilized_ipw)]
-    cov_bal_weighting[Attempt == i & Covariate == unordered_var & Dataset == "Unweighted", Absolute_Correlation := cor_unordered_var(temp_weighted_pseudopop$w, temp_weighted_pseudopop[[unordered_var]])]
+    cov_bal_weighting[Attempt == i & 
+                      Covariate == unordered_var & 
+                      Dataset == "Weighted", 
+                      Absolute_Correlation := weighted_cor_unordered_var(temp_weighted_pseudopop$w, 
+                                                                         temp_weighted_pseudopop[[unordered_var]], 
+                                                                         temp_weighted_pseudopop$capped_stabilized_ipw)]
+    cov_bal_weighting[Attempt == i & 
+                      Covariate == unordered_var & 
+                      Dataset == "Unweighted", 
+                      Absolute_Correlation := cor_unordered_var(temp_weighted_pseudopop$w, 
+                                                                temp_weighted_pseudopop[[unordered_var]])]
   }
   
   ## to do: age_grp is ordered
   
   # calculate covariate balance: absolute correlation for quantitative covariates
   for (quant_var in c(other_expos_names, zip_quant_var_names, indiv_quant_var_names)){
-    cov_bal_weighting[Attempt == i & Covariate == quant_var & Dataset == "Weighted", Absolute_Correlation := weightedCorr(temp_weighted_pseudopop$w, temp_weighted_pseudopop[[quant_var]], method = "Pearson", weights = temp_weighted_pseudopop$capped_stabilized_ipw)]
-    cov_bal_weighting[Attempt == i & Covariate == quant_var & Dataset == "Unweighted", Absolute_Correlation := cor(temp_weighted_pseudopop$w, temp_weighted_pseudopop[[quant_var]], method = "pearson")]
-    cov_bal_weighting[Attempt == i & Covariate == quant_var, Absolute_Correlation := abs(Absolute_Correlation)]
+    cov_bal_weighting[Attempt == i & 
+                      Covariate == quant_var & 
+                      Dataset == "Weighted", 
+                      Absolute_Correlation := weightedCorr(temp_weighted_pseudopop$w, 
+                                                           temp_weighted_pseudopop[[quant_var]], 
+                                                           method = "Pearson", 
+                                                           weights = temp_weighted_pseudopop$capped_stabilized_ipw)]
+    cov_bal_weighting[Attempt == i & 
+                      Covariate == quant_var & 
+                      Dataset == "Unweighted", 
+                      Absolute_Correlation := cor(temp_weighted_pseudopop$w, 
+                                                  temp_weighted_pseudopop[[quant_var]], 
+                                                  method = "pearson")]
+    cov_bal_weighting[Attempt == i & 
+                      Covariate == quant_var, 
+                      Absolute_Correlation := abs(Absolute_Correlation)]
   }
 }
+
+
 rm(temp_zip_year_with_gps, temp_weighted_pseudopop)
 
 # find GPS model with best covariate balance
-cov_bal_summary <- cov_bal_weighting[Dataset == "Weighted", .(max_abs_cor = max(Absolute_Correlation)), by = Attempt]
+cov_bal_summary <- cov_bal_weighting[Dataset == "Weighted", 
+                                     .(max_abs_cor = max(Absolute_Correlation, 
+                                                         na.rm = TRUE)), 
+                                     by = Attempt]
 best_attempt <- cov_bal_summary$Attempt[which.min(cov_bal_summary$max_abs_cor)]
 best_cov_bal <- cov_bal_weighting[Attempt == best_attempt]
 
@@ -319,7 +311,7 @@ dev.off()
 saveRDS(bam_smooth_exposure_only_capped_weighted, file = paste0(dir_results, "semiparametric_results/spline_objects/bam_smooth_exposure_only_capped_weighted_", n_rows, "rows_", modifications, ".rds"))
 
 
-## 4. GPS Matching -------------------------------------------------------------
+## 5. GPS Matching -------------------------------------------------------------
 
 ##### THE CODE BELOW IS UNFINISHED #####
 
