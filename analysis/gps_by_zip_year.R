@@ -10,6 +10,7 @@ library(mgcv)
 library(ggplot2)
 library(tidyr)
 library(memoise)
+library(parallel)
 
 # TODO: Needs a better way to set the working dir.
 setwd("/n/dominici_nsaph_l3/Lab/projects/nkhoshnevis_pm_no2_o3-adrd_hosp-medicare-causalgps/pm_no2_o3-adrd_hospitalization-medicare-causalgps/analysis")
@@ -28,6 +29,9 @@ if (!dir.exists(sp_cache)) {dir.create(sp_cache)}
 sp_log <- file.path(interim_sp_results, "log_files")
 if (!dir.exists(sp_log)) {dir.create(sp_log)}
 
+sp_output <- file.path(interim_sp_results, "output_files")
+if (!dir.exists(sp_output)) {dir.create(sp_output)}
+
 source(paste0(dir_code, "analysis/helper_functions.R"))
 
 # setup cache on disk
@@ -38,7 +42,7 @@ cdb <- cachem::cache_disk(sp_cache)
 n_cores <- 48 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
 n_gb <- 184 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
 # total_n_rows <- nrow(ADRD_agg_lagged)
-n_attempts <- 3
+n_attempts <- 50
 exposure_name <- "pm25"
 outcome_name <- "n_hosp"
 trim_quantiles <- c(0.01, 0.99)
@@ -256,26 +260,44 @@ for (i in 1:n_attempts){
 rm(temp_zip_year_with_gps, temp_weighted_pseudopop)
 
 # find GPS model with best covariate balance
-cov_bal_summary <- cov_bal_weighting[Dataset == "Weighted", 
+# We do not compute covariate balance for sex, race, dual. 
+# Also there are missing values.
+cov_bal_weighting_2 <- cov_bal_weighting[
+                        !(cov_bal_weighting$Absolute_Correlation > 1 | 
+                        is.na(cov_bal_weighting$Absolute_Correlation))]
+
+cov_bal_summary <- cov_bal_weighting_2[Dataset == "Weighted", 
                                      .(max_abs_cor = max(Absolute_Correlation, 
                                                          na.rm = TRUE)), 
                                      by = Attempt]
 best_attempt <- cov_bal_summary$Attempt[which.min(cov_bal_summary$max_abs_cor)]
-best_cov_bal <- cov_bal_weighting[Attempt == best_attempt]
+best_cov_bal <- cov_bal_weighting_2[Attempt == best_attempt]
 
 # plot covariate balance
-weighted_cov_bal_plot <- ggplot(best_cov_bal, aes(x = Covariate, y = Absolute_Correlation, color = Dataset, group = Dataset)) +
-  geom_point() +
-  geom_line() +
+weighted_cov_bal_plot <- ggplot(best_cov_bal, 
+                                aes(x = Covariate, 
+                                    y = Absolute_Correlation, 
+                                    color = Dataset, group = Dataset)) +
+                         geom_point() +
+                         geom_line() +
   ylab(paste("Absolute Correlation with", exposure_name)) +
-  ggtitle(paste0(format(n_rows, scientific = F, big.mark = ','), " units of analysis (Attempt #", best_attempt, " of ", n_total_attempts, ")")) +
-  theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
+  ggtitle(paste0(format(n_rows, scientific = F, big.mark = ','), 
+                 " units of analysis (Attempt #", 
+                 best_attempt, " of ", 
+                 n_total_attempts, ")")) +
+  theme(axis.text.x = element_text(angle = 90), 
+        plot.title = element_text(hjust = 0.5))
 
-ggsave(paste0(dir_results, "covariate_balance/weighted_pop_", n_rows, "rows_", modifications, ".png"), weighted_cov_bal_plot)
+ggsave(paste0(sp_output, "/weighted_pop_", 
+                 n_rows, "_rows_", modifications, ".png"), 
+       weighted_cov_bal_plot, width = 10, height = 10, dpi = 300)
 
 # print summary statistics for pseudopopulation weights
-best_weighted_pseudopop <- merge(ADRD_agg_lagged_trimmed_1_99, subset(gps_for_weighting_list[[best_attempt]],
-                                                                      select = c("zip", "year", "capped_stabilized_ipw")),
+best_weighted_pseudopop <- merge(ADRD_agg_lagged_trimmed_1_99, 
+                                 subset(gps_for_weighting_list[[best_attempt]],
+                                        select = c("zip", 
+                                                   "year", 
+                                                   "capped_stabilized_ipw")),
                                  by = c("zip", "year"))
 ess(best_weighted_pseudopop$capped_stabilized_ipw) # 7,889,768
 
@@ -284,6 +306,9 @@ formula_expos_only <- as.formula(paste(outcome_name, "~", paste(c("w", strata_va
 formula_expos_only_smooth <- as.formula(paste(outcome_name, "~", paste(c("s(w, bs = 'ts')", strata_vars), collapse = "+", sep = "")))
 
 # parametric model (Poisson regression)
+
+cl <- parallel::makeCluster(n_cores, type = "PSOCK")
+
 bam_exposure_only_capped_weighted <- bam(formula_expos_only,
                                          data = best_weighted_pseudopop,
                                          offset = log(n_persons * n_years),
@@ -291,11 +316,24 @@ bam_exposure_only_capped_weighted <- bam(formula_expos_only,
                                          weights = capped_stabilized_ipw,
                                          samfrac = 0.05,
                                          chunk.size = 5000,
-                                         control = gam.control(trace = TRUE))
+                                         control = gam.control(trace = TRUE),
+                                         nthreads = n_cores,
+                                         cluster = cl)
+
+parallel::stopCluster(cl)
+
+
 summary(bam_exposure_only_capped_weighted)
-saveRDS(summary(bam_exposure_only_capped_weighted), file = paste0(dir_results, "parametric_results/bam_capped_weighted_exposure_only_", n_rows, "rows_", modifications, ".rds"))
+saveRDS(summary(bam_exposure_only_capped_weighted), 
+        file = paste0(sp_output, 
+                      "/bam_capped_weighted_exposure_only_", 
+                      n_rows, 
+                      "rows_", 
+                      modifications, 
+                      ".rds"))
 
 # semi-parametric model (thin-plate spline)
+cl <- parallel::makeCluster(n_cores, type = "PSOCK")
 bam_smooth_exposure_only_capped_weighted <- bam(formula_expos_only_smooth,
                                                 data = best_weighted_pseudopop,
                                                 offset = log(n_persons * n_years),
@@ -304,12 +342,24 @@ bam_smooth_exposure_only_capped_weighted <- bam(formula_expos_only_smooth,
                                                 samfrac = 0.05,
                                                 chunk.size = 5000,
                                                 control = gam.control(trace = TRUE),
-                                                nthreads = n_cores - 1)
-png(paste0(dir_results, "semiparametric_results/ERFs/bam_smooth_exposure_only_capped_weighted_", n_rows, "rows_", modifications, ".png"))
-plot(bam_smooth_exposure_only_capped_weighted, main = paste0("GPS-Weighted, Capped at 10, Smoothed Poisson regression,\nexposure only (", exposure_name, ")"))
-dev.off()
-saveRDS(bam_smooth_exposure_only_capped_weighted, file = paste0(dir_results, "semiparametric_results/spline_objects/bam_smooth_exposure_only_capped_weighted_", n_rows, "rows_", modifications, ".rds"))
+                                                nthreads = n_cores,
+                                                cluster = cl)
+parallel::stopCluster(cl)
 
+png(paste0(sp_output, "/semiparametric_results_ERFs_bam_smooth_exposure_only_capped_weighted_", 
+           n_rows, "rows_", modifications, ".png"))
+plot(bam_smooth_exposure_only_capped_weighted, 
+     main = paste0("GPS-Weighted, Capped at 10, Smoothed Poisson regression,\nexposure only (", exposure_name, ")"))
+dev.off()
+
+saveRDS(bam_smooth_exposure_only_capped_weighted, 
+        file = paste0(sp_output, 
+                      "/semiparametric_results_spline_objects_bam_smooth_exposure_only_capped_weighted_", 
+                      n_rows, "rows_", modifications, ".rds"))
+
+run_the_rest_of_code = FALSE
+
+if (run_the_rest_of_code){
 
 ## 5. GPS Matching -------------------------------------------------------------
 
@@ -419,6 +469,8 @@ for (i in 1:n_attempts){
 }
 
 ##### THE CODE BELOW IS OLD #####
+
+
 
 # GPS matching by ZIP-level covariates
 set.seed(200)
@@ -714,3 +766,6 @@ ggplot(bal2df) +
   geom_vline(xintercept = 0.1, linetype = 2) +
   theme_bw() +
   scale_y_continuous(breaks = 1:length(bal), labels = baldf$n)
+
+
+}
