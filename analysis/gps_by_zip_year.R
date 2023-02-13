@@ -6,6 +6,7 @@ gc()
 library(data.table)
 library(fst)
 library(CausalGPS)
+library(wCorr)
 library(mgcv)
 library(ggplot2)
 library(tidyr)
@@ -112,6 +113,7 @@ for (i in 1:n_attempts){
                                                                    select = c("zip", "year", "capped_stabilized_ipw")),
                               by = c("zip", "year"))
 
+  # to do: make multiple columns in cov_bal_weighting
   # calculate covariate balance: mean absolute point-biserial correlation for unordered categorical vars
   for (unordered_var in c(zip_unordered_cat_var_names)){
     cov_bal_weighting[Attempt == i & Covariate == unordered_var & Dataset == "Weighted", Absolute_Correlation := weighted_cor_unordered_var(temp_weighted_pseudopop$w, temp_weighted_pseudopop[[unordered_var]], temp_weighted_pseudopop$capped_stabilized_ipw)]
@@ -183,7 +185,6 @@ saveRDS(bam_smooth_exposure_only_capped_weighted, file = paste0(dir_results, "se
 
 
 ##### GPS Matching #####
-##### THE CODE BELOW IS UNFINISHED #####
 
 # get columns from full data that are useful for matching
 ADRD_agg_for_matching <- copy(ADRD_agg_lagged_trimmed_1_99)
@@ -193,12 +194,13 @@ ADRD_agg_for_matching <- ADRD_agg_for_matching[, .(zip, year, stratum)]
 
 # set up dataframe to check covariate balance for each GPS modeling attempt
 ### to do: see if zip can be included or if need more memory or something
-vars_for_cov_bal <- c(other_expos_names, zip_var_names, indiv_var_names)
+vars_for_cov_bal <- c(other_expos_names, zip_quant_var_names, levels(zip_year_data[["region"]]), indiv_var_names)
 cov_bal_matching <- expand.grid(1:n_attempts,
                                 vars_for_cov_bal,
                                 c("Matched", "Unmatched"),
+                                100,
                                 100)
-colnames(cov_bal_matching) <- c("Attempt", "Covariate", "Dataset", "Absolute_Correlation") # Absolute_Correlation column will be updated
+colnames(cov_bal_matching) <- c("Attempt", "Covariate", "Dataset", "Correlation", "Absolute_Correlation") # Correlation and Absolute_Correlation columns will be updated
 cov_bal_matching <- as.data.table(cov_bal_matching)
 
 # set up list to store each GPS modeling attempt
@@ -209,6 +211,7 @@ gps_for_matching_list <- vector("list", n_attempts)
 # matching_caliper <- mean(diff(bin_seq_by_quantile))
 matching_caliper <- 0.6
 
+# to do: make this a function instead of a for loop, so that it can be called later to regenerate the best attempt
 for (i in 1:n_attempts){
   # create log file to see internal processes of CausalGPS
   set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_estimate_gps_for_matching_", modifications, "_", n_zip_year_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
@@ -245,12 +248,15 @@ for (i in 1:n_attempts){
   set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_matching_by_stratum", modifications, "_", n_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
              logger_level = "TRACE")
   
+  # returns a data.table with variable "counter_weight" denoting number of times each observation is matched
   match_within_stratum <- function(dataset_plus_params){
+    set.seed(i*10)
+    
     # make cgps_gps object from input ("dataset_plus_params")
     dataset_as_cgps_gps <- list()
     class(dataset_as_cgps_gps) <- "cgps_gps"
-    dataset_as_cgps_gps$dataset <- subset(dataset_plus_params,
-                                          select = c("Y", "w", "year", zip_var_names, # note that Y is a fake variable with value 0; not used in matching
+    dataset_as_cgps_gps$dataset <- subset(as.data.frame(dataset_plus_params),
+                                          select = c("Y", "w", "year", other_expos_names, zip_var_names, # note that Y is a fake variable with value 0; not used in matching
                                                      "gps", "counter_weight", "row_index"))
     # dataset_as_cgps_gps$used_params <- used_params # old code
     dataset_as_cgps_gps$e_gps_pred <- dataset_plus_params$e_gps_pred
@@ -272,21 +278,63 @@ for (i in 1:n_attempts){
                                       covar_bl_trs = 0.1,
                                       covar_bl_trs_type = "maximal",
                                       delta_n = matching_caliper,
-                                      scale = 1) # max_attempt is not a parameter
+                                      scale = 1) # notice: max_attempt and transformers are not parameters
     
-    matched_pop2 <- CausalGPS:::create_matching(dataset = dataset_as_cgps_gps,
-                                                bin_seq = NULL,
-                                                gps_model = "parametric",
-                                                nthread = n_cores,
-                                                optimized_compile = T,
-                                                matching_fun = "matching_l1",
-                                                delta_n = matching_caliper)
+#     matched_pop2 <- CausalGPS:::create_matching(dataset = dataset_as_cgps_gps,
+#                                                 bin_seq = NULL,
+#                                                 gps_model = "parametric",
+#                                                 nthread = n_cores,
+#                                                 optimized_compile = T,
+#                                                 matching_fun = "matching_l1",
+#                                                 delta_n = matching_caliper)
     
-    return()
+    return(matched_pop)
   }
-  # temp_matched_pseudopops <- lapply(strata_list, match_within_stratum)
+  temp_matched_pseudopop_list <- lapply(strata_list, match_within_stratum)
+  temp_matched_pseudopop <- rbindlist(temp_matched_pseudopop_list)
   
+  for (unordered_var in c(zip_unordered_cat_var_names)){
+    for (level in levels(zip_year_data[[unordered_var]])){
+      cov_bal_matching[Attempt == i & Covariate == level & Dataset == "Matched", Correlation := weightedCorr(temp_matched_pseudopop$w, temp_matched_pseudopop[[unordered_var]] == level, method = "Pearson", weights = temp_matched_pseudopop$counter_weight)]
+      cov_bal_matching[Attempt == i & Covariate == level & Dataset == "Unmatched", Correlation := cor(temp_matched_pseudopop$w, temp_matched_pseudopop[[unordered_var]] == level, method = "pearson")]
+    }
+  }
+  
+  # calculate covariate balance: absolute correlation for quantitative covariates
+  for (quant_var in c(other_expos_names, zip_quant_var_names)){
+    cov_bal_matching[Attempt == i & Covariate == quant_var & Dataset == "Matched", Correlation := weightedCorr(temp_matched_pseudopop$w, temp_matched_pseudopop[[quant_var]], method = "Pearson", weights = temp_matched_pseudopop$counter_weight)]
+    cov_bal_matching[Attempt == i & Covariate == quant_var & Dataset == "Unmatched", Correlation := cor(temp_matched_pseudopop$w, temp_matched_pseudopop[[quant_var]], method = "pearson")]
+  }
 }
+
+# identify GPS model with best covariate balance
+cov_bal_matching[, Absolute_Correlation := abs(Correlation)]
+cov_bal_matching_summary <- cov_bal_matching[Dataset == "Matched", .(max_abs_cor = max(Absolute_Correlation)), by = Attempt]
+best_matching_attempt <- cov_bal_matching_summary$Attempt[which.min(cov_bal_matching_summary$max_abs_cor)]
+best_matching_cov_bal <- cov_bal_matching[Attempt == best_matching_attempt]
+
+# plot covariate balance
+matched_cov_bal_plot <- ggplot(best_matching_cov_bal, aes(x = Covariate, y = Absolute_Correlation, color = Dataset, group = Dataset)) +
+  geom_point() +
+  geom_line() +
+  ylab(paste("Absolute Correlation with", exposure_name)) +
+  ggtitle(paste0(format(n_rows, scientific = F, big.mark = ','), " units of analysis (Attempt #", best_attempt, " of ", n_total_attempts, ")")) +
+  theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
+
+ggsave(paste0(dir_results, "covariate_balance/matched_pop_", n_rows, "rows_", modifications, ".png"), matched_cov_bal_plot)
+
+# regenerate GPS model and matched pseudopopulation with best covariate balance
+# add "stratum" variable back to pseudopop, so that individual variables can be merged back in, for outcome modeling
+best_matched_pseudopop_list <- 0 # TO DO # lapply(strata_list, match_within_stratum)
+temp_matched_pseudopop_list <- lapply(1:length(temp_matched_pseudopop_list), function(i) temp_matched_pseudopop_list[[i]][, stratum := i])
+best_matched_pseudopop <- rbindlist(temp_matched_pseudopop_list)
+
+# print summary statistics for pseudopopulation weights
+cat("ESS:", ess(best_matched_pseudopop$counter_weight))
+cat("Number of observations matched:", sum(best_matched_pseudopop$counter_weight > 0))
+
+# to do: outcome models
+
 
 ##### THE CODE BELOW IS OLD #####
 
