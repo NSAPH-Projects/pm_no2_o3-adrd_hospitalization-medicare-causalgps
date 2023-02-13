@@ -66,12 +66,13 @@ n_rows <- nrow(ADRD_agg_lagged_trimmed_1_99) # 34,141,155 for PM1.5; 34,090,022 
 
 # set up dataframe to check covariate balance for each GPS modeling attempt
 ### to do: see if zip can be included or if need more memory or something
-vars_for_cov_bal <- c(other_expos_names, zip_var_names, indiv_var_names)
+vars_for_cov_bal <- c(other_expos_names, zip_quant_var_names, levels(zip_year_data[["region"]]), indiv_var_names)
 cov_bal_weighting <- expand.grid(1:n_attempts,
                                  vars_for_cov_bal,
                                  c("Matched", "Unmatched"),
+                                 100,
                                  100)
-colnames(cov_bal_weighting) <- c("Attempt", "Covariate", "Dataset", "Absolute_Correlation") # Absolute_Correlation column will be updated
+colnames(cov_bal_weighting) <- c("Attempt", "Covariate", "Dataset", "Correlation", "Absolute_Correlation") # Correlation and Absolute_Correlation columns will be updated
 cov_bal_weighting <- as.data.table(cov_bal_weighting)
 
 # set up list to store each GPS modeling attempt
@@ -105,9 +106,6 @@ for (i in 1:n_attempts){
   temp_zip_year_with_gps$capped_stabilized_ipw <- ifelse(temp_zip_year_with_gps$stabilized_ipw > 10, 10, temp_zip_year_with_gps$stabilized_ipw)
   gps_for_weighting_list[[i]] <- temp_zip_year_with_gps
   
-  ### to do: compare results with create_weighting()
-  
-  
   # merge with patient data
   temp_weighted_pseudopop <- merge(ADRD_agg_lagged_trimmed_1_99, subset(temp_zip_year_with_gps,
                                                                    select = c("zip", "year", "capped_stabilized_ipw")),
@@ -116,22 +114,24 @@ for (i in 1:n_attempts){
   # to do: make multiple columns in cov_bal_weighting
   # calculate covariate balance: mean absolute point-biserial correlation for unordered categorical vars
   for (unordered_var in c(zip_unordered_cat_var_names)){
-    cov_bal_weighting[Attempt == i & Covariate == unordered_var & Dataset == "Weighted", Absolute_Correlation := weighted_cor_unordered_var(temp_weighted_pseudopop$w, temp_weighted_pseudopop[[unordered_var]], temp_weighted_pseudopop$capped_stabilized_ipw)]
-    cov_bal_weighting[Attempt == i & Covariate == unordered_var & Dataset == "Unweighted", Absolute_Correlation := cor_unordered_var(temp_weighted_pseudopop$w, temp_weighted_pseudopop[[unordered_var]])]
+    for (level in levels(zip_year_data[[unordered_var]])){
+      cov_bal_weighting[Attempt == i & Covariate == unordered_var & Dataset == "Weighted", Correlation := weightedCorr(temp_weighted_pseudopop$w, temp_weighted_pseudopop[[unordered_var]] == level, method = "pearson", weights = temp_weighted_pseudopop$capped_stabilized_ipw)]
+      cov_bal_weighting[Attempt == i & Covariate == unordered_var & Dataset == "Unweighted", Correlation := cor(temp_weighted_pseudopop$w, temp_weighted_pseudopop[[unordered_var]] == level, method = "pearson")]
+    }
   }
   
   ## to do: age_grp is ordered
   
   # calculate covariate balance: absolute correlation for quantitative covariates
-  for (quant_var in c(other_expos_names, zip_quant_var_names, indiv_quant_var_names)){
-    cov_bal_weighting[Attempt == i & Covariate == quant_var & Dataset == "Weighted", Absolute_Correlation := weightedCorr(temp_weighted_pseudopop$w, temp_weighted_pseudopop[[quant_var]], method = "Pearson", weights = temp_weighted_pseudopop$capped_stabilized_ipw)]
-    cov_bal_weighting[Attempt == i & Covariate == quant_var & Dataset == "Unweighted", Absolute_Correlation := cor(temp_weighted_pseudopop$w, temp_weighted_pseudopop[[quant_var]], method = "pearson")]
-    cov_bal_weighting[Attempt == i & Covariate == quant_var, Absolute_Correlation := abs(Absolute_Correlation)]
+  for (quant_var in c(other_expos_names, zip_quant_var_names)){
+    cov_bal_weighting[Attempt == i & Covariate == quant_var & Dataset == "Weighted", Correlation := weightedCorr(temp_weighted_pseudopop$w, temp_weighted_pseudopop[[quant_var]], method = "Pearson", weights = temp_weighted_pseudopop$capped_stabilized_ipw)]
+    cov_bal_weighting[Attempt == i & Covariate == quant_var & Dataset == "Unweighted", Correlation := cor(temp_weighted_pseudopop$w, temp_weighted_pseudopop[[quant_var]], method = "pearson")]
   }
 }
 rm(temp_zip_year_with_gps, temp_weighted_pseudopop)
 
 # find GPS model with best covariate balance
+cov_bal_weighting[, Absolute_Correlation := abs(Correlation)]
 cov_bal_summary <- cov_bal_weighting[Dataset == "Weighted", .(max_abs_cor = max(Absolute_Correlation)), by = Attempt]
 best_attempt <- cov_bal_summary$Attempt[which.min(cov_bal_summary$max_abs_cor)]
 best_cov_bal <- cov_bal_weighting[Attempt == best_attempt]
