@@ -11,7 +11,7 @@ library(mgcv)
 library(ggplot2)
 library(tidyr)
 
-# # directories for data, code, and results
+# directories for data, code, and results
 dir_data <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
 dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
 dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
@@ -23,21 +23,13 @@ ADRD_agg_lagged[, `:=`(zip = as.factor(zip), year = as.factor(year), cohort = as
 
 source(paste0(dir_code, "analysis/helper_functions.R"))
 
-# parameters for this computing job
-n_cores <- 8 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
-n_gb <- 64 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
-# total_n_rows <- nrow(ADRD_agg_lagged)
-n_attempts <- 10
-n_total_attempts <- n_attempts # user can set this to a number larger than n_attempts if some attempts with different seeds have already been tried
-modifications <- paste0("gps_by_zip_year_", n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
-
 
 ##### Get data for exposure, outcome, and covariates of interest #####
 
 exposure_name <- "pm25"
 other_expos_names <- zip_expos_names[zip_expos_names != exposure_name]
 outcome_name <- "n_hosp"
-ADRD_agg_lagged_subset <- data.table::subset(ADRD_agg_lagged,
+ADRD_agg_lagged_subset <- subset(ADRD_agg_lagged,
                                              select = c(exposure_name, outcome_name, other_expos_names, zip_var_names, "zip", indiv_var_names, offset_var_names))
 for (var in c(zip_unordered_cat_var_names, indiv_unordered_cat_var_names)){
   ADRD_agg_lagged_subset[[var]] <- as.factor(ADRD_agg_lagged_subset[[var]])
@@ -50,7 +42,7 @@ colnames(ADRD_agg_lagged_subset)[colnames(ADRD_agg_lagged_subset) == exposure_na
 
 ##### Isolate just the exposure and covariates (1 observation per ZIP, year) and trim exposure #####
 
-zip_year_data <- data.table::subset(ADRD_agg_lagged_subset,
+zip_year_data <- subset(ADRD_agg_lagged_subset,
                                     select = c("zip", "year", "w", other_expos_names, zip_var_names))
 zip_year_data <- unique(zip_year_data, by = c("zip", "year"))
 trim_1_99 <- quantile(zip_year_data$w, c(0.01, 0.99))

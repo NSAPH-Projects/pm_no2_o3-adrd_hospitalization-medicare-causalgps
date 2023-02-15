@@ -1,19 +1,24 @@
+# directories for data, code, and results
+dir_data <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
 dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
+dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
+
 source(paste0(dir_code, "analysis/setup_trimmed_and_zip_year_data.R"))
+
+# parameters for this computing job
+n_cores <- 8 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
+n_gb <- 64 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
+# total_n_rows <- nrow(ADRD_agg_lagged)
+n_attempts <- 10
+n_total_attempts <- n_attempts # user can set this to a number larger than n_attempts if some attempts with different seeds have already been tried
+modifications <- paste0("gps_by_zip_year_", n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
 
 
 ##### GPS Weighting #####
 
-# set up dataframe to check covariate balance for each GPS modeling attempt
+# set up data.table to check covariate balance for each GPS modeling attempt
 ### to do: see if zip can be included or if need more memory or something
-vars_for_cov_bal <- c(other_expos_names, zip_quant_var_names, levels(zip_year_data[["region"]]))
-cov_bal_weighting <- expand.grid(1:n_attempts,
-                                 vars_for_cov_bal,
-                                 c("Weighted", "Unweighted"),
-                                 100,
-                                 100)
-colnames(cov_bal_weighting) <- c("Attempt", "Covariate", "Dataset", "Correlation", "Absolute_Correlation") # Correlation and Absolute_Correlation columns will be updated
-cov_bal_weighting <- as.data.table(cov_bal_weighting)
+cov_bal_weighting <- create_cov_bal_data.table("weighting", n_attempts)
 
 # set up list to store each GPS modeling attempt
 gps_for_weighting_list <- vector("list", n_attempts)
@@ -51,28 +56,23 @@ for (i in 1:n_attempts){
                                                                    select = c("zip", "year", "capped_stabilized_ipw")),
                               by = c("zip", "year"))
 
-  for (unordered_var in c(zip_unordered_cat_var_names)){
-    for (level in levels(zip_year_data[[unordered_var]])){
-      cov_bal_weighting[Attempt == i & Covariate == level & Dataset == "Weighted", Correlation := weightedCorr(temp_weighted_pseudopop$w, temp_weighted_pseudopop[[unordered_var]] == level, method = "pearson", weights = temp_weighted_pseudopop$capped_stabilized_ipw)]
-      cov_bal_weighting[Attempt == i & Covariate == level & Dataset == "Unweighted", Correlation := cor(temp_weighted_pseudopop$w, temp_weighted_pseudopop[[unordered_var]] == level, method = "pearson")]
-    }
-  }
-  
-  for (quant_var in c(other_expos_names, zip_quant_var_names)){
-    cov_bal_weighting[Attempt == i & Covariate == quant_var & Dataset == "Weighted", Correlation := weightedCorr(temp_weighted_pseudopop$w, temp_weighted_pseudopop[[quant_var]], method = "Pearson", weights = temp_weighted_pseudopop$capped_stabilized_ipw)]
-    cov_bal_weighting[Attempt == i & Covariate == quant_var & Dataset == "Unweighted", Correlation := cor(temp_weighted_pseudopop$w, temp_weighted_pseudopop[[quant_var]], method = "pearson")]
-  }
+  # calculate correlation between exposure and covariates
+  cov_bal_weighting <- calculate_correlations(cov_bal_data.table = cov_bal_weighting,
+                                              method = "weighting",
+                                              attempt = i,
+                                              pseudopop = temp_weighted_pseudopop)
 }
 rm(temp_zip_year_with_gps, temp_weighted_pseudopop)
 
-# find GPS model with best covariate balance
-cov_bal_weighting[, Absolute_Correlation := abs(Correlation)]
-cov_bal_summary <- cov_bal_weighting[Dataset == "Weighted", .(max_abs_cor = max(Absolute_Correlation)), by = Attempt]
-best_attempt <- cov_bal_summary$Attempt[which.min(cov_bal_summary$max_abs_cor)]
-best_cov_bal <- cov_bal_weighting[Attempt == best_attempt]
+# find GPS model(s) with best covariate balance
+cov_bal_summary <- summarize_cov_bal(cov_bal_data.table = cov_bal_weighting,
+                                        method = "weighting",
+                                        save_csv = T)
+best_maxAC_attempt <- cov_bal_summary$Attempt[which.min(cov_bal_summary$maxAC)]
+best_maxAC_cov_bal <- cov_bal_weighting[Attempt == best_maxAC_attempt]
 
 # plot covariate balance
-weighted_cov_bal_plot <- ggplot(best_cov_bal, aes(x = Covariate, y = Absolute_Correlation, color = Dataset, group = Dataset)) +
+weighted_cov_bal_plot <- ggplot(best_maxAC_cov_bal, aes(x = Covariate, y = Absolute_Correlation, color = Dataset, group = Dataset)) +
   geom_point() +
   geom_line() +
   ylab(paste("Absolute Correlation with", exposure_name)) +
@@ -82,37 +82,49 @@ weighted_cov_bal_plot <- ggplot(best_cov_bal, aes(x = Covariate, y = Absolute_Co
 ggsave(paste0(dir_results, "covariate_balance/weighted_pop_", n_rows, "rows_", modifications, ".png"), weighted_cov_bal_plot)
 
 # print summary statistics for pseudopopulation weights
-best_weighted_pseudopop <- merge(ADRD_agg_lagged_trimmed_1_99, subset(gps_for_weighting_list[[best_attempt]],
+best_maxAC_weighted_pseudopop <- merge(ADRD_agg_lagged_trimmed_1_99, subset(gps_for_weighting_list[[best_maxAC_attempt]],
                                                                       select = c("zip", "year", "capped_stabilized_ipw")),
                                  by = c("zip", "year"))
-ess(best_weighted_pseudopop$capped_stabilized_ipw) # 7,889,768
+ess(best_maxAC_weighted_pseudopop$capped_stabilized_ipw) # for attempt #121, which is best out of 200, ESS is 9,427,355
 
 # model outcome from GPS-weighted pseudo-population
 formula_expos_only <- as.formula(paste(outcome_name, "~", paste(c("w", strata_vars), collapse = "+", sep = "")))
 formula_expos_only_smooth <- as.formula(paste(outcome_name, "~", paste(c("s(w, bs = 'ts')", strata_vars), collapse = "+", sep = "")))
 
 # parametric model (Poisson regression)
+cl <- parallel::makeCluster(n_cores, type = "PSOCK")
+
 bam_exposure_only_capped_weighted <- bam(formula_expos_only,
-                                         data = best_weighted_pseudopop,
+                                         data = best_maxAC_weighted_pseudopop,
                                          offset = log(n_persons * n_years),
                                          family = poisson(link = "log"),
                                          weights = capped_stabilized_ipw,
                                          samfrac = 0.05,
                                          chunk.size = 5000,
-                                         control = gam.control(trace = TRUE))
+                                         control = gam.control(trace = TRUE),
+                                         nthreads = n_cores,
+                                         cluster = cl)
+
+parallel::stopCluster(cl)
+
 summary(bam_exposure_only_capped_weighted)
 saveRDS(summary(bam_exposure_only_capped_weighted), file = paste0(dir_results, "parametric_results/bam_capped_weighted_exposure_only_", n_rows, "rows_", modifications, ".rds"))
 
 # semi-parametric model (thin-plate spline)
+cl <- parallel::makeCluster(n_cores, type = "PSOCK")
+
 bam_smooth_exposure_only_capped_weighted <- bam(formula_expos_only_smooth,
-                                                data = best_weighted_pseudopop,
+                                                data = best_maxAC_weighted_pseudopop,
                                                 offset = log(n_persons * n_years),
                                                 family = poisson(link = "log"),
                                                 weights = capped_stabilized_ipw,
                                                 samfrac = 0.05,
                                                 chunk.size = 5000,
                                                 control = gam.control(trace = TRUE),
-                                                nthreads = n_cores - 1)
+                                                nthreads = n_cores)
+
+parallel::stopCluster(cl)
+
 png(paste0(dir_results, "semiparametric_results/ERFs/bam_smooth_exposure_only_capped_weighted_", n_rows, "rows_", modifications, ".png"))
 plot(bam_smooth_exposure_only_capped_weighted, main = paste0("GPS-Weighted, Capped at 10, Smoothed Poisson regression,\nexposure only (", exposure_name, ")"))
 dev.off()

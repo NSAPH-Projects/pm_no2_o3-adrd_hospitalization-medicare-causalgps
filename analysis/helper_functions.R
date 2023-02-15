@@ -1,4 +1,4 @@
-# Classify variables in dataset
+## Classify variables in dataset
 offset_var_names <- c("n_persons", "n_years")
 zip_expos_names <- c("pm25", "no2", "ozone_summer")
 zip_quant_var_names <- c("mean_bmi", "smoke_rate", "hispanic", "prop_blk",
@@ -12,10 +12,11 @@ zip_var_names <- c(zip_quant_var_names, zip_unordered_cat_var_names)
 indiv_var_names <- c(indiv_unordered_cat_var_names, indiv_quant_var_names) # note: for now, using ADRD_age as a quantitative variable (not binned)
 
 
-# Functions to transform variables in generate_pseudo_pop()
+## Functions to transform variables in generate_pseudo_pop()
 log_nonneg <- function(x){
   if (min(x) >= 0) return(log(x + 0.001)) else return(x)
 }
+
 logit_nonneg <- function(x){
   if (min(x) >= 0 & max(x) <= 1){
     return(log((x + 0.001)/(1 - x + 0.001)))
@@ -24,14 +25,96 @@ logit_nonneg <- function(x){
   }
 }
 
-### To Do: write matching as functions
+## Functions to assess covariate balance
+
+# to do: see if zip can be included or if need more memory or something
+create_cov_bal_data.table <- function(method,
+                                      n_attempts,
+                                      vars_for_cov_bal = c(other_expos_names, zip_quant_var_names, levels(zip_year_data[["region"]]))){
+  
+  if (method == "weighting") dataset_names <- c("Weighted", "Unweighted")
+  else if (method == "matching") dataset_names <- c("Matched", "Unmatched")
+  else stop("'method' must be 'weighting' or 'matching'")
+  
+  cov_bal <- expand.grid(1:n_attempts,
+                         vars_for_cov_bal,
+                         dataset_names,
+                         100,
+                         100) # Correlation and Absolute_Correlation columns will be updated; 100 is placeholder (impossible value of correlation)
+  colnames(cov_bal) <- c("Attempt", "Covariate", "Dataset", "Correlation", "Absolute_Correlation")
+  cov_bal <- as.data.table(cov_bal)
+  return(cov_bal)
+}
+
+calculate_correlations <- function(cov_bal_data.table,
+                                   method,
+                                   attempt,
+                                   pseudopop){
+  
+  if (method == "weighting"){
+    dataset_names <- c("Weighted", "Unweighted")
+    weight_name <- "capped_stabilized_ipw"
+  }
+  else if (method == "matching"){
+    dataset_names <- c("Matched", "Unmatched")
+    weight_name <- "counter_weight"
+  }
+  else stop("'method' must be 'weighting' or 'matching'")
+  
+  for (unordered_var in zip_unordered_cat_var_names){
+    for (level in levels(zip_year_data[[unordered_var]])){
+      cov_bal_data.table[Attempt == attempt & Covariate == level & Dataset == dataset_names[1],
+                         Correlation := weightedCorr(pseudopop$w,
+                                                     pseudopop[[unordered_var]] == level,
+                                                     method = "pearson",
+                                                     weights = pseudopop[[weight_name]])]
+      
+      cov_bal_data.table[Attempt == attempt & Covariate == level & Dataset == dataset_names[2],
+                         Correlation := cor(pseudopop$w,
+                                            pseudopop[[unordered_var]] == level,
+                                            method = "pearson")]
+    }
+  }
+  
+  for (quant_var in c(other_expos_names, zip_quant_var_names)){
+    cov_bal_data.table[Attempt == attempt & Covariate == quant_var & Dataset == dataset_names[1],
+                       Correlation := weightedCorr(pseudopop$w,
+                                                   pseudopop[[quant_var]],
+                                                   method = "Pearson",
+                                                   weights = pseudopop[[weight_name]])]
+    
+    cov_bal_data.table[Attempt == attempt & Covariate == quant_var & Dataset == dataset_names[2],
+                       Correlation := cor(pseudopop$w,
+                                          pseudopop[[quant_var]],
+                                          method = "pearson")]
+  }
+  
+  return(cov_bal_data.table)
+}
+
+summarize_cov_bal <- function(cov_bal_data.table,
+                              method,
+                              save_csv = T){
+  
+  if (method == "weighting") dataset_name <- "Weighted"
+  else if (method == "matching") dataset_name <- "Matched"
+  else stop("'method' must be 'weighting' or 'matching'")
+  
+  cov_bal_data.table[, Absolute_Correlation := abs(Correlation)]
+  cov_bal_summary <- cov_bal_data.table[Dataset == dataset_name, .(maxAC = max(Absolute_Correlation),
+                                                                meanAC = mean(Absolute_Correlation),
+                                                                maxACVariable = Covariate[which.max(Absolute_Correlation)]), by = Attempt]
+  if (save_csv){
+    write.csv(cov_bal_summary, paste0(dir_results, "covariate_balance/cov_bal_as_csv/weighted_pop_", n_rows, "rows_", modifications, ".csv"))
+  }
+  return(cov_bal_summary)
+}
 
 
-
-# Calculate Kish's effective sample size
+## Calculate Kish's effective sample size
 ess <- function(weights) return(sum(weights)^2 / (sum(weights^2)))
 
-# Explore distribution of ZIP-level covariates
+## Explore distribution of ZIP-level covariates
 explore_zip_covs <- function(df){
   cat("\nMin of mean_bmi:", min(df$mean_bmi))
   cat("\nMax of mean_bmi:", max(df$mean_bmi))
@@ -93,45 +176,3 @@ explore_indiv_covs <- function(df){
   cat("\nProportion Medicaid-eligible\n")
   print(prop.table(table(df$any_dual)))
 }
-
-# For GPS-matched pseudopopulation, print summary statistics for counter
-summarize_pseudo_counter <- function(pseudo_pop){
-  counter <- pseudo_pop$pseudo_pop$counter_weight
-  cat("Number of observations UNTRIMMED by GPS matching algorithm:", length(pseudo_pop$pseudo_pop$row_index))
-  cat("\nNumber of observations matched:", sum(counter > 0), "\n")
-  cat("\nNumber of matches:", sum(counter), "\n")
-  print("\nDistribution of number of matches per untrimmed observation\n")
-  print(quantile(counter, c(0, 0.25, 0.5, 0.75, 0.95, 0.99, 0.999, 1)))
-  cat("\nKish ESS:", ess(counter))
-}
-
-# For GPS-weighted pseudopopulation, print summary statistics for weights
-summarize_pseudo_weights <- function(pseudo_pop){
-  weights <- pseudo_pop$pseudo_pop$counter_weight
-  cat("Number of observations UNTRIMMED by GPS weighting algorithm:", length(pseudo_pop$pseudo_pop$row_index))
-  cat("\nNumber of observations with non-zero weight:", sum(weights > 0), "\n")
-  cat("\nSum of weights:", sum(weights), "\n")
-  print("\nDistribution of weights\n")
-  print(quantile(weights, c(0, 0.25, 0.5, 0.75, 0.95, 0.99, 0.999, 1)))
-  cat("\nKish ESS:", ess(weights))
-}
-
-# Cap counts or weights if desired
-cap_weights <- function(pseudo_pop, ci_appr, nthread, quant_var_names, cat_var_names, title){
-  weights <- "counter_weight"
-  
-  cutoff <- quantile(pseudo_pop$pseudo_pop[[weights]], 0.95)
-  pseudo_pop$pseudo_pop[[weights]] <- ifelse(pseudo_pop$pseudo_pop[[weights]] > cutoff, cutoff, pseudo_pop$pseudo_pop[[weights]])
-  adjusted_corr_obj <- check_covar_balance(pseudo_pop$pseudo_pop,
-                                           ci_appr=ci_appr,
-                                           nthread=nthread,
-                                           covar_bl_method = "absolute",
-                                           covar_bl_trs = 0.1,
-                                           covar_bl_trs_type = "maximal",
-                                           optimized_compile=T)
-  pseudo_pop$adjusted_corr_results <-  adjusted_corr_obj$corr_results
-  
-  quant_cov_bal(pseudo_pop, ci_appr, quant_var_names, title)
-  cat_cov_bal(pseudo_pop, ci_appr, cat_var_names, title)
-}
-
