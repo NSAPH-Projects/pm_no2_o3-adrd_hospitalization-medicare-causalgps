@@ -166,34 +166,15 @@ cat("Distribution of number of matches per observations:")
 summary(best_matched_pseudopop$counter_weight)
 quantile(best_matched_pseudopop$counter_weight, c(0, 0.25, 0.5, 0.75, 0.95, 0.99, 0.999, 1))
 
-# model outcome from GPS-matched pseudo-population
-formula_expos_only <- as.formula(paste(outcome_name, "~", paste(c("w", strata_vars), collapse = "+", sep = "")))
-formula_expos_only_smooth <- as.formula(paste(outcome_name, "~", paste(c("s(w, bs = 'ts')", strata_vars), collapse = "+", sep = "")))
+# run parametric and semiparametric (thin-plate spline) outcome models
+parametric_model_summary <- get_outcome_model_summary(best_matched_pseudopop,
+                                                      "matching",
+                                                      n_cores,
+                                                      "parametric",
+                                                      save_results = T)
 
-# parametric model (Poisson regression)
-bam_exposure_only_matched <- bam(formula_expos_only,
-                                         data = best_matched_pseudopop,
-                                         offset = log(n_persons * n_years),
-                                         family = poisson(link = "log"),
-                                         weights = counter_weight,
-                                         samfrac = 0.05,
-                                         chunk.size = 5000,
-                                         control = gam.control(trace = TRUE))
-summary(bam_exposure_only_matched)
-saveRDS(summary(bam_exposure_only_matched), file = paste0(dir_results, "parametric_results/bam_matched_exposure_only_", n_rows, "rows_", modifications, ".rds"))
-
-# semi-parametric model (thin-plate spline)
-bam_smooth_exposure_only_matched <- bam(formula_expos_only_smooth,
-                                                data = best_matched_pseudopop,
-                                                offset = log(n_persons * n_years),
-                                                family = poisson(link = "log"),
-                                                weights = counter_weight,
-                                                samfrac = 0.05,
-                                                chunk.size = 5000,
-                                                control = gam.control(trace = TRUE),
-                                                nthreads = n_cores - 1)
-png(paste0(dir_results, "semiparametric_results/ERFs/bam_smooth_exposure_only_matched_", n_rows, "rows_", modifications, ".png"))
-plot(bam_smooth_exposure_only_matched, main = paste0("GPS-Matched, Smoothed Poisson regression,\nexposure only (", exposure_name, ")"))
-dev.off()
-saveRDS(bam_smooth_exposure_only_matched, file = paste0(dir_results, "semiparametric_results/spline_objects/bam_smooth_exposure_only_matched_", n_rows, "rows_", modifications, ".rds"))
-
+semiparametric_model_summary <- get_outcome_model_summary(best_matched_pseudopop,
+                                                          "matching",
+                                                          n_cores,
+                                                          "semiparametric",
+                                                          save_results = T)

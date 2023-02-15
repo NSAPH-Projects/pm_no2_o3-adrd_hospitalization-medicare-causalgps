@@ -1,4 +1,5 @@
 ## Classify variables in dataset
+
 offset_var_names <- c("n_persons", "n_years")
 zip_expos_names <- c("pm25", "no2", "ozone_summer")
 zip_quant_var_names <- c("mean_bmi", "smoke_rate", "hispanic", "prop_blk",
@@ -11,19 +12,11 @@ strata_vars <- c("year", "sex", "race", "dual", "age_grp") # to do: consider if 
 zip_var_names <- c(zip_quant_var_names, zip_unordered_cat_var_names)
 indiv_var_names <- c(indiv_unordered_cat_var_names, indiv_quant_var_names) # note: for now, using ADRD_age as a quantitative variable (not binned)
 
+## Formulas for outcome models (parametric and semiparametric thin-plate spline)
 
-## Functions to transform variables in generate_pseudo_pop()
-log_nonneg <- function(x){
-  if (min(x) >= 0) return(log(x + 0.001)) else return(x)
-}
+formula_expos_only <- as.formula(paste(outcome_name, "~", paste(c("w", strata_vars), collapse = "+", sep = "")))
+formula_expos_only_smooth <- as.formula(paste(outcome_name, "~", paste(c("s(w, bs = 'ts')", strata_vars), collapse = "+", sep = "")))
 
-logit_nonneg <- function(x){
-  if (min(x) >= 0 & max(x) <= 1){
-    return(log((x + 0.001)/(1 - x + 0.001)))
-  } else{
-    return(x)
-  }
-}
 
 ## Functions to assess covariate balance
 
@@ -108,6 +101,49 @@ summarize_cov_bal <- function(cov_bal_data.table,
     write.csv(cov_bal_summary, paste0(dir_results, "covariate_balance/cov_bal_as_csv/weighted_pop_", n_rows, "rows_", modifications, ".csv"))
   }
   return(cov_bal_summary)
+}
+
+
+## Functions for outcome models
+
+get_outcome_model_summary <- function(pseudopop,
+                                      method,
+                                      n_cores,
+                                      parametric_or_semiparametric = "parametric",
+                                      save_results = T){
+  
+  if (method == "weighting") weight_name = "capped_stabilized_ipw"
+  if (method == "matching") weight_name = "counter_weight"
+  else stop("'method' must be 'weighting' or 'matching'")
+  
+  if (parametric_or_semiparametric == "parametric") formula <- formula_expos_only
+  else if (parametric_or_semiparametric == "semiparametric") formula <- formula_expos_only_smooth
+  else stop("parametric_or_semiparametric must be 'parametric' or 'semiparametric'")
+  
+  cl <- parallel::makeCluster(n_cores, type = "PSOCK")
+  bam_exposure_only <- bam(formula,
+                           data = pseudopop,
+                           offset = log(n_persons * n_years),
+                           family = poisson(link = "log"),
+                           weights = pseudopop[[weight_name]],
+                           samfrac = 0.05,
+                           chunk.size = 5000,
+                           control = gam.control(trace = TRUE),
+                           nthreads = n_cores,
+                           cluster = cl)
+  parallel::stopCluster(cl)
+  
+  if (save_results){
+    if (parametric_or_semiparametric == "parametric"){
+      saveRDS(summary(bam_exposure_only), file = paste0(dir_results, "parametric_results/bam_exposure_only_", method, "_", n_rows, "rows_", modifications, ".rds"))
+    } else{
+      png(paste0(dir_results, "semiparametric_results/ERFs/bam_smooth_exposure_only_", method, "_", n_rows, "rows_", modifications, ".png"))
+      plot(bam_exposure_only, main = paste0("GPS ", method, ", Smoothed Poisson regression,\nexposure only (", exposure_name, ")"))
+      dev.off()
+      # saveRDS(bam_exposure_only, file = paste0(dir_results, "semiparametric_results/spline_objects/bam_smooth_exposure_only_", method, "_", n_rows, "rows_", modifications, ".rds"))
+    }
+  }
+  return(summary(bam_exposure_only))
 }
 
 
