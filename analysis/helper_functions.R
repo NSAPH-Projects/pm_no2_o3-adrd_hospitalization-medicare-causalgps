@@ -12,11 +12,6 @@ strata_vars <- c("year", "sex", "race", "dual", "age_grp") # to do: consider if 
 zip_var_names <- c(zip_quant_var_names, zip_unordered_cat_var_names)
 indiv_var_names <- c(indiv_unordered_cat_var_names, indiv_quant_var_names) # note: for now, using ADRD_age as a quantitative variable (not binned)
 
-## Formulas for outcome models (parametric and semiparametric thin-plate spline)
-
-formula_expos_only <- as.formula(paste(outcome_name, "~", paste(c("w", strata_vars), collapse = "+", sep = "")))
-formula_expos_only_smooth <- as.formula(paste(outcome_name, "~", paste(c("s(w, bs = 'ts')", strata_vars), collapse = "+", sep = "")))
-
 
 ## Functions to assess covariate balance
 

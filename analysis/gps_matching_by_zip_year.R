@@ -162,9 +162,10 @@ best_matched_pseudopop <- rbindlist(best_matched_pseudopop_list)
 # print summary statistics for pseudopopulation weights
 cat("ESS:", ess(best_matched_pseudopop$counter_weight)) # to do: if ESS is small, investigate which observation(s) are being matched so many times and if increasing? or changing caliper helps
 cat("Number of observations matched:", sum(best_matched_pseudopop$counter_weight > 0))
+cat("Proportion of observations matched:", sum(best_matched_pseudopop$counter_weight > 0) / nrow(best_matched_pseudopop))
 cat("Distribution of number of matches per observations:")
 summary(best_matched_pseudopop$counter_weight)
-quantile(best_matched_pseudopop$counter_weight, c(0, 0.25, 0.5, 0.75, 0.95, 0.99, 0.999, 1))
+quantile(best_matched_pseudopop$counter_weight, c(0, 0.25, 0.5, 0.75, 0.95, 0.99, 0.999, 0.9999, 1))
 
 # run parametric and semiparametric (thin-plate spline) outcome models
 parametric_model_summary <- get_outcome_model_summary(best_matched_pseudopop,
