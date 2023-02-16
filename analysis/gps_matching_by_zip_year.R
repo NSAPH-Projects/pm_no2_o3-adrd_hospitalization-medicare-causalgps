@@ -123,7 +123,7 @@ get_matched_pseudopop <- function(attempt_number,
   }
   
   else if (return_pseudopop_list) return(temp_matched_pseudopop_list)
-  else stop("User must specify whether to return covariate balance or pseudopopulations")
+  else stop("User must specify whether to return covariate balance or (list of) pseudopopulations")
 }
 
 for (i in 1:n_attempts){

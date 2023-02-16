@@ -13,6 +13,10 @@ zip_var_names <- c(zip_quant_var_names, zip_unordered_cat_var_names)
 indiv_var_names <- c(indiv_unordered_cat_var_names, indiv_quant_var_names) # note: for now, using ADRD_age as a quantitative variable (not binned)
 
 
+## Calculate Kish's effective sample size
+ess <- function(weights) return(sum(weights)^2 / (sum(weights^2)))
+
+
 ## Functions to assess covariate balance
 
 # to do: see if zip can be included or if need more memory or something
@@ -27,9 +31,10 @@ create_cov_bal_data.table <- function(method,
   cov_bal <- expand.grid(1:n_attempts,
                          vars_for_cov_bal,
                          dataset_names,
-                         100,
-                         100) # Correlation and Absolute_Correlation columns will be updated; 100 is placeholder (impossible value of correlation)
-  colnames(cov_bal) <- c("Attempt", "Covariate", "Dataset", "Correlation", "Absolute_Correlation")
+                         NA,
+                         NA,
+                         NA)
+  colnames(cov_bal) <- c("Attempt", "Covariate", "Dataset", "Correlation", "Absolute_Correlation", "ESS")
   cov_bal <- as.data.table(cov_bal)
   return(cov_bal)
 }
@@ -77,6 +82,9 @@ calculate_correlations <- function(cov_bal_data.table,
                                           method = "pearson")]
   }
   
+  cov_bal_data.table[Attempt == attempt & Dataset == dataset_names[1], ESS := ess(pseudopop[[weight_name]])]
+  cov_bal_data.table[Attempt == attempt & Dataset == dataset_names[2], ESS := nrow(pseudopop)]
+  
   return(cov_bal_data.table)
 }
 
@@ -91,7 +99,9 @@ summarize_cov_bal <- function(cov_bal_data.table,
   cov_bal_data.table[, Absolute_Correlation := abs(Correlation)]
   cov_bal_summary <- cov_bal_data.table[Dataset == dataset_name, .(maxAC = max(Absolute_Correlation),
                                                                 meanAC = mean(Absolute_Correlation),
-                                                                maxACVariable = Covariate[which.max(Absolute_Correlation)]), by = Attempt]
+                                                                maxACVariable = Covariate[which.max(Absolute_Correlation)],
+                                                                ESS = unique(ESS)),
+                                        by = Attempt]
   if (save_csv){
     write.csv(cov_bal_summary, paste0(dir_results, "covariate_balance/cov_bal_as_csv/weighted_pop_", n_rows, "rows_", modifications, ".csv"))
   }
@@ -141,9 +151,6 @@ get_outcome_model_summary <- function(pseudopop,
   return(summary(bam_exposure_only))
 }
 
-
-## Calculate Kish's effective sample size
-ess <- function(weights) return(sum(weights)^2 / (sum(weights^2)))
 
 ## Explore distribution of ZIP-level covariates
 explore_zip_covs <- function(df){
