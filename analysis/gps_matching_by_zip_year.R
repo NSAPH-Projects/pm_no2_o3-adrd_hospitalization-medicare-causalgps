@@ -179,7 +179,7 @@ cat("Distribution of number of matches per observations:")
 summary(best_matched_pseudopop$counter_weight)
 quantile(best_matched_pseudopop$counter_weight, c(0, 0.25, 0.5, 0.75, 0.95, 0.99, 0.999, 0.9999, 1))
 plot(density(best_matched_pseudopop$w,
-             weights = best_matched_pseudopop$counter_weight),
+             weights = best_matched_pseudopop$counter_weight / sum(best_matched_pseudopop$counter_weight)),
      main = "Density of exposure in matched pseudopopulation",
      xlab = exposure_name)
 plot(density(best_matched_pseudopop$w),
