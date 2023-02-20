@@ -65,7 +65,7 @@ best_weighted_pseudopop <- get_weighted_pseudopop(best_maxAC_attempt,
                                                   return_cov_bal = F)
 
 # run parametric outcome model
-weights <- best_weighted_pseudopop$capped_stabilized_ipw
+weights <- best_weighted_pseudopop$capped_stabilized_ipw # note: to use the following function, need to have "weights" in global environment; to do: improve this
 parametric_model_summary <- get_outcome_model_summary(pseudopop = best_weighted_pseudopop,
                                                       method = "weighting",
                                                       n_cores = n_cores,

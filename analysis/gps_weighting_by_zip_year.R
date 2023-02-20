@@ -3,6 +3,10 @@
 # devtools::install_github("fasrc/CausalGPS", ref="develop")
 library(data.table)
 library(fst)
+library(CausalGPS)
+library(wCorr)
+library(mgcv)
+library(ggplot2)
 
 # directories for data, code, and results
 dir_data <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
@@ -69,7 +73,7 @@ best_weighted_pseudopop <- get_weighted_pseudopop(best_maxAC_attempt,
 ess(best_weighted_pseudopop$capped_stabilized_ipw) # for attempt #121, which is best out of 200, ESS is 9,427,355
 
 # run parametric and semiparametric (thin-plate spline) outcome models
-best_weighted_pseudopop$capped_stabilized_ipw
+weights <- best_weighted_pseudopop$capped_stabilized_ipw # note: to use the following functions, need to have "weights" in global environment; to do: improve this
 parametric_model_summary <- get_outcome_model_summary(best_weighted_pseudopop,
                                                       "weighting",
                                                       n_cores,

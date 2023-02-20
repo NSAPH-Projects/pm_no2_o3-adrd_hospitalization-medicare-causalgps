@@ -178,9 +178,16 @@ cat("Proportion of observations matched:", sum(best_matched_pseudopop$counter_we
 cat("Distribution of number of matches per observations:")
 summary(best_matched_pseudopop$counter_weight)
 quantile(best_matched_pseudopop$counter_weight, c(0, 0.25, 0.5, 0.75, 0.95, 0.99, 0.999, 0.9999, 1))
+plot(density(best_matched_pseudopop$w,
+             weights = best_matched_pseudopop$counter_weight),
+     main = "Density of exposure in matched pseudopopulation",
+     xlab = exposure_name)
+plot(density(best_matched_pseudopop$w),
+     main = "Density of exposure in original pseudopopulation",
+     xlab = exposure_name)
 
 # run parametric and semiparametric (thin-plate spline) outcome models
-best_matched_pseudopop$counter_weight
+weights <- best_matched_pseudopop$counter_weight # note: to use the following functions, need to have "weights" in global environment; to do: improve this
 parametric_model_summary <- get_outcome_model_summary(best_matched_pseudopop,
                                                       "matching",
                                                       n_cores,

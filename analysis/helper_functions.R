@@ -168,7 +168,8 @@ get_weighted_pseudopop <- function(attempt_number,
 
 ## Functions for outcome models
 
-# note: to use this function, need to have weights in global environment
+# note: to use this function, need to have "weights" in global environment
+# to do: improve this
 get_outcome_model_summary <- function(pseudopop,
                                       method,
                                       n_cores,
