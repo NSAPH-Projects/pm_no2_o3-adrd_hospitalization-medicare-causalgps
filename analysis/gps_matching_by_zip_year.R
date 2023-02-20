@@ -23,6 +23,7 @@ n_cores <- 8 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
 n_gb <- 64 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
 n_attempts <- 10
 n_total_attempts <- n_attempts # user can set this to a number larger than n_attempts if some attempts with different seeds have already been tried
+if (n_total_attempts == 1) best_maxAC_attempt <- 1
 modifications <- paste0("gps_by_zip_year_", n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
 
 
@@ -40,7 +41,7 @@ cov_bal_matching <- create_cov_bal_data.table("matching", n_attempts)
 
 # use same exposure bin sequence for all strata's matching
 matching_caliper <- 0.6 ## to do: play with this. goal is to get large enough ESS
-# bin_seq_by_quantile <- quantile(zip_year_data$w, 0:100/100)
+# bin_seq_by_quantile <- quantile(zip_year_data$w, 0:30/30) # for 30 exposure bins with equal number of observations in each bin (bins are not equally spaced)
 # matching_caliper <- mean(diff(bin_seq_by_quantile))
 
 # returns a data.table with variable "counter_weight" denoting number of times each observation is matched
