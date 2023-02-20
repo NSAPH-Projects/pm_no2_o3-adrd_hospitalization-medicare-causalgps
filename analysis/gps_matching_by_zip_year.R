@@ -1,14 +1,26 @@
+##### Setup #####
+
+# devtools::install_github("fasrc/CausalGPS", ref="develop")
+library(data.table)
+library(fst)
+library(CausalGPS)
+library(wCorr)
+library(mgcv)
+library(ggplot2)
+
 # directories for data, code, and results
 dir_data <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
 dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
 dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
 
-source(paste0(dir_code, "analysis/setup_trimmed_and_zip_year_data.R"))
+# get data and helpful functions
+source(paste0(dir_code, "analysis/helper_functions.R"))
+zip_year_data <- read.fst(paste0(dir_data, "analysis/pm_zip_year_data_trimmed_1_99.fst"), as.data.table = T)
+zip_year_data_with_strata <- read.fst(paste0(dir_data, "analysis/ADRD_agg_lagged_trimmed_1_99.fst"), as.data.table = T)
 
 # parameters for this computing job
 n_cores <- 8 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
 n_gb <- 64 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
-# total_n_rows <- nrow(ADRD_agg_lagged)
 n_attempts <- 10
 n_total_attempts <- n_attempts # user can set this to a number larger than n_attempts if some attempts with different seeds have already been tried
 modifications <- paste0("gps_by_zip_year_", n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
@@ -17,10 +29,10 @@ modifications <- paste0("gps_by_zip_year_", n_attempts, "attempts") # to be used
 ##### GPS Matching #####
 
 # get columns from full data that are useful for matching
-ADRD_agg_for_matching <- copy(ADRD_agg_lagged_trimmed_1_99)
-ADRD_agg_for_matching[, stratum := .GRP, by = strata_vars]
-setorder(ADRD_agg_for_matching, stratum) # to do: consider if this line is necessary
-ADRD_agg_for_matching <- ADRD_agg_for_matching[, .(zip, year, stratum)]
+data_for_matching <- copy(zip_year_data_with_strata)
+data_for_matching[, stratum := .GRP, by = strata_vars]
+setorder(data_for_matching, stratum) # to do: consider if this line is necessary
+data_for_matching <- data_for_matching[, .(zip, year, stratum)]
 
 # set up data.table to check covariate balance for each GPS modeling attempt
 ### to do: see if zip can be included or if need more memory or something
@@ -73,7 +85,7 @@ get_matched_pseudopop <- function(attempt_number,
                                   return_pseudopop_list = F){
   
   # create log file to see internal processes of CausalGPS
-  set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_estimateGpsForMatching_AttemptNumber", attempt_number, "_", modifications, "_", n_zip_year_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
+  set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_estimateGpsForMatching_AttemptNumber", attempt_number, "_", modifications, "_", nrow(zip_year_data), "rows_", n_cores, "cores_", n_gb, "gb.log"),
              logger_level = "TRACE")
   
   # estimate GPS
@@ -95,17 +107,17 @@ get_matched_pseudopop <- function(attempt_number,
   
   # apply estimated GPS value to all strata within each ZIP/year
   temp_zip_year_with_gps_dataset_plus_params$zip <- zip_year_data$zip
-  temp_zip_year_with_gps_dataset_plus_params <- merge(ADRD_agg_for_matching, temp_zip_year_with_gps_dataset_plus_params,
+  temp_zip_year_with_gps_dataset_plus_params <- merge(data_for_matching, temp_zip_year_with_gps_dataset_plus_params,
                                                       by = c("zip", "year"))
   setorder(temp_zip_year_with_gps_dataset_plus_params, stratum)
   temp_zip_year_with_gps_dataset_plus_params[, row_index := 1:.N, by = stratum]
-  # temp_zip_year_with_gps_dataset_plus_params$row_index = 1:n_rows # old code
+  # temp_zip_year_with_gps_dataset_plus_params$row_index = 1:nrow(zip_year_data_with_strata) # old code
   temp_zip_year_with_gps_dataset_plus_params$zip <- NULL # ZIP is the only free variable for matching, so remove it from the dataset
   
   # match within strata
   strata_list <- split(temp_zip_year_with_gps_dataset_plus_params,
                        temp_zip_year_with_gps_dataset_plus_params$stratum)
-  set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_matching_by_stratum", modifications, "_", n_rows, "rows_", n_cores, "cores_", n_gb, "gb.log"),
+  set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_matching_by_stratum", modifications, "_", nrow(zip_year_data_with_strata), "rows_", n_cores, "cores_", n_gb, "gb.log"),
              logger_level = "TRACE")
   temp_matched_pseudopop_list <- lapply(strata_list,
                                         match_within_stratum,
@@ -145,10 +157,10 @@ matched_cov_bal_plot <- ggplot(best_maxAC_cov_bal, aes(x = Covariate, y = Absolu
   geom_point() +
   geom_line() +
   ylab(paste("Absolute Correlation with", exposure_name)) +
-  ggtitle(paste0(format(n_rows, scientific = F, big.mark = ','), " units of analysis (Attempt #", best_maxAC_attempt, " of ", n_total_attempts, ")")) +
+  ggtitle(paste0(format(nrow(zip_year_data_with_strata), scientific = F, big.mark = ','), " units of analysis (Attempt #", best_maxAC_attempt, " of ", n_total_attempts, ")")) +
   theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
 
-ggsave(paste0(dir_results, "covariate_balance/matched_pop_", n_rows, "rows_", modifications, ".png"), matched_cov_bal_plot)
+ggsave(paste0(dir_results, "covariate_balance/matched_pop_", nrow(zip_year_data_with_strata), "rows_", modifications, ".png"), matched_cov_bal_plot)
 
 # regenerate GPS model and matched pseudopopulation with best covariate balance
 # add "stratum" variable back to pseudopop, so that individual variables can be merged back in, for outcome modeling
@@ -168,6 +180,7 @@ summary(best_matched_pseudopop$counter_weight)
 quantile(best_matched_pseudopop$counter_weight, c(0, 0.25, 0.5, 0.75, 0.95, 0.99, 0.999, 0.9999, 1))
 
 # run parametric and semiparametric (thin-plate spline) outcome models
+best_matched_pseudopop$counter_weight
 parametric_model_summary <- get_outcome_model_summary(best_matched_pseudopop,
                                                       "matching",
                                                       n_cores,

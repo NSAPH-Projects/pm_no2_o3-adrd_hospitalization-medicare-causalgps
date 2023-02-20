@@ -12,6 +12,17 @@ strata_vars <- c("year", "sex", "race", "dual", "age_grp") # to do: consider if 
 zip_var_names <- c(zip_quant_var_names, zip_unordered_cat_var_names)
 indiv_var_names <- c(indiv_unordered_cat_var_names, indiv_quant_var_names) # note: for now, using ADRD_age as a quantitative variable (not binned)
 
+# exposure and outcome variables for this analysis
+exposure_name <- "pm25"
+other_expos_names <- zip_expos_names[zip_expos_names != exposure_name]
+outcome_name <- "n_hosp"
+
+
+## Formulas for outcome models (parametric and semiparametric thin-plate spline)
+
+formula_expos_only <- as.formula(paste(outcome_name, "~", paste(c("w", strata_vars), collapse = "+", sep = "")))
+formula_expos_only_smooth <- as.formula(paste(outcome_name, "~", paste(c("s(w, bs = 'ts')", strata_vars), collapse = "+", sep = "")))
+
 
 ## Calculate Kish's effective sample size
 ess <- function(weights) return(sum(weights)^2 / (sum(weights^2)))
@@ -31,9 +42,9 @@ create_cov_bal_data.table <- function(method,
   cov_bal <- expand.grid(1:n_attempts,
                          vars_for_cov_bal,
                          dataset_names,
-                         NA,
-                         NA,
-                         NA)
+                         -1,
+                         -1,
+                         -1) # these -1's are placeholders, will be replaced
   colnames(cov_bal) <- c("Attempt", "Covariate", "Dataset", "Correlation", "Absolute_Correlation", "ESS")
   cov_bal <- as.data.table(cov_bal)
   return(cov_bal)
@@ -82,6 +93,7 @@ calculate_correlations <- function(cov_bal_data.table,
                                           method = "pearson")]
   }
   
+  cov_bal_data.table[Attempt == attempt, Absolute_Correlation := abs(Correlation)]
   cov_bal_data.table[Attempt == attempt & Dataset == dataset_names[1], ESS := ess(pseudopop[[weight_name]])]
   cov_bal_data.table[Attempt == attempt & Dataset == dataset_names[2], ESS := nrow(pseudopop)]
   
@@ -96,30 +108,72 @@ summarize_cov_bal <- function(cov_bal_data.table,
   else if (method == "matching") dataset_name <- "Matched"
   else stop("'method' must be 'weighting' or 'matching'")
   
-  cov_bal_data.table[, Absolute_Correlation := abs(Correlation)]
   cov_bal_summary <- cov_bal_data.table[Dataset == dataset_name, .(maxAC = max(Absolute_Correlation),
                                                                 meanAC = mean(Absolute_Correlation),
                                                                 maxACVariable = Covariate[which.max(Absolute_Correlation)],
                                                                 ESS = unique(ESS)),
                                         by = Attempt]
   if (save_csv){
-    write.csv(cov_bal_summary, paste0(dir_results, "covariate_balance/cov_bal_as_csv/weighted_pop_", n_rows, "rows_", modifications, ".csv"))
+    write.csv(cov_bal_summary, paste0(dir_results, "covariate_balance/cov_bal_as_csv/weighted_pop_", modifications, ".csv"))
   }
   return(cov_bal_summary)
 }
 
 
+## Functions to perform GPS weighting or matching
+
+get_weighted_pseudopop <- function(attempt_number,
+                                   zip_year_data,
+                                   zip_year_data_with_strata,
+                                   cov_bal_data.table,
+                                   return_cov_bal = T){
+  # estimate GPS
+  set.seed(attempt_number*100)
+  temp_zip_year_with_gps <- estimate_gps(Y = 0, # fake Y variable since our outcomes are not at the zip-year level; not used in estimate_gps
+                                         w = zip_year_data$w,
+                                         c = subset(zip_year_data, select = c("year", other_expos_names, zip_var_names)),
+                                         gps_model = "parametric", # i.e., w=f(x)+epsilon, f(x) estimated by xgboost and epsilon is normal
+                                         internal_use = T,
+                                         params = list(xgb_nrounds = seq(10, 50),
+                                                       xgb_eta = seq(0.1, 0.4, 0.01)),
+                                         sl_lib = c("m_xgboost"),
+                                         nthread = n_cores)
+  temp_zip_year_with_gps <- temp_zip_year_with_gps$dataset
+  temp_zip_year_with_gps$zip <- zip_year_data$zip
+  
+  # stabilize GPS using marginal probability of exposure (modeled normally) and cap extreme weights at 10
+  marginal_expos_prob <- dnorm(zip_year_data$w,
+                               mean = mean(zip_year_data$w),
+                               sd = sd(zip_year_data$w))
+  temp_zip_year_with_gps$stabilized_ipw <- marginal_expos_prob / temp_zip_year_with_gps$gps ## check estimate_gps
+  temp_zip_year_with_gps$capped_stabilized_ipw <- ifelse(temp_zip_year_with_gps$stabilized_ipw > 10, 10, temp_zip_year_with_gps$stabilized_ipw)
+  
+  # merge with patient data
+  temp_weighted_pseudopop <- merge(zip_year_data_with_strata, subset(temp_zip_year_with_gps,
+                                                                        select = c("zip", "year", "capped_stabilized_ipw")),
+                                   by = c("zip", "year"))
+  
+  if (return_cov_bal){
+    # calculate correlation between exposure and covariates
+    cov_bal_weighting <- calculate_correlations(cov_bal_data.table = cov_bal_data.table,
+                                                method = "weighting",
+                                                attempt = attempt_number,
+                                                pseudopop = temp_weighted_pseudopop)
+    return(cov_bal_weighting)
+  } else{
+    return(temp_weighted_pseudopop)
+  }
+}
+
+
 ## Functions for outcome models
 
+# note: to use this function, need to have weights in global environment
 get_outcome_model_summary <- function(pseudopop,
                                       method,
                                       n_cores,
                                       parametric_or_semiparametric = "parametric",
                                       save_results = T){
-  
-  if (method == "weighting") weight_name = "capped_stabilized_ipw"
-  if (method == "matching") weight_name = "counter_weight"
-  else stop("'method' must be 'weighting' or 'matching'")
   
   if (parametric_or_semiparametric == "parametric") formula <- formula_expos_only
   else if (parametric_or_semiparametric == "semiparametric") formula <- formula_expos_only_smooth
@@ -130,7 +184,7 @@ get_outcome_model_summary <- function(pseudopop,
                            data = pseudopop,
                            offset = log(n_persons * n_years),
                            family = poisson(link = "log"),
-                           weights = pseudopop[[weight_name]],
+                           weights = weights,
                            samfrac = 0.05,
                            chunk.size = 5000,
                            control = gam.control(trace = TRUE),
@@ -140,12 +194,12 @@ get_outcome_model_summary <- function(pseudopop,
   
   if (save_results){
     if (parametric_or_semiparametric == "parametric"){
-      saveRDS(summary(bam_exposure_only), file = paste0(dir_results, "parametric_results/bam_exposure_only_", method, "_", n_rows, "rows_", modifications, ".rds"))
+      saveRDS(summary(bam_exposure_only), file = paste0(dir_results, "parametric_results/bam_exposure_only_", method, "_", nrow(pseudopop), "rows_", modifications, ".rds"))
     } else{
-      png(paste0(dir_results, "semiparametric_results/ERFs/bam_smooth_exposure_only_", method, "_", n_rows, "rows_", modifications, ".png"))
+      png(paste0(dir_results, "semiparametric_results/ERFs/bam_smooth_exposure_only_", method, "_", nrow(pseudopop), "rows_", modifications, ".png"))
       plot(bam_exposure_only, main = paste0("GPS ", method, ", Smoothed Poisson regression,\nexposure only (", exposure_name, ")"))
       dev.off()
-      # saveRDS(bam_exposure_only, file = paste0(dir_results, "semiparametric_results/spline_objects/bam_smooth_exposure_only_", method, "_", n_rows, "rows_", modifications, ".rds"))
+      # saveRDS(bam_exposure_only, file = paste0(dir_results, "semiparametric_results/spline_objects/bam_smooth_exposure_only_", method, "_", nrow(pseudopop), "rows_", modifications, ".rds"))
     }
   }
   return(summary(bam_exposure_only))
