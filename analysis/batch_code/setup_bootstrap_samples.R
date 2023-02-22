@@ -14,9 +14,9 @@ zip_year_data <- read.fst(paste0(dir_data, "analysis/pm_zip_year_data_trimmed_1_
 
 # set up m out of n bootstrap, with replacement, and save as csv
 set.seed(186)
-n_boot_iter <- 50
-n_boot <- length(unique(zip_year_data$zip))
-m_boot <- floor(2 * sqrt(n_boot))
+n_boot_iter <- 500
+n_boot <- length(unique(zip_year_data$zip)) # 31013
+m_boot <- floor(2 * sqrt(n_boot)) # 352
 boot_zips <- sapply(1:n_boot_iter, function(i) sample(unique(zip_year_data$zip), m_boot, replace = T))
 fwrite(boot_zips, paste0(dir_code, "analysis/batch_code/pm_boot_zips.csv"))
 

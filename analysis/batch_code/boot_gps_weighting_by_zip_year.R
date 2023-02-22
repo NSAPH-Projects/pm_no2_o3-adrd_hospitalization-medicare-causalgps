@@ -78,4 +78,4 @@ fwrite(result,
 ##### After running analyses on all bootstrap samples, compute bootstrap estimate and SE #####
 
 # boot_mean <- mean(boot_results)
-# boot_var <- m/n * var(boot_results)
+# boot_var <- m_boot / n_boot * var(boot_results)
