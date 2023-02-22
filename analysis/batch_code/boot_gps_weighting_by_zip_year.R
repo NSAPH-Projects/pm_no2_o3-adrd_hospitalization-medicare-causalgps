@@ -70,11 +70,9 @@ parametric_model_summary <- get_outcome_model_summary(pseudopop = best_weighted_
 coef_for_exposure <- parametric_model_summary$p.table["w", "Estimate"]
 result <- data.table(boot_sample_number = boot_sample_number,
                      coef_for_exposure = coef_for_exposure)
-
-# save result in csv
-boot_results <- fread(paste0(dir_results, "batch_sims/boot_results.csv"))
-boot_results <- rbind(boot_results, result)
-fwrite(boot_results, paste0(dir_results, "batch_sims/boot_results.csv"))
+fwrite(result,
+       paste0(dir_results, "batch_sims/boot_results.csv"),
+       append = T)
 
 
 ##### After running analyses on all bootstrap samples, compute bootstrap estimate and SE #####
