@@ -57,10 +57,10 @@ weighted_cov_bal_plot <- ggplot(best_maxAC_cov_bal, aes(x = Covariate, y = Absol
   geom_point() +
   geom_line() +
   ylab(paste("Absolute Correlation with", exposure_name)) +
-  ggtitle(paste0(format(n_rows, scientific = F, big.mark = ','), " units of analysis (Attempt #", best_maxAC_attempt, " of ", n_total_attempts, ")")) +
+  ggtitle(paste0(format(nrow(zip_year_data_with_strata), scientific = F, big.mark = ','), " units of analysis (Attempt #", best_maxAC_attempt, " of ", n_total_attempts, ")")) +
   theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
 
-ggsave(paste0(dir_results, "covariate_balance/weighted_pop_", n_rows, "rows_", modifications, ".png"), weighted_cov_bal_plot)
+ggsave(paste0(dir_results, "covariate_balance/weighted_pop_", nrow(zip_year_data_with_strata), "rows_", modifications, ".png"), weighted_cov_bal_plot)
 
 # get pseudopopulation
 best_weighted_pseudopop <- get_weighted_pseudopop(best_maxAC_attempt,
