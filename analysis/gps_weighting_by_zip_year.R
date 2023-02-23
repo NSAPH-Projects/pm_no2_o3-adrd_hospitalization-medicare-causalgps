@@ -13,8 +13,11 @@ dir_data <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
 dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
 dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
 
-# set exposure, get data and helpful functions
+# set exposure
 exposure_name <- "pm25"
+other_expos_names <- c("no2", "ozone_summer")
+
+# get data and helpful functions
 source(paste0(dir_code, "analysis/helper_functions.R"))
 zip_year_data <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_trimmed_1_99.fst"), as.data.table = T)
 zip_year_data_with_strata <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_with_strata_trimmed_1_99.fst"), as.data.table = T)
@@ -31,17 +34,18 @@ modifications <- paste0(exposure_name, "_gps_by_zip_year_", n_attempts, "attempt
 
 # set up data.table to check covariate balance for each GPS modeling attempt
 ### to do: see if zip can be included or if need more memory or something
-cov_bal_weighting <- create_cov_bal_data.table("weighting", n_attempts)
+cov_bal_weighting <- create_cov_bal_data.table("weighting", n_attempts, other_expos_names)
 
 # create log file to see internal processes of CausalGPS
 set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_estimate_gps_for_weighting_", modifications, "_", nrow(zip_year_data), "rows_", n_cores, "cores_", n_gb, "gb.log"),
            logger_level = "TRACE")
 
 for (i in 1:n_attempts){
-  cov_bal_weighting <- get_weighted_pseudopop(i,
-                                              zip_year_data,
-                                              zip_year_data_with_strata,
-                                              cov_bal_weighting,
+  cov_bal_weighting <- get_weighted_pseudopop(attempt_number = i,
+                                              other_expos_names = other_expos_names,
+                                              zip_year_data = zip_year_data,
+                                              zip_year_data_with_strata = zip_year_data_with_strata,
+                                              cov_bal_data.table = cov_bal_weighting,
                                               return_cov_bal = T)
 }
 
@@ -64,25 +68,28 @@ weighted_cov_bal_plot <- ggplot(best_maxAC_cov_bal, aes(x = Covariate, y = Absol
 ggsave(paste0(dir_results, "covariate_balance/weighted_pop_", nrow(zip_year_data_with_strata), "rows_", modifications, ".png"), weighted_cov_bal_plot)
 
 # get pseudopopulation
-best_weighted_pseudopop <- get_weighted_pseudopop(best_maxAC_attempt,
-                                                  zip_year_data,
-                                                  zip_year_data_with_strata,
-                                                  cov_bal_weighting,
+best_weighted_pseudopop <- get_weighted_pseudopop(attempt_number = best_maxAC_attempt,
+                                                  other_expos_names = other_expos_names,
+                                                  zip_year_data = zip_year_data,
+                                                  zip_year_data_with_strata = zip_year_data_with_strata,
+                                                  cov_bal_data.table = cov_bal_weighting,
                                                   return_cov_bal = F)
 
 # print summary statistics for pseudopopulation weights
-ess(best_weighted_pseudopop$capped_stabilized_ipw) # for attempt #121, which is best out of 200, ESS is 9,427,355
+ess(best_weighted_pseudopop$capped_stabilized_ipw) # for PM2.5 attempt #121, which is best out of 200, ESS is 9,427,355
 
 # run parametric and semiparametric (thin-plate spline) outcome models
 weights <- best_weighted_pseudopop$capped_stabilized_ipw # note: to use the following functions, need to have "weights" in global environment; to do: improve this
-parametric_model_summary <- get_outcome_model_summary(best_weighted_pseudopop,
-                                                      "weighting",
-                                                      n_cores,
-                                                      "parametric",
+parametric_model_summary <- get_outcome_model_summary(pseudopop = best_weighted_pseudopop,
+                                                      exposure_name = exposure_name,
+                                                      method = "weighting",
+                                                      n_cores = n_cores,
+                                                      parametric_or_semiparametric = "parametric",
                                                       save_results = T)
 
-semiparametric_model_summary <- get_outcome_model_summary(best_weighted_pseudopop,
-                                                          "weighting",
-                                                          n_cores,
-                                                          "semiparametric",
+semiparametric_model_summary <- get_outcome_model_summary(pseudopop = best_weighted_pseudopop,
+                                                          exposure_name = exposure_name,
+                                                          method = "weighting",
+                                                          n_cores = n_cores,
+                                                          parametric_or_semiparametric = "semiparametric",
                                                           save_results = T)

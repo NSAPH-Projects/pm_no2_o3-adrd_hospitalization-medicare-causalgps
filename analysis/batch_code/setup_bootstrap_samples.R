@@ -8,14 +8,16 @@ dir_data <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
 dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
 dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
 
-# set exposure, get data and helpful functions
+# set exposure
 exposure_name <- "pm25"
+
+# get data and helpful functions
 source(paste0(dir_code, "analysis/helper_functions.R"))
 zip_year_data <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_trimmed_1_99.fst"))
 
 # set up m out of n bootstrap, with replacement, and save as csv
 set.seed(186)
-n_boot_iter <- 5000
+n_boot_iter <- 200
 n_boot <- length(unique(zip_year_data$zip)) # 31013
 m_boot <- floor(2 * sqrt(n_boot)) # 352
 boot_zips <- sapply(1:n_boot_iter, function(i) sample(unique(zip_year_data$zip), m_boot, replace = T))

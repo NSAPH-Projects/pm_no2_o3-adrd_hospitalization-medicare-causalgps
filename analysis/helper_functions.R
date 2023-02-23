@@ -12,9 +12,7 @@ strata_vars <- c("year", "sex", "race", "dual", "age_grp") # to do: consider if 
 zip_var_names <- c(zip_quant_var_names, zip_unordered_cat_var_names)
 indiv_var_names <- c(indiv_unordered_cat_var_names, indiv_quant_var_names) # note: for now, using ADRD_age as a quantitative variable (not binned)
 
-# exposure and outcome variables for this analysis
-exposure_name <- "pm25"
-other_expos_names <- zip_expos_names[zip_expos_names != exposure_name]
+# outcome variable for this analysis
 outcome_name <- "n_hosp"
 
 
@@ -33,11 +31,13 @@ ess <- function(weights) return(sum(weights)^2 / (sum(weights^2)))
 # to do: see if zip can be included or if need more memory or something
 create_cov_bal_data.table <- function(method,
                                       n_attempts,
-                                      vars_for_cov_bal = c(other_expos_names, zip_quant_var_names, levels(zip_year_data[["region"]]))){
+                                      other_expos_names){
   
   if (method == "weighting") dataset_names <- c("Weighted", "Unweighted")
   else if (method == "matching") dataset_names <- c("Matched", "Unmatched")
   else stop("'method' must be 'weighting' or 'matching'")
+  
+  vars_for_cov_bal = c(other_expos_names, zip_quant_var_names, levels(zip_year_data[["region"]]))
   
   cov_bal <- expand.grid(1:n_attempts,
                          vars_for_cov_bal,
@@ -51,6 +51,7 @@ create_cov_bal_data.table <- function(method,
 }
 
 calculate_correlations <- function(cov_bal_data.table,
+                                   other_expos_names,
                                    method,
                                    attempt,
                                    pseudopop){
@@ -123,6 +124,7 @@ summarize_cov_bal <- function(cov_bal_data.table,
 ## Functions to perform GPS weighting or matching
 
 get_weighted_pseudopop <- function(attempt_number,
+                                   other_expos_names,
                                    zip_year_data,
                                    zip_year_data_with_strata,
                                    cov_bal_data.table,
@@ -156,6 +158,7 @@ get_weighted_pseudopop <- function(attempt_number,
   if (return_cov_bal){
     # calculate correlation between exposure and covariates
     cov_bal_weighting <- calculate_correlations(cov_bal_data.table = cov_bal_data.table,
+                                                other_expos_names = other_expos_names,
                                                 method = "weighting",
                                                 attempt = attempt_number,
                                                 pseudopop = temp_weighted_pseudopop)
@@ -171,6 +174,7 @@ get_weighted_pseudopop <- function(attempt_number,
 # note: to use this function, need to have "weights" in global environment
 # to do: improve this
 get_outcome_model_summary <- function(pseudopop,
+                                      exposure_name,
                                       method,
                                       n_cores,
                                       parametric_or_semiparametric = "parametric",
