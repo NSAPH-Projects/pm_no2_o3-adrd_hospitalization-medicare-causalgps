@@ -13,10 +13,11 @@ dir_data <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
 dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
 dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
 
-# get data and helpful functions
+# set exposure, get data and helpful functions
+exposure_name <- "pm25"
 source(paste0(dir_code, "analysis/helper_functions.R"))
-zip_year_data <- read.fst(paste0(dir_data, "analysis/pm_zip_year_data_trimmed_1_99.fst"), as.data.table = T)
-zip_year_data_with_strata <- read.fst(paste0(dir_data, "analysis/ADRD_agg_lagged_trimmed_1_99.fst"), as.data.table = T)
+zip_year_data <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_trimmed_1_99.fst"), as.data.table = T)
+zip_year_data_with_strata <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_with_strata_trimmed_1_99.fst"), as.data.table = T)
 
 # parameters for this computing job
 n_cores <- 8 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition

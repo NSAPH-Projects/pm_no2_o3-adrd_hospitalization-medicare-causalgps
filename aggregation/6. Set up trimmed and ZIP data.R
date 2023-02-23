@@ -55,12 +55,12 @@ trim_1_99 <- quantile(zip_year_data$w, c(0.01, 0.99))
 zip_year_rows_within_range <- zip_year_data$w >= trim_1_99[1] & zip_year_data$w <= trim_1_99[2]
 zip_year_trimmed_1_99 <- zip_year_data[zip_year_rows_within_range, ]
 n_zip_year_rows <- nrow(zip_year_trimmed_1_99)
-# write_fst(zip_year_trimmed_1_99, paste0(dir_data, "analysis/pm_zip_year_data_trimmed_1_99.fst"))
+# write_fst(zip_year_trimmed_1_99, paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_trimmed_1_99.fst"))
 
 ADRD_agg_rows_within_range <- ADRD_agg_lagged_subset$w >= trim_1_99[1] & ADRD_agg_lagged_subset$w <= trim_1_99[2]
 ADRD_agg_lagged_trimmed_1_99 <- ADRD_agg_lagged_subset[ADRD_agg_rows_within_range, ]
 n_rows <- nrow(ADRD_agg_lagged_trimmed_1_99) # 34,141,155 for PM1.5; 34,090,022 for NO2; 33,411,373 for ozone
-# write_fst(ADRD_agg_lagged_trimmed_1_99, paste0(dir_data, "analysis/ADRD_agg_lagged_trimmed_1_99.fst"))
+# write_fst(ADRD_agg_lagged_trimmed_1_99, paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_with_strata_trimmed_1_99.fst"))
 
 
 ## Formulas for outcome models (parametric and semiparametric thin-plate spline)

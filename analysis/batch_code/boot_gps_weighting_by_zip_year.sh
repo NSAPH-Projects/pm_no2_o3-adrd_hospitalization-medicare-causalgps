@@ -7,7 +7,7 @@
 #SBATCH --error boot_gps_weighting_by_zip_year.err
 #SBATCH --mem 16000
 #SBATCH --time=00:20:00
-#SBATCH --array=1-500
+#SBATCH --array=1-1000
 #SBATCH --mail-user=michelleqin@college.harvard.edu
 #SBATCH --mail-type=ALL
 
