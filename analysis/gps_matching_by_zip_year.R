@@ -15,7 +15,6 @@ dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/res
 
 # set exposure
 exposure_name <- "pm25"
-other_expos_names <- c("no2", "ozone_summer")
 
 # parameters for this computing job
 n_cores <- 8 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
@@ -23,7 +22,7 @@ n_gb <- 64 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
 n_attempts <- 10
 n_total_attempts <- n_attempts # user can set this to a number larger than n_attempts if some attempts with different seeds have already been tried
 if (n_total_attempts == 1) best_maxAC_attempt <- 1
-modifications <- paste0("gps_by_zip_year_", n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
+modifications <- paste0(exposure_name, "_only_gps_by_zip_year_", n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
 
 # get data and helpful functions
 source(paste0(dir_code, "analysis/helper_functions.R"))
@@ -41,7 +40,7 @@ data_for_matching <- data_for_matching[, .(zip, year, stratum)]
 
 # set up data.table to check covariate balance for each GPS modeling attempt
 ### to do: see if zip can be included or if need more memory or something
-cov_bal_matching <- create_cov_bal_data.table("matching", n_attempts, other_expos_names)
+cov_bal_matching <- create_cov_bal_data.table("matching", n_attempts)
 
 # use same exposure bin sequence for all strata's matching
 matching_caliper <- 0.6 ## to do: play with this. goal is to get large enough ESS
@@ -50,7 +49,6 @@ matching_caliper <- 0.6 ## to do: play with this. goal is to get large enough ES
 
 # returns a data.table with variable "counter_weight" denoting number of times each observation is matched
 match_within_stratum <- function(dataset_plus_params,
-                                 other_expos_names,
                                  e_gps_std_pred,
                                  gps_mx,
                                  w_mx){
@@ -58,7 +56,7 @@ match_within_stratum <- function(dataset_plus_params,
   dataset_as_cgps_gps <- list()
   class(dataset_as_cgps_gps) <- "cgps_gps"
   dataset_as_cgps_gps$dataset <- subset(as.data.frame(dataset_plus_params),
-                                        select = c("Y", "w", "year", other_expos_names, zip_var_names, # note that Y is a fake variable with value 0; not used in matching
+                                        select = c("Y", "w", "year", zip_var_names, # note that Y is a fake variable with value 0; not used in matching
                                                    "gps", "counter_weight", "row_index"))
   # dataset_as_cgps_gps$used_params <- used_params # old code
   dataset_as_cgps_gps$e_gps_pred <- dataset_plus_params$e_gps_pred
@@ -86,7 +84,6 @@ match_within_stratum <- function(dataset_plus_params,
 }
 
 get_matched_pseudopop <- function(attempt_number,
-                                  other_expos_names,
                                   cov_bal_data.table,
                                   return_cov_bal = T,
                                   return_pseudopop_list = F){
@@ -99,7 +96,7 @@ get_matched_pseudopop <- function(attempt_number,
   set.seed(attempt_number*100)
   temp_zip_year_with_gps_obj <- estimate_gps(Y = 0, # fake Y variable since our outcomes are not at the zip-year level; not used in estimate_gps
                                              w = zip_year_data$w,
-                                             c = subset(zip_year_data, select = c("year", other_expos_names, zip_var_names)),
+                                             c = subset(zip_year_data, select = c("year", zip_var_names)),
                                              gps_model = "parametric", # i.e., w=f(x)+epsilon, f(x) estimated by xgboost and epsilon is normal
                                              internal_use = T,
                                              params = list(xgb_nrounds = seq(10, 50),
@@ -128,7 +125,6 @@ get_matched_pseudopop <- function(attempt_number,
              logger_level = "TRACE")
   temp_matched_pseudopop_list <- lapply(strata_list,
                                         match_within_stratum,
-                                        other_expos_names = other_expos_names,
                                         e_gps_std_pred = temp_zip_year_with_gps_obj$e_gps_std_pred,
                                         gps_mx = temp_zip_year_with_gps_obj$gps_mx,
                                         w_mx = temp_zip_year_with_gps_obj$w_mx)
@@ -136,7 +132,6 @@ get_matched_pseudopop <- function(attempt_number,
   if (return_cov_bal){
     temp_matched_pseudopop <- rbindlist(temp_matched_pseudopop_list)
     cov_bal_data.table <- calculate_correlations(cov_bal_data.table = cov_bal_data.table,
-                                                 other_expos_names = other_expos_names,
                                                  method = "matching",
                                                  attempt = attempt_number,
                                                  pseudopop = temp_matched_pseudopop)
@@ -149,7 +144,6 @@ get_matched_pseudopop <- function(attempt_number,
 
 for (i in 1:n_attempts){
   cov_bal_matching <- get_matched_pseudopop(attempt_number = i,
-                                            other_expos_names = other_expos_names,
                                             cov_bal_data.table = cov_bal_matching,
                                             return_cov_bal = T,
                                             return_pseudopop_list = F)
@@ -175,7 +169,6 @@ ggsave(paste0(dir_results, "covariate_balance/matched_pop_", nrow(zip_year_data_
 # regenerate GPS model and matched pseudopopulation with best covariate balance
 # add "stratum" variable back to pseudopop, so that individual variables can be merged back in, for outcome modeling
 best_matched_pseudopop_list <- get_matched_pseudopop(attempt_number = best_maxAC_attempt,
-                                                     other_expos_names = other_expos_names,
                                                      cov_bal_data.table = cov_bal_matching,
                                                      return_cov_bal = F,
                                                      return_pseudopop_list = T)

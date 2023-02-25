@@ -1,3 +1,5 @@
+##### To do: remove other pollutants #####
+
 ##### Setup #####
 
 # devtools::install_github("fasrc/CausalGPS", ref="develop")

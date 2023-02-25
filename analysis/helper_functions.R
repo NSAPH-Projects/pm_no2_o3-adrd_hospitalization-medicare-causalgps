@@ -30,14 +30,13 @@ ess <- function(weights) return(sum(weights)^2 / (sum(weights^2)))
 
 # to do: see if zip can be included or if need more memory or something
 create_cov_bal_data.table <- function(method,
-                                      n_attempts,
-                                      other_expos_names){
+                                      n_attempts){
   
   if (method == "weighting") dataset_names <- c("Weighted", "Unweighted")
   else if (method == "matching") dataset_names <- c("Matched", "Unmatched")
   else stop("'method' must be 'weighting' or 'matching'")
   
-  vars_for_cov_bal = c(other_expos_names, zip_quant_var_names, levels(zip_year_data[["region"]]))
+  vars_for_cov_bal = c(zip_quant_var_names, levels(zip_year_data[["region"]]))
   
   cov_bal <- expand.grid(1:n_attempts,
                          vars_for_cov_bal,
@@ -51,7 +50,6 @@ create_cov_bal_data.table <- function(method,
 }
 
 calculate_correlations <- function(cov_bal_data.table,
-                                   other_expos_names,
                                    method,
                                    attempt,
                                    pseudopop){
@@ -81,7 +79,7 @@ calculate_correlations <- function(cov_bal_data.table,
     }
   }
   
-  for (quant_var in c(other_expos_names, zip_quant_var_names)){
+  for (quant_var in zip_quant_var_names){
     cov_bal_data.table[Attempt == attempt & Covariate == quant_var & Dataset == dataset_names[1],
                        Correlation := weightedCorr(pseudopop$w,
                                                    pseudopop[[quant_var]],
@@ -124,7 +122,6 @@ summarize_cov_bal <- function(cov_bal_data.table,
 ## Functions to perform GPS weighting or matching
 
 get_weighted_pseudopop <- function(attempt_number,
-                                   other_expos_names,
                                    zip_year_data,
                                    zip_year_data_with_strata,
                                    cov_bal_data.table,
@@ -133,7 +130,7 @@ get_weighted_pseudopop <- function(attempt_number,
   set.seed(attempt_number*100)
   temp_zip_year_with_gps <- estimate_gps(Y = 0, # fake Y variable since our outcomes are not at the zip-year level; not used in estimate_gps
                                          w = zip_year_data$w,
-                                         c = subset(zip_year_data, select = c("year", other_expos_names, zip_var_names)),
+                                         c = subset(zip_year_data, select = c("year", zip_var_names)),
                                          gps_model = "parametric", # i.e., w=f(x)+epsilon, f(x) estimated by xgboost and epsilon is normal
                                          internal_use = T,
                                          params = list(xgb_nrounds = seq(10, 50),
@@ -158,7 +155,6 @@ get_weighted_pseudopop <- function(attempt_number,
   if (return_cov_bal){
     # calculate correlation between exposure and covariates
     cov_bal_weighting <- calculate_correlations(cov_bal_data.table = cov_bal_data.table,
-                                                other_expos_names = other_expos_names,
                                                 method = "weighting",
                                                 attempt = attempt_number,
                                                 pseudopop = temp_weighted_pseudopop)

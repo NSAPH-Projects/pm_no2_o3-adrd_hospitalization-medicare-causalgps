@@ -15,7 +15,6 @@ dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/res
 
 # set exposure
 exposure_name <- "pm25"
-other_expos_names <- c("no2", "ozone_summer")
 
 # get data and helpful functions
 source(paste0(dir_code, "analysis/helper_functions.R"))
@@ -27,14 +26,14 @@ n_cores <- 8 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
 n_gb <- 64 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
 n_attempts <- 30
 n_total_attempts <- n_attempts # user can set this to a number larger than n_attempts if some attempts with different seeds have already been tried
-modifications <- paste0(exposure_name, "_gps_by_zip_year_", n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
+modifications <- paste0(exposure_name, "_only_gps_by_zip_year_", n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
 
 
 ##### GPS Weighting #####
 
 # set up data.table to check covariate balance for each GPS modeling attempt
 ### to do: see if zip can be included or if need more memory or something
-cov_bal_weighting <- create_cov_bal_data.table("weighting", n_attempts, other_expos_names)
+cov_bal_weighting <- create_cov_bal_data.table("weighting", n_attempts)
 
 # create log file to see internal processes of CausalGPS
 set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_estimate_gps_for_weighting_", modifications, "_", nrow(zip_year_data), "rows_", n_cores, "cores_", n_gb, "gb.log"),
@@ -42,7 +41,6 @@ set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGP
 
 for (i in 1:n_attempts){
   cov_bal_weighting <- get_weighted_pseudopop(attempt_number = i,
-                                              other_expos_names = other_expos_names,
                                               zip_year_data = zip_year_data,
                                               zip_year_data_with_strata = zip_year_data_with_strata,
                                               cov_bal_data.table = cov_bal_weighting,
@@ -69,7 +67,6 @@ ggsave(paste0(dir_results, "covariate_balance/weighted_pop_", nrow(zip_year_data
 
 # get pseudopopulation
 best_weighted_pseudopop <- get_weighted_pseudopop(attempt_number = best_maxAC_attempt,
-                                                  other_expos_names = other_expos_names,
                                                   zip_year_data = zip_year_data,
                                                   zip_year_data_with_strata = zip_year_data_with_strata,
                                                   cov_bal_data.table = cov_bal_weighting,
