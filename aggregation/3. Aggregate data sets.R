@@ -17,7 +17,7 @@
 # options(stringsAsFactors = FALSE)
 # 
 # setDTthreads(threads = 16)
-dir_proj <- "~/nsaph_projects/pm_no2_o3-adrd_hosp-medicare-causalgps/"
+dir_proj <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/"
 source(paste0(dir_proj, "code/aggregation/2. ADRD hospitalization data.R"))
 
 ##### Read denom files ##### 
@@ -30,12 +30,15 @@ setkey(dt, zip, cohort, year, age_grp, sex, race, dual)
 #         begin year 2001 to pair with 2000 exposures
 #   Select: # persons, # hospitalizations
 #   By: zip, cohort, year, age_grp, sex, race, dual
-dt_ADRD <- dt[ADRD_year >= cohort + 2 & ADRD_year >= year & year >= 2001]
+dt_ADRD <- dt[ADRD_year >= cohort + 2 & # 2 year 'clean' period
+                ADRD_year >= year & # censor observations after ADRD event
+                year >= 2001] # begin year 2001 to pair with 2000 exposures
 dt_ADRD[cohort == 2000, cohort := 2001] # start 2000 cohort in 2001
+dt_ADRD[, .(uniqueN(qid))] # 50,053,399 individuals in the dataset
 ADRD_agg <- dt_ADRD[, .(n_persons = .N, n_hosp = sum(ADRD_hosp)),
                     by = .(zip, cohort, year, age_grp, sex, race, dual)]
 ADRD_agg[, n_years := 1 + year - cohort]
-ADRD_agg[, .(.N, sum(n_hosp))] # 41948558 units 5935558 events
+ADRD_agg[, .(.N, sum(n_hosp))] # 41,948,558 units; 5,935,558 events
 write_fst(ADRD_agg, paste0(dir_proj, "data/aggregated/ADRD_agg_tv.fst")) 
 rm(dt_ADRD)
 

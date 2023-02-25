@@ -18,8 +18,8 @@ options(stringsAsFactors = FALSE)
 setDTthreads(threads = 24)
 threads_fst(nr_of_threads = 24, reset_after_fork = TRUE)
 
-dir_proj <- "~/nsaph_projects/pm_no2_o3-adrd_hosp-medicare-causalgps/"
-dir_data <- "/n/dominici_nsaph_l3/Lab/projects/pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
+dir_proj <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/"
+dir_data <- "/n/dominici_nsaph_l3/Lab/projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
 dir_denominator <- "/n/dominici_nsaph_l3/Lab/projects/analytic/denom_by_year/"
 
 ##### Read denom files ##### 
