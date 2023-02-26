@@ -22,9 +22,9 @@ zip_year_data <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_yea
 zip_year_data_with_strata <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_with_strata_trimmed_1_99.fst"), as.data.table = T)
 
 # parameters for this computing job; user should set
-n_cores <- 32 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
-n_gb <- 128 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
-find_best_cov_bal_attempt = T # user should set this variable
+n_cores <- 16 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
+n_gb <- 64 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
+find_best_cov_bal_attempt <- T # user should set this variable
 
 if (find_best_cov_bal_attempt){
   n_attempts <- 30 # user should set this; number of attempts this script will try to model the GPS
@@ -92,7 +92,6 @@ best_weighted_pseudopop <- get_weighted_pseudopop(attempt_number = best_maxAC_at
 ess(best_weighted_pseudopop$capped_stabilized_ipw) # for PM2.5 attempt #121, which is best out of 200, ESS is 9,427,355
 
 # run parametric and semiparametric (thin-plate spline) outcome models
-weights <- best_weighted_pseudopop$capped_stabilized_ipw # note: to use the following functions, need to have "weights" in global environment; to do: improve this
 parametric_model_summary <- get_outcome_model_summary(pseudopop = best_weighted_pseudopop,
                                                       exposure_name = exposure_name,
                                                       method = "weighting",

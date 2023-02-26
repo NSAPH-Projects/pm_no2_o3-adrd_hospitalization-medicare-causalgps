@@ -167,8 +167,6 @@ get_weighted_pseudopop <- function(attempt_number,
 
 ## Functions for outcome models
 
-# note: to use this function, need to have "weights" in global environment
-# to do: improve this
 get_outcome_model_summary <- function(pseudopop,
                                       exposure_name,
                                       method,
@@ -181,16 +179,29 @@ get_outcome_model_summary <- function(pseudopop,
   else stop("parametric_or_semiparametric must be 'parametric' or 'semiparametric'")
   
   cl <- parallel::makeCluster(n_cores, type = "PSOCK")
-  bam_exposure_only <- bam(formula,
-                           data = pseudopop,
-                           offset = log(n_persons * n_years),
-                           family = poisson(link = "log"),
-                           weights = weights,
-                           samfrac = 0.05,
-                           chunk.size = 5000,
-                           control = gam.control(trace = TRUE),
-                           nthreads = n_cores,
-                           cluster = cl)
+  if (method == "weighting"){
+    bam_exposure_only <- bam(formula,
+                             data = pseudopop,
+                             offset = log(n_persons * n_years),
+                             family = poisson(link = "log"),
+                             weights = capped_stabilized_ipw,
+                             samfrac = 0.05,
+                             chunk.size = 5000,
+                             control = gam.control(trace = TRUE),
+                             nthreads = n_cores,
+                             cluster = cl)
+  } else if (method == "matching"){
+    bam_exposure_only <- bam(formula,
+                             data = pseudopop,
+                             offset = log(n_persons * n_years),
+                             family = poisson(link = "log"),
+                             weights = counter_weight,
+                             samfrac = 0.05,
+                             chunk.size = 5000,
+                             control = gam.control(trace = TRUE),
+                             nthreads = n_cores,
+                             cluster = cl)
+  } else stop("method must be 'weighting' or 'matching'")
   parallel::stopCluster(cl)
   
   if (save_results){

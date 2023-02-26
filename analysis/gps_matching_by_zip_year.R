@@ -16,13 +16,27 @@ dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/res
 # set exposure
 exposure_name <- "pm25"
 
+
+
 # parameters for this computing job
 n_cores <- 8 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
 n_gb <- 64 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
-n_attempts <- 10
-n_total_attempts <- n_attempts # user can set this to a number larger than n_attempts if some attempts with different seeds have already been tried
-if (n_total_attempts == 1) best_maxAC_attempt <- 1
-modifications <- paste0(exposure_name, "_only_gps_by_zip_year_", n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
+find_best_cov_bal_attempt <- T # user should set this variable
+
+if (find_best_cov_bal_attempt){
+  n_attempts <- 30 # user should set this; number of attempts this script will try to model the GPS
+  n_total_attempts <- 30 # user can set this to a number larger than n_attempts if some attempts have already been tried; to be printed on cov bal plot
+  
+  if (n_attempts < n_total_attempts){
+    modifications <- paste0(exposure_name, "_only_gps_by_zip_year_", n_attempts, "more_attempts") # to be used in names of output files, to record how you're tuning the models
+  } else{
+    modifications <- paste0(exposure_name, "_only_gps_by_zip_year_", n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
+  }
+} else{
+  n_attempts <- 1
+  best_maxAC_attempt <- 1 # user should set this to the attempt # to be used (for the seed)
+  modifications <- paste0(exposure_name, "_only_gps_by_zip_year_attempt", best_maxAC_attempt) # to be used in names of output files, to record how you're tuning the models
+}
 
 # get data and helpful functions
 source(paste0(dir_code, "analysis/helper_functions.R"))
@@ -142,29 +156,31 @@ get_matched_pseudopop <- function(attempt_number,
   else stop("User must specify whether to return covariate balance or (list of) pseudopopulations")
 }
 
-for (i in 1:n_attempts){
-  cov_bal_matching <- get_matched_pseudopop(attempt_number = i,
-                                            cov_bal_data.table = cov_bal_matching,
-                                            return_cov_bal = T,
-                                            return_pseudopop_list = F)
+if (find_best_cov_bal_attempt){
+  for (i in 1:n_attempts){
+    cov_bal_matching <- get_matched_pseudopop(attempt_number = i,
+                                              cov_bal_data.table = cov_bal_matching,
+                                              return_cov_bal = T,
+                                              return_pseudopop_list = F)
+  }
+  
+  # identify GPS model(s) with best covariate balance
+  cov_bal_summary <- summarize_cov_bal(cov_bal_data.table = cov_bal_matching,
+                                       method = "matching",
+                                       save_csv = T)
+  best_maxAC_attempt <- cov_bal_summary$Attempt[which.min(cov_bal_summary$maxAC)]
+  best_maxAC_cov_bal <- cov_bal_matching[Attempt == best_maxAC_attempt]
+  
+  # plot covariate balance
+  matched_cov_bal_plot <- ggplot(best_maxAC_cov_bal, aes(x = Covariate, y = Absolute_Correlation, color = Dataset, group = Dataset)) +
+    geom_point() +
+    geom_line() +
+    ylab(paste("Absolute Correlation with", exposure_name)) +
+    ggtitle(paste0(format(nrow(zip_year_data_with_strata), scientific = F, big.mark = ','), " units of analysis (Attempt #", best_maxAC_attempt, " of ", n_total_attempts, ")")) +
+    theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
+  
+  ggsave(paste0(dir_results, "covariate_balance/matched_pop_", nrow(zip_year_data_with_strata), "rows_", modifications, ".png"), matched_cov_bal_plot)
 }
-
-# identify GPS model(s) with best covariate balance
-cov_bal_summary <- summarize_cov_bal(cov_bal_data.table = cov_bal_matching,
-                                     method = "matching",
-                                     save_csv = T)
-best_maxAC_attempt <- cov_bal_summary$Attempt[which.min(cov_bal_summary$maxAC)]
-best_maxAC_cov_bal <- cov_bal_matching[Attempt == best_maxAC_attempt]
-
-# plot covariate balance
-matched_cov_bal_plot <- ggplot(best_maxAC_cov_bal, aes(x = Covariate, y = Absolute_Correlation, color = Dataset, group = Dataset)) +
-  geom_point() +
-  geom_line() +
-  ylab(paste("Absolute Correlation with", exposure_name)) +
-  ggtitle(paste0(format(nrow(zip_year_data_with_strata), scientific = F, big.mark = ','), " units of analysis (Attempt #", best_maxAC_attempt, " of ", n_total_attempts, ")")) +
-  theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
-
-ggsave(paste0(dir_results, "covariate_balance/matched_pop_", nrow(zip_year_data_with_strata), "rows_", modifications, ".png"), matched_cov_bal_plot)
 
 # regenerate GPS model and matched pseudopopulation with best covariate balance
 # add "stratum" variable back to pseudopop, so that individual variables can be merged back in, for outcome modeling
@@ -191,7 +207,6 @@ plot(density(best_matched_pseudopop$w),
      xlab = exposure_name)
 
 # run parametric and semiparametric (thin-plate spline) outcome models
-weights <- best_matched_pseudopop$counter_weight # note: to use the following functions, need to have "weights" in global environment; to do: improve this
 parametric_model_summary <- get_outcome_model_summary(pseudopop = best_matched_pseudopop,
                                                       exposure_name = exposure_name,
                                                       method = "matching",
