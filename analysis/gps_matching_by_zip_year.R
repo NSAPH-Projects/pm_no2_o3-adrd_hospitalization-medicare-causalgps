@@ -16,8 +16,6 @@ dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/res
 # set exposure
 exposure_name <- "pm25"
 
-
-
 # parameters for this computing job
 n_cores <- 8 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
 n_gb <- 64 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
@@ -106,8 +104,10 @@ get_matched_pseudopop <- function(attempt_number,
   set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_estimateGpsForMatching_AttemptNumber", attempt_number, "_", modifications, "_", nrow(zip_year_data), "rows_", n_cores, "cores_", n_gb, "gb.log"),
              logger_level = "TRACE")
   
+  # set seed according to attempt number
+  set.seed(attempt_number * 100)
+  
   # estimate GPS
-  set.seed(attempt_number*100)
   temp_zip_year_with_gps_obj <- estimate_gps(Y = 0, # fake Y variable since our outcomes are not at the zip-year level; not used in estimate_gps
                                              w = zip_year_data$w,
                                              c = subset(zip_year_data, select = c("year", zip_var_names)),
@@ -158,7 +158,14 @@ get_matched_pseudopop <- function(attempt_number,
 
 if (find_best_cov_bal_attempt){
   for (i in 1:n_attempts){
-    cov_bal_matching <- get_matched_pseudopop(attempt_number = i,
+    
+    if (n_attempts < n_total_attempts){
+      attempt_number_out_of_total_attempts <- i + (n_total_attempts - n_attempts) # n_total_attempts - n_attempts is the number of attempts already tried
+    } else{
+      attempt_number_out_of_total_attempts <- i
+    }
+    
+    cov_bal_matching <- get_matched_pseudopop(attempt_number = attempt_number_out_of_total_attempts,
                                               cov_bal_data.table = cov_bal_matching,
                                               return_cov_bal = T,
                                               return_pseudopop_list = F)

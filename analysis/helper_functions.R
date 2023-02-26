@@ -126,8 +126,10 @@ get_weighted_pseudopop <- function(attempt_number,
                                    zip_year_data_with_strata,
                                    cov_bal_data.table,
                                    return_cov_bal = T){
-  # estimate GPS
+  # set seed according to attempt number
   set.seed(attempt_number*100)
+  
+  # estimate GPS
   temp_zip_year_with_gps <- estimate_gps(Y = 0, # fake Y variable since our outcomes are not at the zip-year level; not used in estimate_gps
                                          w = zip_year_data$w,
                                          c = subset(zip_year_data, select = c("year", zip_var_names)),

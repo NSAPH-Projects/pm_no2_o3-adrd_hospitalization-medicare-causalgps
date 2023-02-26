@@ -54,7 +54,14 @@ if (find_best_cov_bal_attempt){
              logger_level = "TRACE")
   
   for (i in 1:n_attempts){
-    cov_bal_weighting <- get_weighted_pseudopop(attempt_number = i,
+    
+    if (n_attempts < n_total_attempts){
+      attempt_number_out_of_total_attempts <- i + (n_total_attempts - n_attempts) # n_total_attempts - n_attempts is the number of attempts already tried
+    } else{
+      attempt_number_out_of_total_attempts <- i
+    }
+    
+    cov_bal_weighting <- get_weighted_pseudopop(attempt_number = attempt_number_out_of_total_attempts,
                                                 zip_year_data = zip_year_data,
                                                 zip_year_data_with_strata = zip_year_data_with_strata,
                                                 cov_bal_data.table = cov_bal_weighting,
