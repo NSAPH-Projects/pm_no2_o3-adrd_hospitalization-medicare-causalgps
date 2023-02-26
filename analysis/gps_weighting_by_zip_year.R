@@ -73,6 +73,7 @@ best_weighted_pseudopop <- get_weighted_pseudopop(attempt_number = best_maxAC_at
                                                   return_cov_bal = F)
 
 # print summary statistics for pseudopopulation weights
+# to do: save in txt file
 ess(best_weighted_pseudopop$capped_stabilized_ipw) # for PM2.5 attempt #121, which is best out of 200, ESS is 9,427,355
 
 # run parametric and semiparametric (thin-plate spline) outcome models
