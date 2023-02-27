@@ -31,14 +31,14 @@ if (find_best_cov_bal_attempt){
   n_total_attempts <- 30 # user can set this to a number larger than n_attempts if some attempts have already been tried; to be printed on cov bal plot
   
   if (n_attempts < n_total_attempts){
-    modifications <- paste0(exposure_name, "_only_gps_by_zip_year_", n_attempts, "more_attempts") # to be used in names of output files, to record how you're tuning the models
+    modifications <- paste0(exposure_name, "_only_gps_by_zip_year_trimmed_0.05_0.95_", n_attempts, "more_attempts") # to be used in names of output files, to record how you're tuning the models
   } else{
-    modifications <- paste0(exposure_name, "_only_gps_by_zip_year_", n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
+    modifications <- paste0(exposure_name, "_only_gps_by_zip_year_trimmed_0.05_0.95_", n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
   }
 } else{
   n_attempts <- 1
   best_maxAC_attempt <- 1 # user should set this to the attempt # to be used (for the seed)
-  modifications <- paste0(exposure_name, "_only_gps_by_zip_year_attempt", best_maxAC_attempt) # to be used in names of output files, to record how you're tuning the models
+  modifications <- paste0(exposure_name, "_only_gps_by_zip_year_trimmed_0.05_0.95_attempt", best_maxAC_attempt) # to be used in names of output files, to record how you're tuning the models
 }
 
 

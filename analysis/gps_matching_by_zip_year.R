@@ -17,29 +17,29 @@ dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/res
 exposure_name <- "pm25"
 
 # parameters for this computing job
-n_cores <- 8 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
+n_cores <- 16 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
 n_gb <- 64 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
 find_best_cov_bal_attempt <- T # user should set this variable
 
 if (find_best_cov_bal_attempt){
-  n_attempts <- 30 # user should set this; number of attempts this script will try to model the GPS
-  n_total_attempts <- 30 # user can set this to a number larger than n_attempts if some attempts have already been tried; to be printed on cov bal plot
+  n_attempts <- 10 # user should set this; number of attempts this script will try to model the GPS
+  n_total_attempts <- 10 # user can set this to a number larger than n_attempts if some attempts have already been tried; to be printed on cov bal plot
   
   if (n_attempts < n_total_attempts){
-    modifications <- paste0(exposure_name, "_only_gps_by_zip_year_", n_attempts, "more_attempts") # to be used in names of output files, to record how you're tuning the models
+    modifications <- paste0(exposure_name, "_only_gps_by_zip_year_trimmed_0.05_0.95_", n_attempts, "more_attempts") # to be used in names of output files, to record how you're tuning the models
   } else{
-    modifications <- paste0(exposure_name, "_only_gps_by_zip_year_", n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
+    modifications <- paste0(exposure_name, "_only_gps_by_zip_year_trimmed_0.05_0.95_", n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
   }
 } else{
   n_attempts <- 1
   best_maxAC_attempt <- 1 # user should set this to the attempt # to be used (for the seed)
-  modifications <- paste0(exposure_name, "_only_gps_by_zip_year_attempt", best_maxAC_attempt) # to be used in names of output files, to record how you're tuning the models
+  modifications <- paste0(exposure_name, "_only_gps_by_zip_year_trimmed_0.05_0.95_attempt", best_maxAC_attempt) # to be used in names of output files, to record how you're tuning the models
 }
 
 # get data and helpful functions
 source(paste0(dir_code, "analysis/helper_functions.R"))
-zip_year_data <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_trimmed_1_99.fst"), as.data.table = T)
-zip_year_data_with_strata <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_with_strata_trimmed_1_99.fst"), as.data.table = T)
+zip_year_data <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_trimmed_0.05_0.95.fst"), as.data.table = T)
+zip_year_data_with_strata <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_with_strata_trimmed_0.05_0.95.fst"), as.data.table = T)
 
 
 ##### GPS Matching #####
@@ -55,7 +55,7 @@ data_for_matching <- data_for_matching[, .(zip, year, stratum)]
 cov_bal_matching <- create_cov_bal_data.table("matching", n_attempts)
 
 # use same exposure bin sequence for all strata's matching
-matching_caliper <- 0.6 ## to do: play with this. goal is to get large enough ESS
+matching_caliper <- 0.25 ## to do: play with this (0.25, 0.5, 1, 1.5). goal is to get large enough ESS
 # bin_seq_by_quantile <- quantile(zip_year_data$w, 0:30/30) # for 30 exposure bins with equal number of observations in each bin (bins are not equally spaced)
 # matching_caliper <- mean(diff(bin_seq_by_quantile))
 
