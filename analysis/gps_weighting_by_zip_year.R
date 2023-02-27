@@ -18,8 +18,8 @@ exposure_name <- "pm25"
 
 # get data and helpful functions
 source(paste0(dir_code, "analysis/helper_functions.R"))
-zip_year_data <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_trimmed_1_99.fst"), as.data.table = T)
-zip_year_data_with_strata <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_with_strata_trimmed_1_99.fst"), as.data.table = T)
+zip_year_data <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_trimmed_0.05_0.95.fst"), as.data.table = T)
+zip_year_data_with_strata <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_with_strata_trimmed_0.05_0.95.fst"), as.data.table = T)
 
 # parameters for this computing job; user should set
 n_cores <- 16 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
