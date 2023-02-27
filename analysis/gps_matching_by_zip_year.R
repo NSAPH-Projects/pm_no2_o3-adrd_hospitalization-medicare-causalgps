@@ -105,7 +105,7 @@ get_matched_pseudopop <- function(attempt_number,
              logger_level = "TRACE")
   
   # set seed according to attempt number
-  set.seed(attempt_number * 100)
+  set.seed(attempt_number)
   
   # estimate GPS
   temp_zip_year_with_gps_obj <- estimate_gps(Y = 0, # fake Y variable since our outcomes are not at the zip-year level; not used in estimate_gps
