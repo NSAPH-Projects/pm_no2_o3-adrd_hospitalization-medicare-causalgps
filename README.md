@@ -7,6 +7,10 @@
   first AD/ADRD hospitalization or change to HMO plan or death, aggregated
   by entry year, event year, zip, age, race, sex, dual eligible    
 
+**How to contribute**:
+
+Please read more [here](inst/contribute.md) about the project's structure and workflow. 
+
 **File and folder descriptions**: 
 
 `aggregation`   
