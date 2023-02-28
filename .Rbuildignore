@@ -1,0 +1,6 @@
+^ADRDMedicare220121\.Rproj$
+^\.Rproj\.user$
+^rscripts/*$
+^results/*$
+^_analysis/*$
+^_aggregation/*$

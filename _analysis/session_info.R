@@ -1,0 +1,3 @@
+library(CausalGPS)
+
+print(sessionInfo())

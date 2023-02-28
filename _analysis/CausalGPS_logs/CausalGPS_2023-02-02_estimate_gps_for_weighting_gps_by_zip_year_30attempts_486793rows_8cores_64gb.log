@@ -1,0 +1,91 @@
+2023-02-02 15:06:39 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS gen_wrap_sl_lib DEBUG:  Hyperparameters for m_xgboost: ntrees: 19,  eta: 0.32, max_depth: 6,  min_child_weight: 1.
+2023-02-02 15:07:39 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of treatment: 0.281047811846437, 30.9249272837877
+2023-02-02 15:07:39 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of gps: 3.92512576590105e-32, 0.274323488847694
+2023-02-02 15:07:39 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Weights for the select libraries in predicting e_gps: m_xgboost_internal_All 1 | Overal Risk: 2.13732180308315
+2023-02-02 15:07:39 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to estimate e_gps: 59.3620000000001 seconds.
+2023-02-02 15:07:39 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to run estimate_gps function:  60.5639999999999 seconds.
+2023-02-02 15:45:48 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS gen_wrap_sl_lib DEBUG:  Hyperparameters for m_xgboost: ntrees: 19,  eta: 0.32, max_depth: 6,  min_child_weight: 1.
+2023-02-02 15:46:47 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of treatment: 0.281047811846437, 30.9249272837877
+2023-02-02 15:46:47 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of gps: 3.92512576590105e-32, 0.274323488847694
+2023-02-02 15:46:47 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Weights for the select libraries in predicting e_gps: m_xgboost_internal_All 1 | Overal Risk: 2.13732180308315
+2023-02-02 15:46:47 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to estimate e_gps: 57.902 seconds.
+2023-02-02 15:46:47 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to run estimate_gps function:  58.8770000000004 seconds.
+2023-02-02 15:46:52 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS gen_wrap_sl_lib DEBUG:  Hyperparameters for m_xgboost: ntrees: 47,  eta: 0.27, max_depth: 6,  min_child_weight: 1.
+2023-02-02 15:49:02 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of treatment: 0.281047811846437, 30.9249272837877
+2023-02-02 15:49:02 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of gps: 4.56354316432234e-30, 0.302492541074582
+2023-02-02 15:49:02 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Weights for the select libraries in predicting e_gps: m_xgboost_internal_All 1 | Overal Risk: 1.80725836867566
+2023-02-02 15:49:02 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to estimate e_gps: 128.259 seconds.
+2023-02-02 15:49:02 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to run estimate_gps function:  129.815000000001 seconds.
+2023-02-02 15:49:06 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS gen_wrap_sl_lib DEBUG:  Hyperparameters for m_xgboost: ntrees: 23,  eta: 0.19, max_depth: 6,  min_child_weight: 1.
+2023-02-02 15:50:14 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of treatment: 0.281047811846437, 30.9249272837877
+2023-02-02 15:50:14 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of gps: 4.83248023732226e-33, 0.267898900995038
+2023-02-02 15:50:14 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Weights for the select libraries in predicting e_gps: m_xgboost_internal_All 1 | Overal Risk: 2.27923000852126
+2023-02-02 15:50:14 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to estimate e_gps: 65.9540000000006 seconds.
+2023-02-02 15:50:14 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to run estimate_gps function:  67.6419999999998 seconds.
+2023-02-02 15:50:19 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS gen_wrap_sl_lib DEBUG:  Hyperparameters for m_xgboost: ntrees: 46,  eta: 0.31, max_depth: 6,  min_child_weight: 1.
+2023-02-02 15:52:24 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of treatment: 0.281047811846437, 30.9249272837877
+2023-02-02 15:52:24 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of gps: 8.71943748789794e-26, 0.303718497912291
+2023-02-02 15:52:24 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Weights for the select libraries in predicting e_gps: m_xgboost_internal_All 1 | Overal Risk: 1.79503336967418
+2023-02-02 15:52:24 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to estimate e_gps: 123.862999999999 seconds.
+2023-02-02 15:52:24 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to run estimate_gps function:  125.571 seconds.
+2023-02-02 15:52:29 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS gen_wrap_sl_lib DEBUG:  Hyperparameters for m_xgboost: ntrees: 48,  eta: 0.36, max_depth: 6,  min_child_weight: 1.
+2023-02-02 15:54:39 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of treatment: 0.281047811846437, 30.9249272837877
+2023-02-02 15:54:39 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of gps: 2.72526262949541e-24, 0.306998105547728
+2023-02-02 15:54:39 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Weights for the select libraries in predicting e_gps: m_xgboost_internal_All 1 | Overal Risk: 1.75938974225764
+2023-02-02 15:54:39 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to estimate e_gps: 128.754 seconds.
+2023-02-02 15:54:39 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to run estimate_gps function:  130.227000000001 seconds.
+2023-02-02 15:54:44 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS gen_wrap_sl_lib DEBUG:  Hyperparameters for m_xgboost: ntrees: 40,  eta: 0.3, max_depth: 6,  min_child_weight: 1.
+2023-02-02 15:56:33 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of treatment: 0.281047811846437, 30.9249272837877
+2023-02-02 15:56:33 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of gps: 1.03723279356112e-39, 0.298912679964225
+2023-02-02 15:56:33 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Weights for the select libraries in predicting e_gps: m_xgboost_internal_All 1 | Overal Risk: 1.84301655828368
+2023-02-02 15:56:33 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to estimate e_gps: 107.956999999999 seconds.
+2023-02-02 15:56:33 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to run estimate_gps function:  109.406 seconds.
+2023-02-02 15:56:38 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS gen_wrap_sl_lib DEBUG:  Hyperparameters for m_xgboost: ntrees: 20,  eta: 0.35, max_depth: 6,  min_child_weight: 1.
+2023-02-02 15:57:37 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of treatment: 0.281047811846437, 30.9249272837877
+2023-02-02 15:57:37 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of gps: 1.11030559382673e-27, 0.280233452885724
+2023-02-02 15:57:37 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Weights for the select libraries in predicting e_gps: m_xgboost_internal_All 1 | Overal Risk: 2.09207366107796
+2023-02-02 15:57:37 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to estimate e_gps: 57.8000000000002 seconds.
+2023-02-02 15:57:37 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to run estimate_gps function:  59.0869999999995 seconds.
+2023-02-02 15:57:42 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS gen_wrap_sl_lib DEBUG:  Hyperparameters for m_xgboost: ntrees: 31,  eta: 0.27, max_depth: 6,  min_child_weight: 1.
+2023-02-02 15:59:08 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of treatment: 0.281047811846437, 30.9249272837877
+2023-02-02 15:59:08 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of gps: 6.79717175345059e-33, 0.288135281220207
+2023-02-02 15:59:08 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Weights for the select libraries in predicting e_gps: m_xgboost_internal_All 1 | Overal Risk: 1.96471108922908
+2023-02-02 15:59:08 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to estimate e_gps: 84.4589999999998 seconds.
+2023-02-02 15:59:08 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to run estimate_gps function:  86.1119999999992 seconds.
+2023-02-02 15:59:12 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS gen_wrap_sl_lib DEBUG:  Hyperparameters for m_xgboost: ntrees: 30,  eta: 0.16, max_depth: 6,  min_child_weight: 1.
+2023-02-02 16:00:37 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of treatment: 0.281047811846437, 30.9249272837877
+2023-02-02 16:00:37 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of gps: 4.18879250638168e-30, 0.271783423505427
+2023-02-02 16:00:37 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Weights for the select libraries in predicting e_gps: m_xgboost_internal_All 1 | Overal Risk: 2.19430297142926
+2023-02-02 16:00:37 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to estimate e_gps: 83.1469999999999 seconds.
+2023-02-02 16:00:37 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to run estimate_gps function:  84.692 seconds.
+2023-02-02 16:00:42 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS gen_wrap_sl_lib DEBUG:  Hyperparameters for m_xgboost: ntrees: 13,  eta: 0.2, max_depth: 6,  min_child_weight: 1.
+2023-02-02 16:01:23 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of treatment: 0.281047811846437, 30.9249272837877
+2023-02-02 16:01:23 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of gps: 2.410816297559e-29, 0.243177131898306
+2023-02-02 16:01:23 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Weights for the select libraries in predicting e_gps: m_xgboost_internal_All 1 | Overal Risk: 2.98543492270784
+2023-02-02 16:01:23 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to estimate e_gps: 40.0660000000007 seconds.
+2023-02-02 16:01:23 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to run estimate_gps function:  41.5149999999994 seconds.
+2023-02-02 16:01:28 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS gen_wrap_sl_lib DEBUG:  Hyperparameters for m_xgboost: ntrees: 27,  eta: 0.29, max_depth: 6,  min_child_weight: 1.
+2023-02-02 16:02:43 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of treatment: 0.281047811846437, 30.9249272837877
+2023-02-02 16:02:43 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of gps: 8.14121745762486e-33, 0.287148718065882
+2023-02-02 16:02:43 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Weights for the select libraries in predicting e_gps: m_xgboost_internal_All 1 | Overal Risk: 2.00932720201924
+2023-02-02 16:02:43 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to estimate e_gps: 74.9279999999999 seconds.
+2023-02-02 16:02:43 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to run estimate_gps function:  75.8299999999999 seconds.
+2023-02-02 16:02:48 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS gen_wrap_sl_lib DEBUG:  Hyperparameters for m_xgboost: ntrees: 28,  eta: 0.11, max_depth: 6,  min_child_weight: 1.
+2023-02-02 16:04:07 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of treatment: 0.281047811846437, 30.9249272837877
+2023-02-02 16:04:07 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of gps: 6.74781952869373e-29, 0.25348706577725
+2023-02-02 16:04:07 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Weights for the select libraries in predicting e_gps: m_xgboost_internal_All 1 | Overal Risk: 2.65037562317511
+2023-02-02 16:04:07 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to estimate e_gps: 77.6289999999999 seconds.
+2023-02-02 16:04:07 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to run estimate_gps function:  78.9650000000001 seconds.
+2023-02-02 16:04:11 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS gen_wrap_sl_lib DEBUG:  Hyperparameters for m_xgboost: ntrees: 27,  eta: 0.13, max_depth: 6,  min_child_weight: 1.
+2023-02-02 16:05:28 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of treatment: 0.281047811846437, 30.9249272837877
+2023-02-02 16:05:28 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of gps: 4.32272429230403e-29, 0.258237337987843
+2023-02-02 16:05:28 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Weights for the select libraries in predicting e_gps: m_xgboost_internal_All 1 | Overal Risk: 2.45952264484687
+2023-02-02 16:05:28 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to estimate e_gps: 75.1210000000001 seconds.
+2023-02-02 16:05:28 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to run estimate_gps function:  76.7180000000008 seconds.
+2023-02-02 16:05:32 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS gen_wrap_sl_lib DEBUG:  Hyperparameters for m_xgboost: ntrees: 31,  eta: 0.26, max_depth: 6,  min_child_weight: 1.
+2023-02-02 16:06:57 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of treatment: 0.281047811846437, 30.9249272837877
+2023-02-02 16:06:57 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Min Max of gps: 1.76793781013186e-32, 0.287278877868224
+2023-02-02 16:06:57 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Weights for the select libraries in predicting e_gps: m_xgboost_internal_All 1 | Overal Risk: 1.9835672708335
+2023-02-02 16:06:57 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to estimate e_gps: 84.3120000000008 seconds.
+2023-02-02 16:06:57 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS estimate_gps DEBUG:  Wall clock time to run estimate_gps function:  85.5450000000001 seconds.
+2023-02-02 16:07:01 holy7c22202.rc.fas.harvard.edu 173698 CausalGPS gen_wrap_sl_lib DEBUG:  Hyperparameters for m_xgboost: ntrees: 45,  eta: 0.33, max_depth: 6,  min_child_weight: 1.
