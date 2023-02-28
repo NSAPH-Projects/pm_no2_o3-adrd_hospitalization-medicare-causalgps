@@ -11,7 +11,10 @@ Language: en-US
 URL: https://github.com/NSAPH-Projects/pm_no2_o3-adrd_hospitalization-medicare-causalgps
 BugReports: https://github.com/NSAPH-Projects/pm_no2_o3-adrd_hospitalization-medicare-causalgps/issues
 Imports:
-    data.table
+    data.table,
+    memoise,
+    fst,
+    git2r
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.0

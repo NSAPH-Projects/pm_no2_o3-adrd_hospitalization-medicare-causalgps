@@ -1,5 +1,21 @@
-
-setup_path <- function(pkg = "."){
+#' @title
+#' Set up required internal and external paths
+#'
+#' @description
+#' Sets up required internal and external paths. This include any user defined
+#' external data path, package path and many more.
+#'
+#' @param pkg
+#' @param external_private
+#' @param external_public
+#'
+#' @return
+#' @export
+#'
+#' @examples
+setup_path <- function(pkg = ".",
+                       external_private = TRUE,
+                       external_public = TRUE) {
 
   pkg <- as.package(pkg)
   pkg_path <- pkg$path
@@ -7,48 +23,34 @@ setup_path <- function(pkg = "."){
   # Load from .Renviron file
   readRenviron(".Renviron")
 
-  # Collect values for keys
-  dir_d_private_ext <- Sys.getenv("DATA_PRIVATE_EXT")
-  dir_d_public_ext <- Sys.getenv("DATA_PUBLIC_EXT")
+  if (external_private){
+    dir_d_private_ext <- Sys.getenv("DATA_PRIVATE_EXT")
+    unlink(file.path(pkg_path, "data", "private", "external"), recursive = TRUE)
+    file.symlink(dir_d_private_ext, file.path(pkg_path,
+                                              "data", "private", "external"))
+    set_values("dir_data_private_ext", file.path("data", "private", "external"))
+  }
 
-  dir_d_private_ext_name <- basename(dir_d_private_ext)
-  dir_d_public_ext_name <- basename(dir_d_public_ext)
-
-  # Unlink possible available links
-  unlink(file.path(pkg_path, "data", "public", "external"), recursive = TRUE)
-  unlink(file.path(pkg_path, "data", "private", "external"), recursive = TRUE)
-
-  file.symlink(dir_d_public_ext, file.path(pkg_path,
+  if (external_public){
+    dir_d_public_ext <- Sys.getenv("DATA_PUBLIC_EXT")
+    unlink(file.path(pkg_path, "data", "public", "external"), recursive = TRUE)
+    file.symlink(dir_d_public_ext, file.path(pkg_path,
                                              "data", "public", "external"))
-  file.symlink(dir_d_private_ext, file.path(pkg_path,
-                                               "data", "private", "external"))
+    set_values("dir_data_public_ext", file.path("data", "public", "external"))
+  }
 
-
-  # Set up values
-  set_values("dir_data_private_ext", file.path("data", "private", "external",
-                                               dir_d_private_ext_name))
-  set_values("dir_data_public_ext", file.path("data", "public", "external",
-                                               dir_d_public_ext_name))
-
-  set_values("dir_data_private_internal", file.path(pkg_path,
+  set_values("dir_data_private_int", file.path(pkg_path,
                                                     "data",
                                                     "private",
                                                     "internal"))
 
-  set_values("dir_data_public_internal", file.path(pkg_path,
+  set_values("dir_data_public_int", file.path(pkg_path,
                                                    "data",
                                                    "public",
                                                    "internal"))
 
+  set_values("pkg_path", pkg_path)
 }
-
-
-
-
-
-
-
-
 
 internal_params <- new.env(parent = emptyenv())
 
