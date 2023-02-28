@@ -20,20 +20,21 @@ exposure_name <- "pm25"
 n_cores <- 16 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
 n_gb <- 64 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
 find_best_cov_bal_attempt <- T # user should set this variable
+matching_caliper <- 1.5 ## to do: play with this (0.25, 0.5, 1, 1.5). goal is to get large enough ESS
 
 if (find_best_cov_bal_attempt){
   n_attempts <- 10 # user should set this; number of attempts this script will try to model the GPS
   n_total_attempts <- 10 # user can set this to a number larger than n_attempts if some attempts have already been tried; to be printed on cov bal plot
   
   if (n_attempts < n_total_attempts){
-    modifications <- paste0(exposure_name, "_only_gps_by_zip_year_trimmed_expos_and_gps_", n_attempts, "more_attempts") # to be used in names of output files, to record how you're tuning the models
+    modifications <- paste0(exposure_name, "_only_gps_by_zip_year_trimmed_expos_and_gps_caliper", matching_caliper, "_", n_attempts, "more_attempts") # to be used in names of output files, to record how you're tuning the models
   } else{
-    modifications <- paste0(exposure_name, "_only_gps_by_zip_year_trimmed_expos_and_gps_", n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
+    modifications <- paste0(exposure_name, "_only_gps_by_zip_year_trimmed_expos_and_gps_caliper", matching_caliper, "_", n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
   }
 } else{
   n_attempts <- 1
   best_maxAC_attempt <- 1 # user should set this to the attempt # to be used (for the seed)
-  modifications <- paste0(exposure_name, "_only_gps_by_zip_year_trimmed_expos_and_gps_attempt", best_maxAC_attempt) # to be used in names of output files, to record how you're tuning the models
+  modifications <- paste0(exposure_name, "_only_gps_by_zip_year_trimmed_expos_and_gps_caliper", matching_caliper, "_attempt", best_maxAC_attempt) # to be used in names of output files, to record how you're tuning the models
 }
 
 # get data and helpful functions
@@ -53,9 +54,6 @@ data_for_matching <- data_for_matching[, .(zip, year, stratum)]
 # set up data.table to check covariate balance for each GPS modeling attempt
 ### to do: see if zip can be included or if need more memory or something
 cov_bal_matching <- create_cov_bal_data.table("matching", n_attempts)
-
-# use same exposure bin sequence for all strata's matching
-matching_caliper <- 1.5 ## to do: play with this (0.25, 0.5, 1, 1.5). goal is to get large enough ESS
 
 # function to match within strata; first estimate GPS then match within each stratum
 get_matched_pseudopop <- function(attempt_number,
