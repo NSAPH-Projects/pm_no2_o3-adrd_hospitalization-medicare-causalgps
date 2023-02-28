@@ -9,3 +9,5 @@ analysis/.Rhistory
 results
 /out/*
 *~
+*.Renviron
+data/*
