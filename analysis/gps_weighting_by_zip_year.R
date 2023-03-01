@@ -47,8 +47,14 @@ if (find_best_cov_bal_attempt){
 ##### GPS Weighting #####
 
 # set up data.table to check covariate balance for each GPS modeling attempt
-### to do: see if zip can be included or if need more memory or something
-cov_bal_weighting <- create_cov_bal_data.table("weighting", n_attempts)
+if (find_best_cov_bal_attempt){
+  n_attempts_already_tried <- n_total_attempts - n_attempts # greater than 0 if user already ran some attempts
+  cov_bal_weighting <- create_cov_bal_data.table(method = "weighting",
+                                                 attempt_numbers = (1 + n_attempts_already_tried):n_total_attempts)
+} else{
+  cov_bal_weighting <- create_cov_bal_data.table(method = "weighting",
+                                                 attempt_numbers = best_maxAC_attempt)
+}
 
 if (find_best_cov_bal_attempt){
   # create log file to see internal processes of CausalGPS
@@ -56,14 +62,7 @@ if (find_best_cov_bal_attempt){
              logger_level = "TRACE")
   
   for (i in 1:n_attempts){
-    
-    if (n_attempts < n_total_attempts){
-      attempt_number_out_of_total_attempts <- i + (n_total_attempts - n_attempts) # n_total_attempts - n_attempts is the number of attempts already tried
-    } else{
-      attempt_number_out_of_total_attempts <- i
-    }
-    
-    cov_bal_weighting <- get_weighted_pseudopop(attempt_number = attempt_number_out_of_total_attempts,
+    cov_bal_weighting <- get_weighted_pseudopop(attempt_number = i + n_attempts_already_tried,
                                                 zip_year_data = zip_year_data,
                                                 zip_year_data_with_strata = zip_year_data_with_strata,
                                                 cov_bal_data.table = cov_bal_weighting,

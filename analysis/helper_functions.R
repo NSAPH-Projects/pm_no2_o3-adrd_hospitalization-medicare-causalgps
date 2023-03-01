@@ -30,7 +30,7 @@ ess <- function(weights) return(sum(weights)^2 / (sum(weights^2)))
 
 # to do: see if zip can be included or if need more memory or something
 create_cov_bal_data.table <- function(method,
-                                      n_attempts){
+                                      attempt_numbers){
   
   if (method == "weighting") dataset_names <- c("Weighted", "Unweighted")
   else if (method == "matching") dataset_names <- c("Matched", "Unmatched")
@@ -38,7 +38,7 @@ create_cov_bal_data.table <- function(method,
   
   vars_for_cov_bal = c(zip_quant_var_names, levels(zip_year_data[["region"]]))
   
-  cov_bal <- expand.grid(1:n_attempts,
+  cov_bal <- expand.grid(attempt_numbers,
                          vars_for_cov_bal,
                          dataset_names,
                          -1,
