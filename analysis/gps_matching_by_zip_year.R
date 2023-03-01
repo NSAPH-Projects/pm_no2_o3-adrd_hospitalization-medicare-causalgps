@@ -39,17 +39,18 @@ if (find_best_cov_bal_attempt){
 
 # get data and helpful functions
 source(paste0(dir_code, "analysis/helper_functions.R"))
-zip_year_data <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_trimmed_0.05_0.95.fst"), as.data.table = T)
-zip_year_data_with_strata <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_with_strata_trimmed_0.05_0.95.fst"), as.data.table = T)
+zip_year_data <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_trimmed_0.05_0.95.fst"),
+                          as.data.table = T)
+zip_year_data_with_strata <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_with_strata_trimmed_0.05_0.95.fst"),
+                                      as.data.table = T)
 
 
 ##### GPS Matching #####
 
-# get columns from full data that are useful for matching
+# get columns from full data that are useful for matching and add a label for stratum
 data_for_matching <- copy(zip_year_data_with_strata)
 data_for_matching[, stratum := .GRP, by = strata_vars]
 setorder(data_for_matching, stratum) # to do: consider if this line is necessary
-data_for_matching <- data_for_matching[, .(zip, year, stratum)]
 
 # set up data.table to check covariate balance for each GPS modeling attempt
 ### to do: see if zip can be included or if need more memory or something
@@ -91,15 +92,23 @@ get_matched_pseudopop <- function(attempt_number,
                                                                                              gps <= gps_outer_quantiles[2]]
   
   # apply estimated GPS value to all strata within each (untrimmed) ZIP/year
-  temp_zip_year_with_gps_dataset_plus_params <- merge(data_for_matching, temp_zip_year_with_gps_dataset_plus_params,
+  # it's important to subset only to relevant columns in temp_zip_year_with_gps_dataset_plus_params because its "Y" vector is fake, so we want to use the real "Y" vector in data_for_matching
+  temp_zip_year_with_gps_dataset_plus_params <- merge(data_for_matching,
+                                                      subset(temp_zip_year_with_gps_dataset_plus_params,
+                                                             select = c("zip", "year", "gps", "counter_weight", "e_gps_pred", "w_resid")),
                                                       by = c("zip", "year"))
   setorder(temp_zip_year_with_gps_dataset_plus_params, stratum)
   temp_zip_year_with_gps_dataset_plus_params[, row_index := 1:.N, by = stratum]
   temp_zip_year_with_gps_dataset_plus_params$zip <- NULL # ZIP and cohort are the only free variables for matching, should not be used to match
   
-  # match within strata
+  # split data into a list by stratum
   strata_list <- split(temp_zip_year_with_gps_dataset_plus_params,
                        temp_zip_year_with_gps_dataset_plus_params$stratum)
+  
+  # save which strata are included in the pseudopopulation (since it is possible that some strata may have been entirely trimmed by GPS)
+  names(strata_list) <- unique(temp_zip_year_with_gps_dataset_plus_params$stratum)
+  
+  # match within strata
   set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_matching_by_stratum", modifications, "_", nrow(zip_year_data_with_strata), "rows_", n_cores, "cores_", n_gb, "gb.log"),
              logger_level = "TRACE")
   temp_matched_pseudopop_list <- lapply(strata_list,
@@ -133,7 +142,6 @@ match_within_stratum <- function(dataset_plus_params,
   dataset_as_cgps_gps$dataset <- subset(as.data.frame(dataset_plus_params),
                                         select = c("Y", "w", "year", zip_var_names, # note that Y is a fake variable with value 0; not used in matching
                                                    "gps", "counter_weight", "row_index"))
-  # dataset_as_cgps_gps$used_params <- used_params # old code
   dataset_as_cgps_gps$e_gps_pred <- dataset_plus_params$e_gps_pred
   dataset_as_cgps_gps$w_resid <- dataset_plus_params$w_resid
   
@@ -141,7 +149,6 @@ match_within_stratum <- function(dataset_plus_params,
   dataset_as_cgps_gps$gps_mx <- gps_mx
   dataset_as_cgps_gps$w_mx <- w_mx
   
-  # the following two approaches to matching throw errors. how to fix?
   matched_pop <- compile_pseudo_pop(data_obj = dataset_as_cgps_gps,
                                     ci_appr = "matching",
                                     gps_model = "parametric",
@@ -192,13 +199,20 @@ if (find_best_cov_bal_attempt){
 }
 
 # regenerate GPS model and matched pseudopopulation with best covariate balance
-# add "stratum" variable back to pseudopop, so that individual variables can be merged back in, for outcome modeling
 best_matched_pseudopop_list <- get_matched_pseudopop(attempt_number = best_maxAC_attempt,
                                                      cov_bal_data.table = cov_bal_matching,
                                                      return_cov_bal = F,
                                                      return_pseudopop_list = T)
-best_matched_pseudopop_list <- lapply(1:length(best_matched_pseudopop_list), function(i) best_matched_pseudopop_list[[i]][, stratum := i])
+
+# add "stratum" variable back to pseudopop, so that individual variables can be merged back in, for outcome modeling
+best_matched_pseudopop_list <- lapply(1:length(best_matched_pseudopop_list), function(i) best_matched_pseudopop_list[[i]][, stratum := names(best_matched_pseudopop_list)[i]])
+
+# combine all stratum-matched pseudopopulations into one pseudopopulation
 best_matched_pseudopop <- rbindlist(best_matched_pseudopop_list)
+
+# return only relevant and valid columns in pseudopopulation
+best_matched_pseudopop <- subset(best_matched_pseudopop,
+                                 select = c("Y", "w", strata_vars, "counter_weight", "n_persons", "n_years"))
 
 # print summary statistics for pseudopopulation weights
 cat("ESS:", ess(best_matched_pseudopop$counter_weight)) # to do: if ESS is small, investigate which observation(s) are being matched so many times and if increasing? or changing caliper helps
@@ -207,12 +221,13 @@ cat("Proportion of observations matched:", sum(best_matched_pseudopop$counter_we
 cat("Distribution of number of matches per observations:")
 summary(best_matched_pseudopop$counter_weight)
 quantile(best_matched_pseudopop$counter_weight, c(0, 0.25, 0.5, 0.75, 0.95, 0.99, 0.999, 0.9999, 1))
+boxplot(best_matched_pseudopop$counter_weight)
 plot(density(best_matched_pseudopop$w,
              weights = best_matched_pseudopop$counter_weight / sum(best_matched_pseudopop$counter_weight)),
      main = "Density of exposure in matched pseudopopulation",
      xlab = exposure_name)
 plot(density(best_matched_pseudopop$w),
-     main = "Density of exposure in original pseudopopulation",
+     main = "Density of exposure in original population",
      xlab = exposure_name)
 
 # run parametric and semiparametric (thin-plate spline) outcome models
