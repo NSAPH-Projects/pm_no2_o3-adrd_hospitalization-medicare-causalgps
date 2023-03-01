@@ -20,32 +20,33 @@ setup_path <- function(pkg = ".",
   pkg <- as.package(pkg)
   pkg_path <- pkg$path
 
-  # Load from .Renviron file
-  readRenviron(".Renviron")
-
   if (external_private){
-    dir_d_private_ext <- Sys.getenv("DATA_PRIVATE_EXT")
-    unlink(file.path(pkg_path, "data", "private", "external"), recursive = TRUE)
-    file.symlink(dir_d_private_ext, file.path(pkg_path,
-                                              "data", "private", "external"))
-    set_values("dir_data_private_ext", file.path("data", "private", "external"))
+    dir_d_private_ext <- DATA_PRIVATE_EXT
+    unlink(file.path(pkg_path, "study_data", "private", "external"),
+           recursive = TRUE)
+    file.symlink(dir_d_private_ext,
+                 file.path(pkg_path, "study_data", "private", "external"))
+    set_values("dir_data_private_ext",
+               file.path("study_data", "private", "external"))
   }
 
   if (external_public){
-    dir_d_public_ext <- Sys.getenv("DATA_PUBLIC_EXT")
-    unlink(file.path(pkg_path, "data", "public", "external"), recursive = TRUE)
-    file.symlink(dir_d_public_ext, file.path(pkg_path,
-                                             "data", "public", "external"))
-    set_values("dir_data_public_ext", file.path("data", "public", "external"))
+    dir_d_public_ext <- DATA_PUBLIC_EXT
+    unlink(file.path(pkg_path, "study_data", "public", "external"),
+           recursive = TRUE)
+    file.symlink(dir_d_public_ext,
+                 file.path(pkg_path, "study_data", "public", "external"))
+    set_values("dir_data_public_ext",
+               file.path("study_data", "public", "external"))
   }
 
   set_values("dir_data_private_int", file.path(pkg_path,
-                                                    "data",
+                                                    "study_data",
                                                     "private",
                                                     "internal"))
 
   set_values("dir_data_public_int", file.path(pkg_path,
-                                                   "data",
+                                                   "study_data",
                                                    "public",
                                                    "internal"))
 

@@ -26,8 +26,8 @@ finalize_subproject <- function(path_obj) {
   }
 
   write("\n-------- Path:", session_info_fn, append = TRUE)
-  write("\nContent of .Renviron:", session_info_fn, append = TRUE)
-  write(readLines(".Renviron"), session_info_fn, append = TRUE)
+  write("\nContent of R/external_path.R:", session_info_fn, append = TRUE)
+  write(readLines("R/external_path.R"), session_info_fn, append = TRUE)
 
   write("\nContent of path_obj:", session_info_fn, append = TRUE)
   write(capture.output(print(path_obj)), session_info_fn, append = TRUE)
