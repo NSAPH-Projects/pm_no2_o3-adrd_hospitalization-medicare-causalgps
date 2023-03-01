@@ -18,13 +18,6 @@ ADRD_agg_lagged <- read_fst(paste0(dir_data, "analysis/ADRD_complete_tv.fst"),
 setnames(ADRD_agg_lagged,
          old = c("pct_blk", "pct_owner_occ"),
          new = c("prop_blk", "prop_owner_occ"))
-ADRD_agg_lagged[, `:=`(zip = as.factor(zip),
-                       year = as.factor(year),
-                       cohort = as.factor(cohort),
-                       age_grp = as.factor(age_grp),
-                       sex = as.factor(sex),
-                       race = as.factor(race),
-                       dual = as.factor(dual))]
 
 # get variables at ZIP year level
 zip_year_data <- subset(ADRD_agg_lagged,
@@ -69,7 +62,8 @@ for (var in zip_quant_var_names){
   zip_quant_var_distributions[Variable == var, `:=`(Mean = round(mean(var_data), 2),
                                                     SD = round(sd(var_data), 2))]
 }
-xtable(zip_quant_var_distributions)
+print(xtable(zip_quant_var_distributions),
+      include.rownames = F)
 
 # get pairwise correlations between ZIP year variables
 cor_matrix <- cor(subset(zip_year_data, select = c(zip_expos_names, zip_quant_var_names)))
