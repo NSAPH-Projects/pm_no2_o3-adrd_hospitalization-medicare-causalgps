@@ -1,6 +1,8 @@
+#TODO: Convert it to project's convention.
+
 # Summary of the run:
 #
-# Objective: Generating pseudo population based on matching approach for the 
+# Objective: Generating pseudo population based on matching approach for the
 # following parameters.
 #
 
@@ -29,17 +31,17 @@ run_number <- run_name[job_array_number]
 exposure_name <- "pm25"
 outcome_name <- "n_hosp"
 n_cores <- 36
-trim_quantiles <- c(trim_mat[all_runs[1][[1]][job_array_number], 1], 
+trim_quantiles <- c(trim_mat[all_runs[1][[1]][job_array_number], 1],
                     trim_mat[all_runs[1][[1]][job_array_number], 2])
 delta_n <- all_runs[2][[1]][job_array_number]
 
 
-output_folder <- paste0("cgps", 
+output_folder <- paste0("cgps",
                         "_exp_", exposure_name,
-                        "_out_", outcome_name, 
+                        "_out_", outcome_name,
                         "_trimmed_",as.integer(trim_quantiles[1]*100),"_",
                         as.integer(trim_quantiles[2]*100),
-                        "_delta_", delta_n, 
+                        "_delta_", delta_n,
                         "_run_", run_number)
 
 if (!dir.exists(output_folder)) {dir.create(output_folder)}
@@ -76,12 +78,12 @@ ADRD_agg_lagged <- fst::read_fst(paste0(dir_proj,
 data.table::setnames(ADRD_agg_lagged, old = c("pct_blk", "pct_owner_occ"),
                                       new = c("prop_blk", "prop_owner_occ"))
 
-ADRD_agg_lagged[, `:=`(zip = as.factor(zip), 
-                       year = as.factor(year), 
-                       cohort = as.factor(cohort), 
-                       age_grp = as.factor(age_grp), 
-                       sex = as.factor(sex), 
-                       race = as.factor(race), 
+ADRD_agg_lagged[, `:=`(zip = as.factor(zip),
+                       year = as.factor(year),
+                       cohort = as.factor(cohort),
+                       age_grp = as.factor(age_grp),
+                       sex = as.factor(sex),
+                       race = as.factor(race),
                        dual = as.factor(dual))]
 
 # Get data for exposure, outcome, and covariates of interest -----
@@ -90,17 +92,17 @@ ADRD_agg_lagged[, `:=`(zip = as.factor(zip),
 other_expos_names <- zip_expos_names[zip_expos_names != exposure_name]
 #outcome_name <- "n_hosp"
 ADRD_agg_lagged_subset <- subset(ADRD_agg_lagged,
-                                 select = c(exposure_name, 
-                                            outcome_name, 
-                                            other_expos_names, 
-                                            zip_var_names, 
-                                            indiv_var_names, 
+                                 select = c(exposure_name,
+                                            outcome_name,
+                                            other_expos_names,
+                                            zip_var_names,
+                                            indiv_var_names,
                                             offset_var_names))
 
 
 # add some noise to the exposure value ---------------------------
 max_noise <- 0.025
-pm_noise <- runif(nrow(ADRD_agg_lagged_subset))*max_noise - 
+pm_noise <- runif(nrow(ADRD_agg_lagged_subset))*max_noise -
   runif(nrow(ADRD_agg_lagged_subset))*max_noise
 ADRD_agg_lagged_subset$pm_noise <- pm_noise
 ADRD_agg_lagged_subset[, `:=`(pm25 = pm25*(1+pm_noise))]
@@ -109,16 +111,16 @@ for (var in c(zip_unordered_cat_var_names, indiv_unordered_cat_var_names)){
   ADRD_agg_lagged_subset[[var]] <- as.factor(ADRD_agg_lagged_subset[[var]])
 }
 
-# Trim exposures outside the 1st and 99th percentiles, for all analyses 
+# Trim exposures outside the 1st and 99th percentiles, for all analyses
 # (associational and causal) ----
 
 trimmed_data <- quantile(ADRD_agg_lagged_subset[[exposure_name]], trim_quantiles)
-rows_within_range <- ADRD_agg_lagged_subset[[exposure_name]] >= trimmed_data[1] & 
+rows_within_range <- ADRD_agg_lagged_subset[[exposure_name]] >= trimmed_data[1] &
                      ADRD_agg_lagged_subset[[exposure_name]] <= trimmed_data[2]
 ADRD_agg_lagged_trimmed <- ADRD_agg_lagged_subset[rows_within_range, ]
 
 print(paste0(" Number of original data: ", nrow(ADRD_agg_lagged_subset),
-             " Number of data after trimming: ", 
+             " Number of data after trimming: ",
              nrow(ADRD_agg_lagged_trimmed)))
 
 n_rows <- nrow(ADRD_agg_lagged_trimmed)
@@ -128,14 +130,14 @@ n_rows <- nrow(ADRD_agg_lagged_trimmed)
 # 2. Prepare data to the analyses ----------------------------------------------
 
 # Option 1: all data
-selected_rows <- 1:n_rows 
+selected_rows <- 1:n_rows
 
 # Option 2: subset of data
 #set.seed(3986)
 #selected_rows <- sample(seq(1,n_rows), 100000, replace = FALSE, prob = NULL)
 
 
-# TODO: it should also work with data.table. If not, we need to add it. 
+# TODO: it should also work with data.table. If not, we need to add it.
 Y <- as.data.frame(ADRD_agg_lagged_trimmed)[selected_rows, outcome_name]
 w <- as.data.frame(ADRD_agg_lagged_trimmed)[selected_rows, exposure_name]
 c_data <- as.data.frame(subset(ADRD_agg_lagged_trimmed[selected_rows,],
@@ -149,7 +151,7 @@ c_data <- as.data.frame(subset(ADRD_agg_lagged_trimmed[selected_rows,],
 # n_cores <- 48 # 48
 
 # to be used in names of output files, to record how you're tuning the models
-# modifications <- "bin_age_tv_trimmed" 
+# modifications <- "bin_age_tv_trimmed"
 
 set_logger(logger_file_path = paste0(output_folder,"/CausalGPS.log"),
            logger_level = "TRACE")
@@ -163,8 +165,8 @@ matched_pop_subset <- generate_pseudo_pop(Y,
                                           use_cov_transform = TRUE,
                                           transformers = list("pow2",
                                                               "pow3",
-                                                              "sqrt", 
-                                                              "log_nonneg", 
+                                                              "sqrt",
+                                                              "log_nonneg",
                                                               "logit_nonneg"),
                                           sl_lib = c("m_xgboost"),
                                           #bin_seq = seq(4,16,0.2),
@@ -188,7 +190,7 @@ dev.off()
 saveRDS(matched_pop_subset,
         file = paste0(output_folder,"/matched_pop_subset.rds"))
 
-writeLines(capture.output(sessionInfo()),  
+writeLines(capture.output(sessionInfo()),
            paste0(output_folder,"/sessioninfo.txt"))
 
 writeLines(capture.output(summary(matched_pop_subset)),
