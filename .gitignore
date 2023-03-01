@@ -10,4 +10,5 @@ results
 /out/*
 *~
 *.Renviron
-data/*
+study_data/*
+R/external_path.R

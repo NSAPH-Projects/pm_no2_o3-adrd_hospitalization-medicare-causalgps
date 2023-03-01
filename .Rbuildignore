@@ -2,5 +2,7 @@
 ^\.Rproj\.user$
 ^rscripts/*$
 ^results/*$
+^study_data/*$
 ^_analysis/*$
 ^_aggregation/*$
+.Renviron
