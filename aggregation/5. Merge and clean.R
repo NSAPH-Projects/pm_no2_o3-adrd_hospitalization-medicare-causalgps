@@ -8,7 +8,7 @@ library(dplyr)
 options(stringsAsFactors = FALSE)
 
 setDTthreads(threads = 16)
-dir_proj <- "~/nsaph_projects/pm_no2_o3-adrd_hosp-medicare-causalgps/"
+dir_proj <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/"
 # dir_data <- paste0(dir_proj, "data/")
 
 ##### 0. Load data #####
@@ -17,13 +17,16 @@ yr_zip_dat[, dat_year := year + 1][, year := NULL] # year for merging into datas
 yr_zip_dat[, zip := as.integer(zip)]
 setkey(yr_zip_dat, zip, dat_year)
 
-expos_dat <- read_fst(paste0(dir_proj, "data/denom/year_zip_exposures.fst"), as.data.table = TRUE)
+expos_dat <- read_fst(paste0(dir_proj, "data/denom/year_zip_exposures.fst"),
+                      as.data.table = TRUE)
 expos_dat[, dat_year := year + 1][, year := NULL] # year for merging into dataset (year before end)
 expos_dat[, zip := as.integer(zip)]
 setkey(expos_dat, zip, dat_year)
 
-AD_agg <- read_fst(paste0(dir_proj, "data/aggregated/AD_agg_tv.fst"), as.data.table = TRUE)
-ADRD_agg <- read_fst(paste0(dir_proj, "data/aggregated/ADRD_agg_tv.fst"), as.data.table = TRUE)
+AD_agg <- read_fst(paste0(dir_proj, "data/aggregated/AD_agg_tv.fst"),
+                   as.data.table = TRUE)
+ADRD_agg <- read_fst(paste0(dir_proj, "data/aggregated/ADRD_agg_tv.fst"),
+                     as.data.table = TRUE)
 
 #### 1. Merge and clean ####
 setkey(AD_agg, zip, year)
