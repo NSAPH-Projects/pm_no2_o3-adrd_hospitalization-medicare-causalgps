@@ -1,3 +1,0 @@
-library(CausalGPS)
-
-print(sessionInfo())
