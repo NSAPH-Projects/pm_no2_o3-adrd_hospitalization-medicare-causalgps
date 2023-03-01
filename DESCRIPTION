@@ -14,7 +14,8 @@ Imports:
     data.table,
     memoise,
     fst,
-    git2r
+    git2r,
+    wCorr
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.0
