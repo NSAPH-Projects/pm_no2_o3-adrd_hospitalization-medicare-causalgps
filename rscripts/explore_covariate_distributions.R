@@ -1,3 +1,6 @@
+#TODO: Convert it to project's convention.
+
+
 rm(list = ls())
 gc()
 
@@ -21,7 +24,7 @@ source(paste0(dir_proj, "code/analysis/helper_functions.R"))
 ##### 1. Explore covariate distributions of aggregated dataset #####
 
 # disaggregate <- function(var){
-#   return(unlist(map2(ADRD_agg_lagged[[var]], ADRD_agg_lagged$n_persons, rep))) 
+#   return(unlist(map2(ADRD_agg_lagged[[var]], ADRD_agg_lagged$n_persons, rep)))
 # }
 
 # Not in dataset: AK, HI, PR
