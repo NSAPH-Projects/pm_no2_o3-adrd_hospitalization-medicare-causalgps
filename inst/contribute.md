@@ -24,7 +24,7 @@ The following shows an example of the structure of the project, files, and folde
 ```sh
 .
 ├── ADRDMedicare220121.Rproj
-├── data
+├── study_data
 │   ├── private
 │   │   ├── external -> path/to/external/data
 │   │   └── internal
@@ -72,8 +72,8 @@ In the following, we discuss how to work with and contribute to the package.
   - Make sure you are in the project folder, or click on `ADRDMedicare220121.Rproj` to activate the project.
   - Run `devtools::load_all()`
   - If you have added a new function or modified the documentation, run `devtools::document()`
-- Each user should have a `.Renviron` file in the project root directory. This is personalized information and should not be committed to git. In the following, we will discuss how to use it. 
-  - If any unit tests have been added to the project, run `devtools::test()` and make sure that it does not fail. Any function that is being added under `R` folder should have unittests to make sure that some other member or yourself does not modify and break it. 
+- Each user should have a `R/external_path` file in the project root directory. This is personalized information and should not be committed to git. In the following, we will discuss how to use it. 
+  - If any unit tests have been added to the project, run `devtools::test()` and make sure that it does not fail. Any function that is being added under `R` folder should have unit tests to make sure that some other member or yourself does not modify and break it. 
   - Run `devtools::check()` to make sure that the package is in good shape and does not violate the general package structure.
 
 ## Running a scientific workflow
@@ -103,7 +103,7 @@ One paragraph about the objective of the subproject needs to be added. This shou
 
 The second section is just one line of code, which is the sub-project name. The prefix and date after the convention help others to find the sub-projects and sort them out quickly. It is recommended to choose the same file name and project name. 
 
-The name of the sub-project starts with three character prefix, then data (YYMMDD), and then any descriptive name. A folder with the same name will be created under the `results` folder, and all related documents will be there.
+The name of the sub-project starts with three character prefix, then date (YYMMDD), and then any descriptive name. A folder with the same name will be created under the `results` folder, and all related documents will be there.
 
 The convention for prefixes:
   - inp: in progress (any exploratory code)
@@ -130,7 +130,7 @@ path_obj <- initialize_sub_project(sp_name = sp_name,
 `sp_name` is the sub-project name that you defined in the previous step. The `external_public` and `external_private` fields indicate whether you want to generate a symbolic link to the external folders. Please note that all access to data in the code follows the following structure. 
 
 ```sh
-├── data
+├── study_data
 │   ├── private
 │   │   ├── external -> path/to/external/data
 │   │   └── internal
@@ -139,7 +139,7 @@ path_obj <- initialize_sub_project(sp_name = sp_name,
 │       └── internal
 ```
 
-The user should generate an `.Renviron` file and add those paths for each public or private external data. The following is an example of the `.Renviron` file.
+The user should generate an `R/external_path` file and add those paths for each public or private external data. The following is an example of the `R/external_path` file.
 
 ```sh
 DATA_PRIVATE_EXT="~/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data"
