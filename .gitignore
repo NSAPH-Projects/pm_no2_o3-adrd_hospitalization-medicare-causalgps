@@ -5,6 +5,10 @@
 Causal_ADRD_.Rproj
 analysis/CausalGPS_logs
 analysis/.Rhistory
+analysis/batch_code/*err
+analysis/batch_code/*out
+analysis/batch_code/test_files
+*.*csv
 results
 /out/*
 *~
