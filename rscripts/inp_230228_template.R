@@ -16,8 +16,19 @@
 #     3 - Finalizing, which documents the used packages + hash of the used code.
 
 # initiate the process ---------------------------------------------------------
-file_name_env <- sys.frame(1)
-sp_name  <- sub("\\.R$", "", basename(file_name_env$fileName))
+
+tryCatch({
+  # code that may raise an error or exception
+  full_path <- whereami::thisfile_source()
+  sp_name  <- sub("\\.R$", "", basename(full_path))
+  print(paste("Project name (1): ", sp_name))
+}, error = function(e) {
+  # code to handle the error or exception
+  file_name_env <- sys.frame(1)
+  sp_name  <- sub("\\.R$", "", basename(file_name_env$fileName))
+  print(paste("Project name (2): ", sp_name))
+})
+
 path_obj <- initialize_sub_project(sp_name = sp_name)
 
 # setup cache on disk
@@ -66,3 +77,4 @@ dev.off()
 
 # Finialize --------------------------------------------------------------------
 finalize_subproject(path_obj = path_obj)
+
