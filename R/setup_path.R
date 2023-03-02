@@ -49,8 +49,8 @@ setup_path <- function(pkg = ".") {
                                    sub_external_name)
       if (!dir.exists(sub_folder_path)) {dir.create(sub_folder_path)}
       # unlink
-      unlink(file.path(pkg_path, "study_data", "private", sub_external_name),
-             recursive = TRUE)
+      # unlink(file.path(pkg_path, "study_data", "private", sub_external_name),
+      #        recursive = TRUE)
 
       # link
       if (!is.null(pkg_env[[d_name]])){
@@ -99,8 +99,8 @@ setup_path <- function(pkg = ".") {
                                    sub_external_name)
       if (!dir.exists(sub_folder_path)) {dir.create(sub_folder_path)}
       # unlink
-      unlink(file.path(pkg_path, "study_data", "public", sub_external_name),
-             recursive = TRUE)
+      # unlink(file.path(pkg_path, "study_data", "public", sub_external_name),
+      #        recursive = TRUE)
 
       # link
       if (!is.null(pkg_env[[d_name]])){
