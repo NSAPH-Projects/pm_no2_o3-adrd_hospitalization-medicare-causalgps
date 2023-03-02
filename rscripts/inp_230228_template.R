@@ -16,8 +16,8 @@
 #     3 - Finalizing, which documents the used packages + hash of the used code.
 
 # initiate the process ---------------------------------------------------------
-
-sp_name <- "inp_2302_efg"
+file_name_env <- sys.frame(1)
+sp_name  <- sub("\\.R$", "", basename(file_name_env$fileName))
 path_obj <- initialize_sub_project(sp_name = sp_name)
 
 # setup cache on disk

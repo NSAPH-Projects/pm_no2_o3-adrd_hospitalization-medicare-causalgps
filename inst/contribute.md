@@ -90,7 +90,7 @@ We call each scientific task a sub-project. A sub-project can be any number of s
 
 ### Objective of sub-project
 
-One paragraph about the objective of the subproject needs to be added. This should include enough information to help yourself and others to understand why you are doing this processing. If you need more details, open an issue, add more details, and put the issue number in this subproject section. In the case of an `.R` file, this part will be a comment.
+One paragraph about the objective of the sub-project needs to be added. This should include enough information to help yourself and others to understand why you are doing this processing. If you need more details, open an issue, add more details, and put the issue number in this sub-project section. In the case of an `.R` file, this part will be a comment.
 
 ```r
 #  [First section general info]
@@ -107,9 +107,7 @@ One paragraph about the objective of the subproject needs to be added. This shou
 
 ### Sub-project name
 
-The second section is just one line of code, which is the sub-project name. The prefix and date after the convention help others to find the sub-projects and sort them out quickly. It is recommended to choose the same file name and project name. 
-
-The name of the sub-project starts with three character prefix, then date (YYMMDD), and then any descriptive name. A folder with the same name will be created under the `results` folder, and all related documents will be there.
+The second section the sub-project name. The sub-project names is collected from the file name. This is important because we want to make sure that we can find both the code and the results. Since one cannot have two files with the same name, folders in the results folder will be unique and traceable. For file name we follow a naming convention. It starts with three character prefix, then date (YYMMDD), and then any descriptive name. A folder with the same name will be created under the `results` folder, and all related documents will be there.
 
 The convention for prefixes:
   - inp: in progress (any exploratory code)
@@ -117,9 +115,8 @@ The convention for prefixes:
   - or pick any other prefix and update the convention.
 
 ```r
-# [Second section]
-sp_name <- "inp_230228_[any name]"
-
+file_name_env <- sys.frame(1)
+sp_name  <- sub("\\.R$", "", basename(file_name_env$fileName))
 ```
 
 ### Sub-project initialization
@@ -152,7 +149,7 @@ DATA_PRIVATE_EXT_2 <- "~/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/private/dat
 DATA_PUBLIC_EXT_2 <- "~/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/public/data_2"
 ```
 
-There can be many connections to external folders. However, there is one location for internal data. You can put internal data inside your internal directories and have access to them directly. The `path_obj` includes all path information you will need to use in your code to ensure the correct location for the project. These paths will be automatically set internally. So using `path_obj,` instead of hardcoding the path, makes it easier for other members to checkout your code and analyze but store the results in their folder project without interfering with your processing. A sub-project can have one or many connections. 
+There can be many connections to external folders. However, there is one location for internal data. You can put internal data inside your internal directories and have access to them directly. The internal data is the data that sits inside the package. The `path_obj` includes all path information you will need to use in your code to ensure the correct location for the project. These paths will be automatically set internally. So using `path_obj,` instead of hardcoding the path, makes it easier for other members to checkout your code and analyze but store the results in their folder project without interfering with your processing. A sub-project can have one or many connections. 
 
 - **Note**: As one can see, we do not keep the used external paths (`R/external_path.R`) in the committed code. The reason for this is to separate hard-coded paths from code as much as possible. If you wish to regenerate the data, you can see the content of `R/external_path.R` in the `sessioninfo` file inside the project's results folder. 
 
