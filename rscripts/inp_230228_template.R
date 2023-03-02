@@ -20,7 +20,7 @@
 # initiate the process ---------------------------------------------------------
 
 sp_name <- "inp_2302_plot_curated_data"
-path_obj <- initialize_sub_project(sp_name = sp_name, external_public = FALSE)
+path_obj <- initialize_sub_project(sp_name = sp_name)
 
 # setup cache on disk
 cdb <- cachem::cache_disk(path_obj$sp_cache)
@@ -54,7 +54,7 @@ load_data_tmp <- function(data_path){
 m_load_data_tmp <- memoise::memoise(load_data_tmp, cache = cdb)
 
 # load data
-data_path <- file.path(path_obj$private_ext_ddir,
+data_path <- file.path(path_obj$dir_data_private_ext_1,
                        "analysis",
                        "ADRD_complete_tv.fst")
 

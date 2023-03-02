@@ -8,14 +8,10 @@
 #'
 #' @examples
 initialize_sub_project <- function(sp_name,
-                                   pkg = ".",
-                                   external_private = TRUE,
-                                   external_public = TRUE){
+                                   pkg = "."){
 
   # Setting up path ------------------
-  setup_path(pkg = pkg,
-             external_private = external_private,
-             external_public = external_public)
+  setup_path(pkg = pkg)
 
   # Providing process name -----------
   # The process name has a three character prefix then date then any optional
@@ -49,10 +45,18 @@ initialize_sub_project <- function(sp_name,
   path_obj$sp_output <- sp_output
   path_obj$sp_cache <- sp_cache
   path_obj$sp_log <- sp_log
-  path_obj$private_ext_ddir <- private_ext_ddir
-  path_obj$public_ext_ddri <- public_ext_ddir
   path_obj$private_int_ddir <- private_int_ddir
   path_obj$public_int_ddir <- public_int_ddir
+
+  ext_names_pr_valid <- get_values("ext_names_pr_valid")
+  for (pr_path in ext_names_pr_valid){
+    path_obj[pr_path] <- get_values(pr_path)
+  }
+
+  ext_names_pb_valid <- get_values("ext_names_pb_valid")
+  for (pb_path in ext_names_pb_valid){
+    path_obj[pb_path] <- get_values(pb_path)
+  }
 
   return(path_obj)
 }

@@ -1,3 +1,5 @@
+#TODO: Convert it into project convention.
+
 ###############################################################################
 # Project: Causal effect of air pollution on first ADRD hospitalization       #
 # Code: visualize AD/ADRD hospitalization data by histogram                   #
@@ -28,14 +30,14 @@ hist(anyAD[, .(year = first(year)), by = c("QID", "ADATE")][, year], xlab = "Yea
 hist(anyADRD[, .(year = first(year)), by = c("QID", "ADATE")][, year], xlab = "Year", main = "ADRD Hospitalizations")
 
 # Primary only AD/ADRD hosp
-hist(anyAD[DIAG=="DIAG1", year, by = c("QID", "ADATE")][, year], xlab = "Year", 
+hist(anyAD[DIAG=="DIAG1", year, by = c("QID", "ADATE")][, year], xlab = "Year",
      main = "AD Hospitalizations")
-hist(anyADRD[DIAG=="DIAG1", year, by = c("QID", "ADATE")][, year], xlab = "Year", 
+hist(anyADRD[DIAG=="DIAG1", year, by = c("QID", "ADATE")][, year], xlab = "Year",
      main = "ADRD Hospitalizations")
 
 # By ICD code, primary or secondary
 ICD <- unique(anyADRD$ICD)
 for(c in ICD) {
-  hist(anyADRD[ICD==c, .(year = first(year)), by = c("QID", "ADATE")][, year], xlab = "Year", 
+  hist(anyADRD[ICD==c, .(year = first(year)), by = c("QID", "ADATE")][, year], xlab = "Year",
        main = c)
 }

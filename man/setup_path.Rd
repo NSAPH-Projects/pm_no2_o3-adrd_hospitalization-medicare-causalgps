@@ -4,7 +4,7 @@
 \alias{setup_path}
 \title{Set up required internal and external paths}
 \usage{
-setup_path(pkg = ".", external_private = TRUE, external_public = TRUE)
+setup_path(pkg = ".")
 }
 \arguments{
 \item{external_public}{}

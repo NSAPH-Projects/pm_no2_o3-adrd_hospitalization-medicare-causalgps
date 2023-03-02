@@ -4,12 +4,7 @@
 \alias{initialize_sub_project}
 \title{Initialize a subproject}
 \usage{
-initialize_sub_project(
-  sp_name,
-  pkg = ".",
-  external_private = TRUE,
-  external_public = TRUE
-)
+initialize_sub_project(sp_name, pkg = ".")
 }
 \arguments{
 \item{sp_name}{}
