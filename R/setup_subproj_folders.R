@@ -7,9 +7,9 @@
 #' @param sp_name
 #'
 #' @return
+#' value
 #' @export
 #'
-#' @examples
 setup_subproj_folders <- function(sp_name) {
 
   pkg_path <- get_values("pkg_path")

@@ -1,16 +1,16 @@
 #' Title
 #'
-#' @param pseudo_pop
-#' @param ci_appr
-#' @param nthread
-#' @param quant_var_names
-#' @param cat_var_names
-#' @param title
+#' @param pseudo_pop TBD
+#' @param ci_appr TBD
+#' @param nthread TBD
+#' @param quant_var_names TBD
+#' @param cat_var_names TBD
+#' @param title TBD
 #'
 #' @return
+#' value
 #' @export
 #'
-#' @examples
 cap_weights <- function(pseudo_pop, ci_appr, nthread, quant_var_names, cat_var_names, title){
   # Cap counts or weights if desired
   weights <- "counter_weight"

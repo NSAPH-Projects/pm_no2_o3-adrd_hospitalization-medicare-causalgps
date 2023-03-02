@@ -7,7 +7,12 @@
 pt_biserial_cor(w, binary_cov)
 }
 \arguments{
-\item{binary_cov}{}
+\item{w}{TBD}
+
+\item{binary_cov}{TBD}
+}
+\value{
+value
 }
 \description{
 Title

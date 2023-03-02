@@ -1,13 +1,13 @@
 
 #' Title
 #'
-#' @param w
-#' @param binary_cov
+#' @param w TBD
+#' @param binary_cov TBD
 #'
 #' @return
+#' value
 #' @export
 #'
-#' @examples
 pt_biserial_cor <- function(w, binary_cov){
   # Generate point-biserial correlation between continuous exposure (w) and binary covariate (binary_cov)
   # Note - equivalent to pearson correlation

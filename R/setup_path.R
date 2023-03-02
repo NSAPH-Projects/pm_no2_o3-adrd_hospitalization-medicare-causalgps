@@ -5,14 +5,12 @@
 #' Sets up required internal and external paths. This include any user defined
 #' external data path, package path and many more.
 #'
-#' @param pkg
-#' @param external_private
-#' @param external_public
+#' @param pkg A package name or path.
 #'
 #' @return
+#' value
 #' @export
 #'
-#' @examples
 setup_path <- function(pkg = ".") {
 
   pkg <- as.package(pkg)

@@ -3,9 +3,9 @@
 #' @param pseudo_pop
 #'
 #' @return
+#' value
 #' @export
 #'
-#' @examples
 summarize_pseudo_counter <- function(pseudo_pop){
   # For GPS-matched pseudopopulation, print summary statistics for counter
   counter <- pseudo_pop$pseudo_pop$counter_weight

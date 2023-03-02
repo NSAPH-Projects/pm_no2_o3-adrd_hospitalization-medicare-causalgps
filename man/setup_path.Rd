@@ -7,7 +7,10 @@
 setup_path(pkg = ".")
 }
 \arguments{
-\item{external_public}{}
+\item{pkg}{A package name or path.}
+}
+\value{
+value
 }
 \description{
 Sets up required internal and external paths. This include any user defined

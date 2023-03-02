@@ -19,7 +19,7 @@
 
 # initiate the process ---------------------------------------------------------
 
-sp_name <- "inp_2302_plot_curated_data"
+sp_name <- "inp_2302_plot_curated_data_2"
 path_obj <- initialize_sub_project(sp_name = sp_name)
 
 # setup cache on disk

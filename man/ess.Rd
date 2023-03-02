@@ -7,7 +7,10 @@
 ess(weights)
 }
 \arguments{
-\item{weights}{}
+\item{weights}{TBD}
+}
+\value{
+value
 }
 \description{
 Title

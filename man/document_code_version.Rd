@@ -6,6 +6,9 @@
 \usage{
 document_code_version()
 }
+\value{
+value
+}
 \description{
 Title
 }

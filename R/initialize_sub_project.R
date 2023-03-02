@@ -1,12 +1,12 @@
 #' @title
 #' Initialize a subproject
 #'
-#' @param sp_name
+#' @param sp_name TBD
 #'
 #' @return
+#' value
 #' @export
 #'
-#' @examples
 initialize_sub_project <- function(sp_name,
                                    pkg = "."){
 

@@ -1,13 +1,13 @@
 
 #' Title
 #'
-#' @param w
-#' @param unordered_var
+#' @param w TBD
+#' @param unordered_var TBD
 #'
 #' @return
+#' value
 #' @export
 #'
-#' @examples
 cor_unordered_var <- function(w, unordered_var){
   # Calculate mean of absolute point-biserial correlation between continuous exposure and each binary indicator for an unordered categorical covariate
   # params: w is the vector of continuous exposure, unordered_var is vector of unordered categorical covariate

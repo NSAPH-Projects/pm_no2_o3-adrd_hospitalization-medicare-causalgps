@@ -7,7 +7,12 @@
 \method{print}{path_holder}(x, ...)
 }
 \arguments{
-\item{...}{}
+\item{x}{TBD}
+
+\item{...}{TBD}
+}
+\value{
+value
 }
 \description{
 Title

@@ -1,14 +1,14 @@
 #' Title
 #'
-#' @param pseudo_pop
-#' @param ci_appr
-#' @param var_names
-#' @param title
+#' @param pseudo_pop TBD
+#' @param ci_appr TBD
+#' @param var_names TBD
+#' @param title TBD
 #'
 #' @return
+#' value
 #' @export
 #'
-#' @examples
 quant_cov_bal <- function(pseudo_pop, ci_appr, var_names, title){
   # Check ZIP-level covariate balance in matched data: abs correlation for quantitative or ordered categorical variables
   cor_val_pseudo <- pseudo_pop$adjusted_corr_results$absolute_corr[var_names] # remove non-ordinal categorical variables; can include zip_ordered_cat_var_names if exists

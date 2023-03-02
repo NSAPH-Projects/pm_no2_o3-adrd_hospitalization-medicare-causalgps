@@ -7,7 +7,14 @@
 weighted_cor_unordered_var(w, unordered_var, weights)
 }
 \arguments{
-\item{weights}{}
+\item{w}{TBD}
+
+\item{unordered_var}{TBD}
+
+\item{weights}{TBD}
+}
+\value{
+value
 }
 \description{
 Title

@@ -9,6 +9,9 @@ summarize_pseudo_counter(pseudo_pop)
 \arguments{
 \item{pseudo_pop}{}
 }
+\value{
+value
+}
 \description{
 Title
 }

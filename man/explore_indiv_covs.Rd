@@ -9,6 +9,9 @@ explore_indiv_covs(df)
 \arguments{
 \item{df}{}
 }
+\value{
+value
+}
 \description{
 Title
 }

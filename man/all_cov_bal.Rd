@@ -7,7 +7,20 @@
 all_cov_bal(pseudo_pop, w, c_unordered_vars, ci_appr, all_cov_names, title)
 }
 \arguments{
-\item{title}{}
+\item{pseudo_pop}{TBD}
+
+\item{w}{TBD}
+
+\item{c_unordered_vars}{TBD}
+
+\item{ci_appr}{TBD}
+
+\item{all_cov_names}{TBD}
+
+\item{title}{TBD}
+}
+\value{
+value
 }
 \description{
 Title

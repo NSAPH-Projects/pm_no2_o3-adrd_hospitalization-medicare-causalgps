@@ -7,7 +7,10 @@
 logit_nonneg(x)
 }
 \arguments{
-\item{x}{}
+\item{x}{TBD}
+}
+\value{
+value
 }
 \description{
 Title

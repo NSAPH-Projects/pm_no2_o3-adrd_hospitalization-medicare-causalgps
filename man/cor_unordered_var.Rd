@@ -7,7 +7,12 @@
 cor_unordered_var(w, unordered_var)
 }
 \arguments{
-\item{unordered_var}{}
+\item{w}{TBD}
+
+\item{unordered_var}{TBD}
+}
+\value{
+value
 }
 \description{
 Title

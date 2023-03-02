@@ -7,7 +7,10 @@
 initialize_sub_project(sp_name, pkg = ".")
 }
 \arguments{
-\item{sp_name}{}
+\item{sp_name}{TBD}
+}
+\value{
+value
 }
 \description{
 Initialize a subproject

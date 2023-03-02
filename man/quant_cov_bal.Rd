@@ -7,7 +7,16 @@
 quant_cov_bal(pseudo_pop, ci_appr, var_names, title)
 }
 \arguments{
-\item{title}{}
+\item{pseudo_pop}{TBD}
+
+\item{ci_appr}{TBD}
+
+\item{var_names}{TBD}
+
+\item{title}{TBD}
+}
+\value{
+value
 }
 \description{
 Title

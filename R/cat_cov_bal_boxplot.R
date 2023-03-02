@@ -1,14 +1,14 @@
 #' Title
 #'
-#' @param pseudo_pop
-#' @param ci_appr
-#' @param var_names
-#' @param title
+#' @param pseudo_pop TBD
+#' @param ci_appr TBD
+#' @param var_names TBD
+#' @param title TBD
 #'
 #' @return
+#' value
 #' @export
 #'
-#' @examples
 cat_cov_bal_boxplot <- function(pseudo_pop, ci_appr, var_names, title){
   # Check ZIP-level covariate balance in matched data via boxplot: unordered categorical variables
   weights <- "counter_weight"

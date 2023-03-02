@@ -7,7 +7,10 @@
 finalize_subproject(path_obj)
 }
 \arguments{
-\item{path_obj}{}
+\item{path_obj}{TBD}
+}
+\value{
+value
 }
 \description{
 Finalize the processing of the sub project

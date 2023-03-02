@@ -1,11 +1,11 @@
 #' Title
 #'
-#' @param df
+#' @param df TBD
 #'
 #' @return
+#' value
 #' @export
 #'
-#' @examples
 explore_zip_covs <- function(df){
   # Explore distribution of ZIP-level covariates
   cat("\nMin of mean_bmi:", min(df$mean_bmi))

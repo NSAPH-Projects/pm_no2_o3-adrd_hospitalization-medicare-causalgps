@@ -1,12 +1,12 @@
 #' Title
 #'
-#' @param x
-#' @param ...
+#' @param x TBD
+#' @param ... TBD
 #'
 #' @return
+#' value
 #' @export
 #'
-#' @examples
 print.path_holder <- function(x, ...){
   x <- unclass(x)
   tmp_names <- names(x)

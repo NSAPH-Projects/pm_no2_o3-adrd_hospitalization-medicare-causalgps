@@ -4,9 +4,9 @@
 #' @param df
 #'
 #' @return
+#' value
 #' @export
 #'
-#' @examples
 explore_indiv_covs <- function(df){
   # Explore distribution of individual-level covariates
   # To Do: add age distribution

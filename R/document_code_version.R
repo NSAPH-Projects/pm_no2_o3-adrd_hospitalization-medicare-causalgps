@@ -1,9 +1,9 @@
 #' Title
 #'
 #' @return
+#' value
 #' @export
 #'
-#' @examples
 document_code_version <- function(){
 
  repo <- git2r::repository()

@@ -1,12 +1,12 @@
 #' @title
 #' Finalize the processing of the sub project
 #'
-#' @param path_obj
+#' @param path_obj TBD
 #'
 #' @return
+#' value
 #' @export
 #'
-#' @examples
 finalize_subproject <- function(path_obj) {
 
   # write extra details of the session

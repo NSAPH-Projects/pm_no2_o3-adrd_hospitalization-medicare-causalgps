@@ -1,17 +1,17 @@
 
 #' Title
 #'
-#' @param pseudo_pop
-#' @param w
-#' @param c_unordered_vars
-#' @param ci_appr
-#' @param all_cov_names
-#' @param title
+#' @param pseudo_pop TBD
+#' @param w TBD
+#' @param c_unordered_vars TBD
+#' @param ci_appr TBD
+#' @param all_cov_names TBD
+#' @param title TBD
 #'
 #' @return
+#' value
 #' @export
 #'
-#' @examples
 all_cov_bal <- function(pseudo_pop, w, c_unordered_vars, ci_appr, all_cov_names, title){
   # Check ZIP-level covariate balance in matched data
   # i.e., absolute correlation for quantitative covariates
