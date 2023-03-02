@@ -84,6 +84,8 @@ After setting up the environment and making sure that
   - `devtools::load_all()`
 are running without a problem. We can start conducting research. All `.R` and `.Rmd` files go into the `rscript` folder. After implementing all functions and getting a feeling that the function can be used in multiple places or by other users, you can add more functions under `R` folder. Please consider adding unit tests for those functions or at least add them to TODO list.
 
+Before doing any analyses, remove the `external_[number]` folders in the `study_data/private` and the `study_data/public` folders. You may get warnings otherwis. [TODO: write a code to do this internally. Make sure that recursive soft link does not cause problem at the target.]
+
 We call each scientific task a sub-project. A sub-project can be any number of steps that takes some input values and data and provide some outputs. Each sub-project, which is either `.R` or `.Rmd` files, has the following structure (all in the same file). [TODO: the `.Rmd` files have not been tested yet.]
 
 ### Objective of sub-project
