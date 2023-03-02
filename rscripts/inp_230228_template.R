@@ -8,8 +8,6 @@
 # Last update: February 28, 2023
 
 # Notes:
-# Each user has .Renviron file (sitting in the project folder) which is not
-# committed to git.
 # Each sub projects is a R or Rmd file that has three sections:
 #     1 - Initialization, which requires sub project name and whether you want
 #         to symlink external_public and external_private or not.
@@ -19,7 +17,7 @@
 
 # initiate the process ---------------------------------------------------------
 
-sp_name <- "inp_2302_plot_curated_data_2"
+sp_name <- "inp_2302_efg"
 path_obj <- initialize_sub_project(sp_name = sp_name)
 
 # setup cache on disk
@@ -55,6 +53,7 @@ m_load_data_tmp <- memoise::memoise(load_data_tmp, cache = cdb)
 
 # load data
 data_path <- file.path(path_obj$dir_data_private_ext_1,
+                       "main_data_1_private",
                        "analysis",
                        "ADRD_complete_tv.fst")
 
