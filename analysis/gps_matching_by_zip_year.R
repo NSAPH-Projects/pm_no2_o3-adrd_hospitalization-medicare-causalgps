@@ -202,7 +202,6 @@ if (find_best_cov_bal_attempt){
   ggsave(paste0(dir_results, "covariate_balance/matched_pop_", nrow(zip_year_data_with_strata), "rows_", modifications, ".png"), matched_cov_bal_plot)
 }
 
-# to do: not lists
 # regenerate GPS model and matched pseudopopulation with best covariate balance
 best_matched_pseudopop <- get_matched_pseudopop(attempt_number = best_maxAC_attempt,
                                                 cov_bal_data.table = cov_bal_matching,
@@ -216,7 +215,11 @@ cat("Proportion of observations matched:", sum(best_matched_pseudopop$counter_we
 cat("Distribution of number of matches per observations:")
 summary(best_matched_pseudopop$counter_weight)
 quantile(best_matched_pseudopop$counter_weight, c(0, 0.25, 0.5, 0.75, 0.95, 0.99, 0.999, 0.9999, 1))
-boxplot(best_matched_pseudopop$counter_weight)
+# boxplot(best_matched_pseudopop$counter_weight)
+
+# print summary of pseudopopulation exposure
+best_matched_pseudopop[counter_weight > 0, .(max_exposure = max(w))]
+best_matched_pseudopop[counter_weight > 0, .(min_exposure = min(w))]
 plot(density(best_matched_pseudopop$w,
              weights = best_matched_pseudopop$counter_weight / sum(best_matched_pseudopop$counter_weight)),
      main = "Density of exposure in matched pseudopopulation",

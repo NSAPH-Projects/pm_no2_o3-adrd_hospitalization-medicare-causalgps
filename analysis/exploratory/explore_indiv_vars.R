@@ -31,30 +31,27 @@ cat("Number of events:", sum(dt$ADRD_hosp)) # 5,935,558
 cat("Overall prevalence across person-years:", sum(dt$ADRD_hosp) / nrow(dt)) # 0.01429357
 
 # calculate median years of followup
+n_years_followup <- dt[year == ADRD_year] # 49,589,968 rows. unique qid's
+n_years_followup2 <- dt[year == max(year), .SD, by = qid] # 22,490,481 rows. unique qid's
+n_years_followup3 <- dt[year == last_year_ffs] # 45,995,856 rows. unique qid's
 # to do. need to figure out which of these data.frames to use
-n_years_followup1 <- dt[year == ADRD_year] # 49,589,968 rows. unique qid's. year of event or censoring
-n_years_followup2 <- dt[year == max(year), .SD, by = qid] # 22,490,481 rows. unique qid's. should be equivalent to #1?
-# n_years_followup3 <- dt[year == last_year_ffs] # 45,995,856 rows. unique qid's. year of exiting ffs, which may be after event or censoring
-
-# to do. need to figure out which of these data.frames to use
-n_years_followup1[, n_years := year - cohort + 1]
-summary(n_years_followup1$n_years)
-
-# alternatively (equivalent?)
 dt[, .N, by = qid] # will give the number of followup years by individual
-dt[, .N, by = qid][, median(N)] # should give the median follow up years
+dt[, .N, by = qid][, median(N)] should give the median follow up years
 
 
 # calculate summary statistics of patient-level variables at each patient's entry year
 # note: this is for the untrimmed exposure
-dt_entry <- dt[year == cohort] # each patient's entry year
-
-table(dt_entry$sex) # 1 = male, 2 = female
-table(dt_entry$age_grp) # in 5-year bins
-table(dt_entry$race) # RTI-augmented race codes: https://resdac.org/cms-data/variables/research-triangle-institute-rti-race-code
-table(dt_entry$dual) # Medicaid eligibility
-
-prop.table(table(dt_entry$sex)) # 1 = male, 2 = female
+dt_entry <- dt[year == cohort]
+prop.table(table(dt_entry$sex))
 prop.table(table(dt_entry$age_grp)) # in 5-year bins
-prop.table(table(dt_entry$race)) # RTI-augmented race codes: https://resdac.org/cms-data/variables/research-triangle-institute-rti-race-code
+prop.table(table(dt_entry$race)) # RTI-augmented race codes
 prop.table(table(dt_entry$dual)) # Medicaid eligibility
+
+
+ADRD_agg_lagged[, `:=`(zip = as.factor(zip),
+                       year = as.factor(year),
+                       cohort = as.factor(cohort),
+                       age_grp = as.factor(age_grp),
+                       sex = as.factor(sex),
+                       race = as.factor(race),
+                       dual = as.factor(dual))]
