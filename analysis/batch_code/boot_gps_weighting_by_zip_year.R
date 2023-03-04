@@ -86,7 +86,7 @@ coef_for_exposure <- parametric_model_summary$p.table["w", "Estimate"]
 result <- data.table(boot_sample_number = boot_sample_number,
                      coef_for_exposure = coef_for_exposure)
 fwrite(result,
-       paste0(dir_results, "batch_sims/", exposure_name, "_boot_results_",
-              m_boot, "zips_",
-              n_boot_iter, "replicates.csv"),
-       append = T)
+       paste0(dir_results, "batch_sims/",
+              exposure_name, "_boot_results/",
+              m_boot, "zips/",
+              "replicate_", boot_sample_number, "out_of_", n_boot_iter, ".csv"))

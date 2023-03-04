@@ -24,11 +24,3 @@ boot_zips <- sapply(1:n_boot_iter, function(i) sample(unique(zip_year_data$zip),
 fwrite(boot_zips, paste0(dir_code, "analysis/batch_code/", exposure_name, "_boot_",
                          m_boot, "zips_",
                          n_boot_iter, "replicates.csv"))
-
-# set up data.frame to store results and save as csv
-# note: the following line sets up a filler "zeroth" row, which should be deleted after bootstrap results are generated
-boot_results <- data.table(boot_sample_number = 0,
-                           coef_for_exposure = 100)
-fwrite(boot_results, paste0(dir_results, "batch_sims/", exposure_name, "_boot_results_",
-                            m_boot, "zips_",
-                            n_boot_iter, "replicates.csv"))
