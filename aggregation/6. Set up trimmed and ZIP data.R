@@ -17,6 +17,8 @@ n_rows_untrimmed <- nrow(ADRD_agg_lagged) # 34,763,397 rows
 setnames(ADRD_agg_lagged,
          old = c("pct_blk", "pct_owner_occ"),
          new = c("prop_blk", "prop_owner_occ"))
+ADRD_agg_lagged[, sex := ifelse(sex == 2, 0, # in raw data, female is coded as 2; recode as 0
+                               ifelse(sex == 1, 1, NA))] # in raw data, male is coded as 1; keep this; there should be no NAs
 ADRD_agg_lagged[, `:=`(zip = as.factor(zip),
                        year = as.factor(year),
                        cohort = as.factor(cohort),

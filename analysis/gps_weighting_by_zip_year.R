@@ -23,6 +23,15 @@ zip_year_data <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_yea
 zip_year_data_with_strata <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_with_strata_trimmed_0.05_0.95.fst"),
                                       as.data.table = T)
 
+# make sure categorical variables are factors
+zip_year_data_with_strata[, `:=`(zip = as.factor(zip),
+                                 year = as.factor(year),
+                                 cohort = as.factor(cohort),
+                                 age_grp = as.factor(age_grp),
+                                 sex = as.factor(sex),
+                                 race = as.factor(race),
+                                 dual = as.factor(dual))]
+
 # parameters for this computing job; user should set
 n_cores <- 16 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
 n_gb <- 64 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
