@@ -69,7 +69,7 @@ calculate_correlations <- function(cov_bal_data.table,
       cov_bal_data.table[Attempt == attempt & Covariate == level & Dataset == dataset_names[1],
                          Correlation := weightedCorr(pseudopop$w,
                                                      pseudopop[[unordered_var]] == level,
-                                                     method = "pearson",
+                                                     method = "Pearson",
                                                      weights = pseudopop[[weight_name]])]
       
       cov_bal_data.table[Attempt == attempt & Covariate == level & Dataset == dataset_names[2],

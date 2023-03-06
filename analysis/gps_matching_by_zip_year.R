@@ -47,7 +47,6 @@ zip_year_data_with_strata <- read_fst(paste0(dir_data, "analysis/", exposure_nam
 # make sure categorical variables are factors
 zip_year_data_with_strata[, `:=`(zip = as.factor(zip),
                                  year = as.factor(year),
-                                 cohort = as.factor(cohort),
                                  age_grp = as.factor(age_grp),
                                  sex = as.factor(sex),
                                  race = as.factor(race),
@@ -89,6 +88,7 @@ get_matched_pseudopop <- function(attempt_number,
                                              w = zip_year_data$w,
                                              c = subset(zip_year_data, select = c("year", zip_var_names)),
                                              gps_model = "parametric", # i.e., w=f(x)+epsilon, f(x) estimated by xgboost and epsilon is normal
+                                             pred_model = "sl",
                                              internal_use = T,
                                              params = list(xgb_nrounds = seq(10, 50),
                                                            xgb_eta = seq(0.1, 0.4, 0.01)),
@@ -96,7 +96,7 @@ get_matched_pseudopop <- function(attempt_number,
                                              nthread = n_cores)
   
   # create a temporary dataset storing all of CausalGPS's internal parameters, to be expanded from ZIP-years to units of analysis (merging with strata by ZIP, year)
-  temp_zip_year_with_gps_dataset_plus_params <- temp_zip_year_with_gps_obj$dataset
+  temp_zip_year_with_gps_dataset_plus_params <- as.data.table(temp_zip_year_with_gps_obj$dataset)
   temp_zip_year_with_gps_dataset_plus_params$e_gps_pred <- temp_zip_year_with_gps_obj$e_gps_pred
   temp_zip_year_with_gps_dataset_plus_params$w_resid <- temp_zip_year_with_gps_obj$w_resid
   temp_zip_year_with_gps_dataset_plus_params$zip <- zip_year_data$zip
