@@ -107,15 +107,15 @@ get_matched_pseudopop <- function(attempt_number,
                                                                                              gps <= gps_outer_quantiles[2]]
   
   # apply estimated GPS value to all strata within each remaining/untrimmed ZIP-year (merge will only keep rows in both data.tables)
-  # it's important to subset only relevant columns in each data.table:
-  # 1) "Y" vector in temp_zip_year_with_gps_dataset_plus_params is fake
-  # 2) ZIP-level covariates won't be used in matching or and won't be valid after matching
+  # it's important which columns come from which data.table:
+  # 1) "Y" vector in temp_zip_year_with_gps_dataset_plus_params is fake, so use "Y" from data_for_matching
+  # 2) include ZIP-level covariates to measure covariate balance, though they won't be valid after matching
   # 3) it's okay to include variables for the outcome model because they won't be used in matching anyway and will be useful afterward
   # note that strata_vars includes year
   temp_zip_year_with_gps_dataset_plus_params <- merge(subset(data_for_matching,
                                                              select = c("zip", "Y", "stratum", strata_vars, "n_persons", "n_years")),
                                                       subset(temp_zip_year_with_gps_dataset_plus_params,
-                                                             select = c("zip", "year", "w", "gps", "counter_weight", "e_gps_pred", "w_resid")),
+                                                             select = c("zip", "year", "w", "gps", "counter_weight", "e_gps_pred", "w_resid", zip_var_names)),
                                                       by = c("zip", "year"))
   setorder(temp_zip_year_with_gps_dataset_plus_params, stratum)
   temp_zip_year_with_gps_dataset_plus_params[, row_index := 1:.N, by = stratum]
@@ -161,6 +161,7 @@ match_within_stratum <- function(dataset_plus_params,
   class(dataset_as_cgps_gps) <- "cgps_gps"
   dataset_as_cgps_gps$dataset <- subset(as.data.frame(dataset_plus_params),
                                         select = c("Y", "w", "gps", "counter_weight", "row_index", # used in matching
+                                                   zip_var_names, # used to measure covariate balance
                                                    strata_vars, "n_persons", "n_years")) # not used in matching but used in outcome model
   dataset_as_cgps_gps$e_gps_pred <- dataset_plus_params$e_gps_pred
   dataset_as_cgps_gps$w_resid <- dataset_plus_params$w_resid

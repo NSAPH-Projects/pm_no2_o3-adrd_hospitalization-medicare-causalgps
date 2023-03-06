@@ -65,15 +65,15 @@ calculate_correlations <- function(cov_bal_data.table,
   else stop("'method' must be 'weighting' or 'matching'")
   
   for (unordered_var in zip_unordered_cat_var_names){
-    for (level in levels(zip_year_data[[unordered_var]])){
+    for (level in levels(pseudopop[[unordered_var]])){
       cov_bal_data.table[Attempt == attempt & Covariate == level & Dataset == dataset_names[1],
-                         Correlation := weightedCorr(pseudopop$w,
+                         Correlation := weightedCorr(pseudopop[["w"]],
                                                      pseudopop[[unordered_var]] == level,
                                                      method = "Pearson",
                                                      weights = pseudopop[[weight_name]])]
       
       cov_bal_data.table[Attempt == attempt & Covariate == level & Dataset == dataset_names[2],
-                         Correlation := cor(pseudopop$w,
+                         Correlation := cor(pseudopop[["w"]],
                                             pseudopop[[unordered_var]] == level,
                                             method = "pearson")]
     }
@@ -81,13 +81,13 @@ calculate_correlations <- function(cov_bal_data.table,
   
   for (quant_var in zip_quant_var_names){
     cov_bal_data.table[Attempt == attempt & Covariate == quant_var & Dataset == dataset_names[1],
-                       Correlation := weightedCorr(pseudopop$w,
+                       Correlation := weightedCorr(pseudopop[["w"]],
                                                    pseudopop[[quant_var]],
                                                    method = "Pearson",
                                                    weights = pseudopop[[weight_name]])]
     
     cov_bal_data.table[Attempt == attempt & Covariate == quant_var & Dataset == dataset_names[2],
-                       Correlation := cor(pseudopop$w,
+                       Correlation := cor(pseudopop[["w"]],
                                           pseudopop[[quant_var]],
                                           method = "pearson")]
   }
