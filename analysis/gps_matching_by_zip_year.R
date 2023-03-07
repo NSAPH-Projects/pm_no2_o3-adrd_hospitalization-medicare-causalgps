@@ -27,21 +27,25 @@ if (find_best_cov_bal_attempt){
   n_total_attempts <- 10 # user can set this to a number larger than n_attempts if some attempts have already been tried; to be printed on cov bal plot
   
   if (n_attempts < n_total_attempts){
-    modifications <- paste0(exposure_name, "_only_gps_by_zip_year_trimmed_expos_and_gps_caliper", matching_caliper, "_", n_attempts, "more_attempts") # to be used in names of output files, to record how you're tuning the models
+    modifications <- paste0("caliper", matching_caliper, "_", n_attempts, "more_attempts") # to be used in names of output files, to record how you're tuning the models
   } else{
-    modifications <- paste0(exposure_name, "_only_gps_by_zip_year_trimmed_expos_and_gps_caliper", matching_caliper, "_", n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
+    modifications <- paste0("caliper", matching_caliper, "_", n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
   }
 } else{
   n_attempts <- 1
   best_maxAC_attempt <- 1 # user should set this to the attempt # to be used (for the seed)
-  modifications <- paste0(exposure_name, "_only_gps_by_zip_year_trimmed_expos_and_gps_caliper", matching_caliper, "_attempt", best_maxAC_attempt) # to be used in names of output files, to record how you're tuning the models
+  modifications <- paste0("caliper", matching_caliper, "_attempt", best_maxAC_attempt) # to be used in names of output files, to record how you're tuning the models
 }
 
 # get data and helpful functions
 source(paste0(dir_code, "analysis/helper_functions.R"))
-zip_year_data <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_trimmed_0.05_0.95.fst"),
+zip_year_data <- read_fst(paste0(dir_data, "analysis/",
+                                 exposure_name, "/",
+                                 "zip_year_data_trimmed_0.05_0.95.fst"),
                           as.data.table = T)
-zip_year_data_with_strata <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_with_strata_trimmed_0.05_0.95.fst"),
+zip_year_data_with_strata <- read_fst(paste0(dir_data, "analysis/",
+                                             exposure_name, "/",
+                                             "zip_year_data_with_strata_trimmed_0.05_0.95.fst"),
                                       as.data.table = T)
 
 # make sure categorical variables are factors
@@ -58,7 +62,7 @@ zip_year_data_with_strata[, `:=`(zip = as.factor(zip),
 # get columns from full data that are useful for matching and add a label for stratum
 data_for_matching <- copy(zip_year_data_with_strata)
 data_for_matching[, stratum := .GRP, by = strata_vars]
-setorder(data_for_matching, stratum) # to do: consider if this line is necessary
+setkey(data_for_matching, stratum) # to do: consider if this line is necessary
 
 # set up data.table to check covariate balance for each GPS modeling attempt
 if (find_best_cov_bal_attempt){
@@ -72,12 +76,20 @@ if (find_best_cov_bal_attempt){
 
 # function to match within strata; first estimate GPS then match within each stratum
 get_matched_pseudopop <- function(attempt_number,
+                                  exposure_name,
+                                  modifications,
                                   cov_bal_data.table,
+                                  data_for_matching,
+                                  zip_year_data,
                                   return_cov_bal = T,
                                   return_pseudopop = F){
   
   # create log file to see internal processes of CausalGPS
-  set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_estimateGpsForMatching_AttemptNumber", attempt_number, "_", modifications, "_", nrow(zip_year_data), "rows_", n_cores, "cores_", n_gb, "gb.log"),
+  set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/",
+                                       exposure_name, "/",
+                                       "matching/",
+                                       modifications, "/",
+                                       Sys.Date(), "_estimateGpsForMatching_AttemptNumber", attempt_number, "_", nrow(zip_year_data), "rows_", n_cores, "cores_", n_gb, "gb.log"),
              logger_level = "TRACE")
   
   # set seed according to attempt number
@@ -129,7 +141,11 @@ get_matched_pseudopop <- function(attempt_number,
   # names(strata_list) <- unique(temp_zip_year_with_gps_dataset_plus_params$stratum)
   
   # match within strata
-  set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_matching_by_stratum", modifications, "_", nrow(zip_year_data_with_strata), "rows_", n_cores, "cores_", n_gb, "gb.log"),
+  set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/",
+                                       exposure_name, "/",
+                                       "matching/",
+                                       modifications, "/",
+                                       Sys.Date(), "_matching_by_stratum", "_", nrow(zip_year_data_with_strata), "rows_", n_cores, "cores_", n_gb, "gb.log"),
              logger_level = "TRACE")
   temp_matched_pseudopop_list <- lapply(strata_list,
                                         match_within_stratum,
@@ -189,14 +205,20 @@ match_within_stratum <- function(dataset_plus_params,
 if (find_best_cov_bal_attempt){
   for (i in 1:n_attempts){
     cov_bal_matching <- get_matched_pseudopop(attempt_number = i + n_attempts_already_tried,
+                                              exposure_name = exposure_name,
+                                              modifications = modifications,
                                               cov_bal_data.table = cov_bal_matching,
+                                              data_for_matching = data_for_matching,
+                                              zip_year_data = zip_year_data,
                                               return_cov_bal = T,
                                               return_pseudopop = F)
   }
   
   # identify GPS model(s) with best covariate balance
   cov_bal_summary <- summarize_cov_bal(cov_bal_data.table = cov_bal_matching,
+                                       exposure_name = exposure_name,
                                        method = "matching",
+                                       modifications = modifications,
                                        save_csv = T)
   best_maxAC_attempt <- cov_bal_summary$Attempt[which.min(cov_bal_summary$maxAC)]
   best_maxAC_cov_bal <- cov_bal_matching[Attempt == best_maxAC_attempt]
@@ -209,12 +231,20 @@ if (find_best_cov_bal_attempt){
     ggtitle(paste0(format(nrow(zip_year_data_with_strata), scientific = F, big.mark = ','), " units of analysis (Attempt #", best_maxAC_attempt, " of ", n_total_attempts, ")")) +
     theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
   
-  ggsave(paste0(dir_results, "covariate_balance/matched_pop_", nrow(zip_year_data_with_strata), "rows_", modifications, ".png"), matched_cov_bal_plot)
+  ggsave(paste0(dir_results, "covariate_balance/",
+                exposure_name, "/",
+                "matching/",
+                modifications, "/",
+                nrow(zip_year_data_with_strata), "rows.png"), matched_cov_bal_plot)
 }
 
 # regenerate GPS model and matched pseudopopulation with best covariate balance
 best_matched_pseudopop <- get_matched_pseudopop(attempt_number = best_maxAC_attempt,
+                                                exposure_name = exposure_name,
+                                                modifications = modifications,
                                                 cov_bal_data.table = cov_bal_matching,
+                                                data_for_matching = data_for_matching,
+                                                zip_year_data = zip_year_data,
                                                 return_cov_bal = F,
                                                 return_pseudopop = T)
 
@@ -242,6 +272,7 @@ plot(density(best_matched_pseudopop$w),
 parametric_model_summary <- get_outcome_model_summary(pseudopop = best_matched_pseudopop,
                                                       exposure_name = exposure_name,
                                                       method = "matching",
+                                                      modifications = modifications,
                                                       n_cores = n_cores,
                                                       parametric_or_semiparametric = "parametric",
                                                       save_results = T)
@@ -249,6 +280,7 @@ parametric_model_summary <- get_outcome_model_summary(pseudopop = best_matched_p
 semiparametric_model_summary <- get_outcome_model_summary(pseudopop = best_matched_pseudopop,
                                                           exposure_name = exposure_name,
                                                           method = "matching",
+                                                          modifications = modifications,
                                                           n_cores = n_cores,
                                                           parametric_or_semiparametric = "semiparametric",
                                                           save_results = T)

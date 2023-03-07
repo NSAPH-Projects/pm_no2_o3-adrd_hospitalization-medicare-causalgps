@@ -18,15 +18,18 @@ exposure_name <- "pm25"
 
 # get data and helpful functions
 source(paste0(dir_code, "analysis/helper_functions.R"))
-zip_year_data <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_trimmed_0.05_0.95.fst"),
+zip_year_data <- read_fst(paste0(dir_data, "analysis/",
+                                 exposure_name, "/",
+                                 "zip_year_data_trimmed_0.05_0.95.fst"),
                           as.data.table = T)
-zip_year_data_with_strata <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_with_strata_trimmed_0.05_0.95.fst"),
+zip_year_data_with_strata <- read_fst(paste0(dir_data, "analysis/",
+                                             exposure_name, "/",
+                                             "zip_year_data_with_strata_trimmed_0.05_0.95.fst"),
                                       as.data.table = T)
 
 # make sure categorical variables are factors
 zip_year_data_with_strata[, `:=`(zip = as.factor(zip),
                                  year = as.factor(year),
-                                 cohort = as.factor(cohort),
                                  age_grp = as.factor(age_grp),
                                  sex = as.factor(sex),
                                  race = as.factor(race),
@@ -42,14 +45,14 @@ if (find_best_cov_bal_attempt){
   n_total_attempts <- 30 # user can set this to a number larger than n_attempts if some attempts have already been tried; to be printed on cov bal plot
   
   if (n_attempts < n_total_attempts){
-    modifications <- paste0(exposure_name, "_only_gps_by_zip_year_trimmed_0.05_0.95_", n_attempts, "more_attempts") # to be used in names of output files, to record how you're tuning the models
+    modifications <- paste0(n_attempts, "more_attempts") # to be used in names of output files, to record how you're tuning the models
   } else{
-    modifications <- paste0(exposure_name, "_only_gps_by_zip_year_trimmed_0.05_0.95_", n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
+    modifications <- paste0(n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
   }
 } else{
   n_attempts <- 1
   best_maxAC_attempt <- 1 # user should set this to the attempt # to be used (for the seed)
-  modifications <- paste0(exposure_name, "_only_gps_by_zip_year_trimmed_0.05_0.95_attempt", best_maxAC_attempt) # to be used in names of output files, to record how you're tuning the models
+  modifications <- paste0("attempt", best_maxAC_attempt) # to be used in names of output files, to record how you're tuning the models
 }
 
 
@@ -67,7 +70,11 @@ if (find_best_cov_bal_attempt){
 
 if (find_best_cov_bal_attempt){
   # create log file to see internal processes of CausalGPS
-  set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/CausalGPS_", Sys.Date(), "_estimate_gps_for_weighting_", modifications, "_", nrow(zip_year_data), "rows_", n_cores, "cores_", n_gb, "gb.log"),
+  set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/",
+                                       exposure_name, "/",
+                                       "weighting/",
+                                       modifications, "/",
+                                       Sys.Date(), "_estimate_gps_for_weighting_", nrow(zip_year_data), "rows_", n_cores, "cores_", n_gb, "gb.log"),
              logger_level = "TRACE")
   
   for (i in 1:n_attempts){
@@ -79,7 +86,9 @@ if (find_best_cov_bal_attempt){
   }
   
   cov_bal_summary <- summarize_cov_bal(cov_bal_data.table = cov_bal_weighting,
+                                       exposure_name = exposure_name,
                                        method = "weighting",
+                                       modifications = modifications,
                                        save_csv = T)
   
   # find GPS model with best covariate balance
@@ -94,7 +103,11 @@ if (find_best_cov_bal_attempt){
     ggtitle(paste0(format(nrow(zip_year_data_with_strata), scientific = F, big.mark = ','), " units of analysis (Attempt #", best_maxAC_attempt, " of ", n_total_attempts, ")")) +
     theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
   
-  ggsave(paste0(dir_results, "covariate_balance/weighted_pop_", nrow(zip_year_data_with_strata), "rows_", modifications, ".png"), weighted_cov_bal_plot)
+  ggsave(paste0(dir_results, "covariate_balance/",
+                exposure_name, "/",
+                "weighting/",
+                modifications, "/",
+                nrow(zip_year_data_with_strata), "rows.png"), weighted_cov_bal_plot)
 }
 
 # get pseudopopulation
@@ -106,12 +119,13 @@ best_weighted_pseudopop <- get_weighted_pseudopop(attempt_number = best_maxAC_at
 
 # print summary statistics for pseudopopulation weights
 # to do: save in txt file
-ess(best_weighted_pseudopop$capped_stabilized_ipw) # for PM2.5 attempt #121, which is best out of 200, ESS is 9,427,355
+ess(best_weighted_pseudopop$capped_stabilized_ipw)
 
 # run parametric and semiparametric (thin-plate spline) outcome models
 parametric_model_summary <- get_outcome_model_summary(pseudopop = best_weighted_pseudopop,
                                                       exposure_name = exposure_name,
                                                       method = "weighting",
+                                                      modifications = modifications,
                                                       n_cores = n_cores,
                                                       parametric_or_semiparametric = "parametric",
                                                       save_results = T)
@@ -119,6 +133,7 @@ parametric_model_summary <- get_outcome_model_summary(pseudopop = best_weighted_
 semiparametric_model_summary <- get_outcome_model_summary(pseudopop = best_weighted_pseudopop,
                                                           exposure_name = exposure_name,
                                                           method = "weighting",
+                                                          modifications = modifications,
                                                           n_cores = n_cores,
                                                           parametric_or_semiparametric = "semiparametric",
                                                           save_results = T)

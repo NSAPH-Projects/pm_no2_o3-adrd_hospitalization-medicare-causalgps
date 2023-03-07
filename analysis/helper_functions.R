@@ -100,7 +100,9 @@ calculate_correlations <- function(cov_bal_data.table,
 }
 
 summarize_cov_bal <- function(cov_bal_data.table,
+                              exposure_name,
                               method,
+                              modifications,
                               save_csv = T){
   
   if (method == "weighting") dataset_name <- "Weighted"
@@ -113,7 +115,11 @@ summarize_cov_bal <- function(cov_bal_data.table,
                                                                 ESS = unique(ESS)),
                                         by = Attempt]
   if (save_csv){
-    write.csv(cov_bal_summary, paste0(dir_results, "covariate_balance/cov_bal_as_csv/weighted_pop_", modifications, ".csv"))
+    write.csv(cov_bal_summary, paste0(dir_results, "covariate_balance/",
+                                      exposure_name, "/",
+                                      method, "/",
+                                      modifications, "/",
+                                      "cov_bal.csv"))
   }
   return(cov_bal_summary)
 }
@@ -173,6 +179,7 @@ get_weighted_pseudopop <- function(attempt_number,
 get_outcome_model_summary <- function(pseudopop,
                                       exposure_name,
                                       method,
+                                      modifications,
                                       n_cores,
                                       parametric_or_semiparametric = "parametric",
                                       save_results = T){
@@ -209,9 +216,18 @@ get_outcome_model_summary <- function(pseudopop,
   
   if (save_results){
     if (parametric_or_semiparametric == "parametric"){
-      saveRDS(summary(bam_exposure_only), file = paste0(dir_results, "parametric_results/bam_exposure_only_", method, "_", nrow(pseudopop), "rows_", modifications, ".rds"))
+      saveRDS(summary(bam_exposure_only),
+              file = paste0(dir_results, "parametric_results/",
+                            exposure_name, "/",
+                            method, "/",
+                            modifications, "/",
+                            "bam_exposure_only_", nrow(pseudopop), "rows.rds"))
     } else{
-      png(paste0(dir_results, "semiparametric_results/ERFs/bam_smooth_exposure_only_", method, "_", nrow(pseudopop), "rows_", modifications, ".png"))
+      png(paste0(dir_results, "semiparametric_results/ERFs/",
+                 exposure_name, "/",
+                 method, "/",
+                 modifications, "/",
+                 "bam_smooth_exposure_only_", nrow(pseudopop), "rows.png"))
       plot(bam_exposure_only, main = paste0("GPS ", method, ", Smoothed Poisson regression,\nexposure only (", exposure_name, ")"))
       dev.off()
       # saveRDS(bam_exposure_only, file = paste0(dir_results, "semiparametric_results/spline_objects/bam_smooth_exposure_only_", method, "_", nrow(pseudopop), "rows_", modifications, ".rds"))

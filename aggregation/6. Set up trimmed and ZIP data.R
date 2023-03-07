@@ -73,30 +73,24 @@ save_fst <- T
 trim <- quantile(zip_year_data$w, trim_level)
 zip_year_rows_within_range <- zip_year_data$w >= trim[1] & zip_year_data$w <= trim[2]
 zip_year_trimmed <- zip_year_data[zip_year_rows_within_range, ]
-n_zip_year_rows_trimmed <- nrow(zip_year_trimmed)
+n_zip_year_rows_trimmed <- nrow(zip_year_trimmed) # 438,113 rows
 
 if (save_fst){
   write_fst(zip_year_trimmed, paste0(dir_data,
                                      "analysis/",
-                                     exposure_name,
-                                     "_zip_year_data_trimmed_",
-                                     trim_level[1],
-                                     "_",
-                                     trim_level[2],
+                                     exposure_name, "/",
+                                     "zip_year_data_trimmed_", trim_level[1], "_", trim_level[2],
                                      ".fst")) 
 }
 
 ADRD_agg_rows_within_range <- ADRD_agg_lagged_subset$w >= trim[1] & ADRD_agg_lagged_subset$w <= trim[2]
 ADRD_agg_lagged_trimmed <- ADRD_agg_lagged_subset[ADRD_agg_rows_within_range, ]
-n_rows_trimmed <- nrow(ADRD_agg_lagged_trimmed)
+n_rows_trimmed <- nrow(ADRD_agg_lagged_trimmed) # 31,989,354 for PM2.5; 30,813507 for NO2
 
 if (save_fst){
   write_fst(ADRD_agg_lagged_trimmed, paste0(dir_data,
                                             "analysis/",
-                                            exposure_name,
-                                            "_zip_year_data_with_strata_trimmed_",
-                                            trim_level[1],
-                                            "_",
-                                            trim_level[2],
+                                            exposure_name, "/",
+                                            "zip_year_data_with_strata_trimmed_", trim_level[1], "_", trim_level[2],
                                             ".fst"))
 }
