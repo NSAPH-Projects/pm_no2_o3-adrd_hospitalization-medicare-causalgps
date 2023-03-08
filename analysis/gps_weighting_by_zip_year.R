@@ -28,6 +28,8 @@ zip_year_data_with_strata <- read_fst(paste0(dir_data, "analysis/",
                                       as.data.table = T)
 
 # make sure categorical variables are factors
+zip_year_data[, `:=`(zip = as.factor(zip),
+                     year = as.factor(year))]
 zip_year_data_with_strata[, `:=`(zip = as.factor(zip),
                                  year = as.factor(year),
                                  age_grp = as.factor(age_grp),

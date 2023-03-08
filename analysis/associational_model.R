@@ -13,6 +13,9 @@ dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/res
 # set exposure
 exposure_name <- "pm25"
 
+# set parameters for this computing job
+n_cores <- 16
+
 # get data and helpful functions
 source(paste0(dir_code, "analysis/helper_functions.R"))
 zip_year_data_with_strata <- read_fst(paste0(dir_data, "analysis/",
@@ -49,7 +52,7 @@ saveRDS(summary(bam_associational),
         file = paste0(dir_results, "parametric_results/",
                       exposure_name, "/",
                       "associational/",
-                      "bam_associational", nrow(zip_year_data_with_strata), "rows.rds"))
+                      "bam_parametric_associational_", nrow(zip_year_data_with_strata), "rows.rds"))
 
 # sensitivity analysis: thin-plate spline model
 cl <- parallel::makeCluster(n_cores, type = "PSOCK")
@@ -71,6 +74,7 @@ parallel::stopCluster(cl)
 png(paste0(dir_results, "semiparametric_results/ERFs/",
            exposure_name, "/",
            "associational/",
-           "bam_smooth_associational", nrow(zip_year_data_with_strata), "rows.png"))
-plot(bam_smooth_associational, main = paste0("Associational, Smoothed Poisson regression,\nExposure:", exposure_name))
+           "bam_smooth_associational_", nrow(zip_year_data_with_strata), "rows.png"))
+plot(bam_smooth_associational,
+     main = paste0("Associational, Smoothed Poisson regression\nExposure: ", exposure_name))
 dev.off()
