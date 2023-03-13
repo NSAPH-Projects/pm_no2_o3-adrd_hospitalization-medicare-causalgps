@@ -17,9 +17,11 @@ n_boot <- 31013 # user should check that this is the correct number of total ZIP
 m_boot <- 352 # user should set this to the desired value of m; default: floor(2 * sqrt(n_boot))
 
 # get bootstrap results (1 csv per bootstrap replicate) and merge them
+# note this is for weighting for now; to do: use for loop for matching and weighting
 # to do: check if the following lines work
-boot_results <- list.files(path = paste0(dir_results, "batch_sims/",
-                                         exposure_name, "_boot_results/",
+boot_results <- list.files(path = paste0(dir_results, "bootstrap/",
+                                         exposure_name, "/",
+                                         "weighting/",
                                          m_boot, "zips")) %>% 
   lapply(fread) %>% 
   bind_rows

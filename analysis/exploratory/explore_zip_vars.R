@@ -37,12 +37,68 @@ zip_year_data <- unique(zip_year_data, by = c("zip", "year"))
 # [1] 45.99236
 # > sd(zip_year_data$ozone_summer)
 # [1] 7.514933
-# > cor(zip_year_data$ozone_summer, zip_year_data$pm25)
-# [1] 0.2499757
-# > cor(zip_year_data$no2, zip_year_data$pm25)
+# > cor(zip_year_data$pm25, zip_year_data$no2)
 # [1] 0.3991182
+# > cor(zip_year_data$pm25, zip_year_data$ozone_summer)
+# [1] 0.2499757
 # > cor(zip_year_data$no2, zip_year_data$ozone_summer)
 # [1] 0.2503145
+# > IQR(zip_year_data$pm25)
+# [1] 4.159233
+# > IQR(zip_year_data$no2)
+# [1] 12.01235
+# > IQR(zip_year_data$ozone_summer)
+# [1] 9.800937
+
+# plot distribution of exposure across ZIP years
+png(paste0(dir_results, "exploratory/zip_pm2.5_histogram.png"),
+    width = 600, height = 400)
+hist(zip_year_data$pm25,
+     xlab = "PM2.5 (micrograms/m^3)",
+     main = paste0("Annual mean PM2.5\nacross ",
+                   format(length(unique(zip_year_data$zip)), scientific = F, big.mark = ','),
+                   " ZIP codes, 2000-2015")) # recall that patients are matched to exposure of year prior to observation
+dev.off()
+
+png(paste0(dir_results, "exploratory/zip_no2_histogram.png"),
+    width = 600, height = 400)
+hist(zip_year_data$no2,
+     xlab = "NO2 (ppb)",
+     main = paste0("Annual mean NO2\nacross ",
+                   format(length(unique(zip_year_data$zip)), scientific = F, big.mark = ','),
+                   " ZIP codes, 2000-2015")) # recall that patients are matched to exposure of year prior to observation
+dev.off()
+
+png(paste0(dir_results, "exploratory/zip_ozone_histogram.png"),
+    width = 600, height = 400)
+hist(zip_year_data$ozone_summer,
+     xlab = "Ozone (ppb)",
+     main = paste0("Summer mean ozone\nacross ",
+                   format(length(unique(zip_year_data$zip)), scientific = F, big.mark = ','),
+                   " ZIP codes, 2000-2015")) # recall that patients are matched to exposure of year prior to observation
+dev.off()
+
+quantile(zip_year_data$pm25, c(0, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.975, 0.99, 1))
+quantile(zip_year_data$no2, c(0, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.975, 0.99, 1))
+quantile(zip_year_data$ozone_summer, c(0, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.975, 0.99, 1))
+
+# plot distribution of exposure across patients (can be thought of as patient-weighted ZIP years)
+# to do: weight by n_persons
+hist(ADRD_agg_lagged$pm25,
+     xlab = "PM2.5 (micrograms/m^3)",
+     main = paste0("Annual mean PM2.5\nacross ",
+                   format(nrow(ADRD_agg_lagged_subset), scientific = F, big.mark = ','),
+                   " patients"))
+hist(ADRD_agg_lagged$no2,
+     xlab = "NO2 (ppb)",
+     main = paste0("Annual mean NO2\nacross ",
+                   format(nrow(ADRD_agg_lagged_subset), scientific = F, big.mark = ','),
+                   " patients"))
+hist(ADRD_agg_lagged$ozone_summer,
+     xlab = "Ozone (ppb)",
+     main = paste0("Summer mean ozone\nacross ",
+                   format(nrow(ADRD_agg_lagged_subset), scientific = F, big.mark = ','),
+                   " patients"))
 
 # get distribution of categorical ZIP year variable(s)
 for (var in zip_unordered_cat_var_names){

@@ -16,7 +16,6 @@ dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/res
 
 # set exposure
 exposure_name <- "pm25"
-other_expos_names <- c("no2", "ozone_summer")
 
 # parameters for this computing job
 n_cores <- 1 # 48 is max of fasse partition, 64 is max of fasse_bigmem partition
@@ -86,7 +85,8 @@ coef_for_exposure <- parametric_model_summary$p.table["w", "Estimate"]
 result <- data.table(boot_sample_number = boot_sample_number,
                      coef_for_exposure = coef_for_exposure)
 fwrite(result,
-       paste0(dir_results, "batch_sims/",
-              exposure_name, "_boot_results/",
+       paste0(dir_results, "bootstrap/",
+              exposure_name, "/",
+              "weighting/",
               m_boot, "zips/",
               "replicate_", boot_sample_number, "out_of_", n_boot_iter, ".csv"))

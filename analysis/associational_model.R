@@ -1,6 +1,5 @@
 ##### Setup #####
 
-# devtools::install_github("fasrc/CausalGPS", ref="develop")
 library(data.table)
 library(fst)
 library(mgcv)

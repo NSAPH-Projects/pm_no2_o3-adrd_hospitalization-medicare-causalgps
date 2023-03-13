@@ -33,7 +33,6 @@ source(paste0(dir_code, "analysis/helper_functions.R"))
 ##### 2. Get data for exposure, outcome, and covariates of interest #####
 
 exposure_name <- "pm25"
-outcome_name <- "n_hosp"
 
 ADRD_agg_lagged_subset <- subset(ADRD_agg_lagged, select = c(exposure_name,
                                                              outcome_name,

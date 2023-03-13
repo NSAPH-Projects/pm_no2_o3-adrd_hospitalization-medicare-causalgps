@@ -236,5 +236,5 @@ get_outcome_model_summary <- function(pseudopop,
       # saveRDS(bam_exposure_only, file = paste0(dir_results, "semiparametric_results/spline_objects/bam_smooth_exposure_only_", method, "_", nrow(pseudopop), "rows_", modifications, ".rds"))
     }
   }
-  return(summary(bam_exposure_only))
+  return(0)
 }

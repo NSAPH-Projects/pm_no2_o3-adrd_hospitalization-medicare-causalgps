@@ -120,6 +120,15 @@ get_matched_pseudopop <- function(attempt_number,
   temp_zip_year_with_gps_dataset_plus_params <- temp_zip_year_with_gps_dataset_plus_params[gps >= gps_outer_quantiles[1] &
                                                                                              gps <= gps_outer_quantiles[2]]
   
+  # unused: # truncate GPS at 2.5th and 97.5th percentiles
+  # gps_outer_quantiles <- quantile(temp_zip_year_with_gps_dataset_plus_params$gps, c(0.025, 0.975))
+  # temp_zip_year_with_gps_dataset_plus_params$gps <- ifelse(temp_zip_year_with_gps_dataset_plus_params$gps < gps_outer_quantiles[1],
+  #                                                          gps_outer_quantiles[1],
+  #                                                          temp_zip_year_with_gps_dataset_plus_params$gps)
+  # temp_zip_year_with_gps_dataset_plus_params$gps <- ifelse(temp_zip_year_with_gps_dataset_plus_params$gps > gps_outer_quantiles[2],
+  #                                                          gps_outer_quantiles[2],
+  #                                                          temp_zip_year_with_gps_dataset_plus_params$gps)
+  
   # apply estimated GPS value to all strata within each remaining/untrimmed ZIP-year (merge will only keep rows in both data.tables)
   # it's important which columns come from which data.table:
   # 1) "Y" vector in temp_zip_year_with_gps_dataset_plus_params is fake, so use "Y" from data_for_matching
@@ -258,6 +267,9 @@ cat("Distribution of number of matches per observations:")
 summary(best_matched_pseudopop$counter_weight)
 quantile(best_matched_pseudopop$counter_weight, c(0, 0.25, 0.5, 0.75, 0.95, 0.99, 0.999, 0.9999, 1))
 # boxplot(best_matched_pseudopop$counter_weight)
+
+# print number of observations not trimmed by GPS
+cat("Number of observations not trimmed for having extreme GPS:", nrow(best_matched_pseudopop))
 
 # print summary of pseudopopulation exposure
 best_matched_pseudopop[counter_weight > 0, .(max_exposure = max(w))]
