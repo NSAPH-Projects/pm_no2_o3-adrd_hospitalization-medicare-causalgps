@@ -176,23 +176,23 @@ get_weighted_pseudopop <- function(attempt_number,
   }
 }
 
-# function to match within strata; first estimate GPS then match within each stratum
+# function to match ZIP codes within years; first estimate GPS then match within each stratum
 get_matched_pseudopop <- function(attempt_number,
                                   exposure_name,
                                   modifications,
                                   cov_bal_data.table,
-                                  data_for_matching,
                                   zip_year_data,
+                                  zip_year_data_with_strata,
                                   return_cov_bal = T,
                                   return_pseudopop = F){
   
-  # create log file to see internal processes of CausalGPS
-  set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/",
-                                       exposure_name, "/",
-                                       "matching/",
-                                       modifications, "/",
-                                       Sys.Date(), "_estimateGpsForMatching_AttemptNumber", attempt_number, "_", nrow(zip_year_data), "rows_", n_cores, "cores_", n_gb, "gb.log"),
-             logger_level = "TRACE")
+  # # create log file to see internal processes of CausalGPS
+  # set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/",
+  #                                      exposure_name, "/",
+  #                                      "matching/",
+  #                                      modifications, "/",
+  #                                      Sys.Date(), "_estimateGpsForMatching_AttemptNumber", attempt_number, "_", nrow(zip_year_data), "rows_", n_cores, "cores_", n_gb, "gb.log"),
+  #            logger_level = "TRACE")
   
   # set seed according to attempt number
   set.seed(attempt_number)
@@ -200,7 +200,8 @@ get_matched_pseudopop <- function(attempt_number,
   # estimate GPS
   temp_zip_year_with_gps_obj <- estimate_gps(Y = 0, # fake Y variable since our outcomes are not at the zip-year level; not used in estimate_gps
                                              w = zip_year_data$w,
-                                             c = subset(zip_year_data, select = c("year", zip_var_names)),
+                                             c = subset(zip_year_data,
+                                                        select = c("year", zip_var_names)),
                                              gps_model = "parametric", # i.e., w=f(x)+epsilon, f(x) estimated by xgboost and epsilon is normal
                                              pred_model = "sl",
                                              internal_use = T,
@@ -229,41 +230,37 @@ get_matched_pseudopop <- function(attempt_number,
   #                                                          gps_outer_quantiles[2],
   #                                                          temp_zip_year_with_gps_dataset_plus_params$gps)
   
-  # apply estimated GPS value to all strata within each remaining/untrimmed ZIP-year (merge will only keep rows in both data.tables)
-  # it's important which columns come from which data.table:
-  # 1) "Y" vector in temp_zip_year_with_gps_dataset_plus_params is fake, so use "Y" from data_for_matching
-  # 2) include ZIP-level covariates to measure covariate balance, though they won't be valid after matching
-  # 3) it's okay to include variables for the outcome model because they won't be used in matching anyway and will be useful afterward
-  # note that strata_vars includes year
-  temp_zip_year_with_gps_dataset_plus_params <- merge(subset(data_for_matching,
-                                                             select = c("zip", "Y", "stratum", strata_vars, "n_persons", "n_years")),
-                                                      subset(temp_zip_year_with_gps_dataset_plus_params,
-                                                             select = c("zip", "year", "w", "gps", "counter_weight", "e_gps_pred", "w_resid", zip_var_names)),
-                                                      by = c("zip", "year"))
-  setorder(temp_zip_year_with_gps_dataset_plus_params, stratum)
-  temp_zip_year_with_gps_dataset_plus_params[, row_index := 1:.N, by = stratum]
-  temp_zip_year_with_gps_dataset_plus_params$zip <- NULL # ZIP and cohort are the only free variables for matching, should not be used to match
+  # split dataset into a list of datasets by year
+  setorder(temp_zip_year_with_gps_dataset_plus_params, year)
+  temp_zip_year_with_gps_dataset_plus_params[, row_index := 1:.N, by = year]
+  zip_list_by_year <- split(temp_zip_year_with_gps_dataset_plus_params,
+                            temp_zip_year_with_gps_dataset_plus_params$year)
   
-  # split data into a list by stratum
-  strata_list <- split(temp_zip_year_with_gps_dataset_plus_params,
-                       temp_zip_year_with_gps_dataset_plus_params$stratum)
-  
-  # save which strata are included in the pseudopopulation (since it is possible that some strata may have been entirely trimmed by GPS)
-  # names(strata_list) <- unique(temp_zip_year_with_gps_dataset_plus_params$stratum)
-  
-  # match within strata
-  set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/",
-                                       exposure_name, "/",
-                                       "matching/",
-                                       modifications, "/",
-                                       Sys.Date(), "_matching_by_stratum", "_", nrow(zip_year_data_with_strata), "rows_", n_cores, "cores_", n_gb, "gb.log"),
-             logger_level = "TRACE")
-  temp_matched_pseudopop_list <- lapply(strata_list,
-                                        match_within_stratum,
+  # match within years
+  # set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/",
+  #                                      exposure_name, "/",
+  #                                      "matching/",
+  #                                      modifications, "/",
+  #                                      Sys.Date(), "_matching_zip_by_year", "_", nrow(temp_zip_year_with_gps_dataset_plus_params), "rows_", n_cores, "cores_", n_gb, "gb.log"),
+  #            logger_level = "TRACE")
+  temp_matched_pseudopop_list <- lapply(zip_list_by_year,
+                                        match_zips_within_year,
                                         e_gps_std_pred = temp_zip_year_with_gps_obj$e_gps_std_pred,
                                         gps_mx = temp_zip_year_with_gps_obj$gps_mx,
                                         w_mx = temp_zip_year_with_gps_obj$w_mx)
   temp_matched_pseudopop <- rbindlist(temp_matched_pseudopop_list)
+  
+  # apply estimated GPS value to all strata within each remaining/untrimmed ZIP-year (merge will only keep rows in both data.tables)
+  # it's important which columns come from which data.table:
+  # 1) "Y" vector in temp_zip_year_with_gps_dataset_plus_params is fake, so use "Y" from data_for_matching
+  # 2) include ZIP-level covariates to measure covariate balance, though they may not be valid after matching
+  # 3) include variables for the outcome model ("Y", "w", strata_vars, "n_persons", "n_years", "counter_weight")
+  # note that strata_vars includes "year"
+  temp_matched_pseudopop <- merge(subset(zip_year_data_with_strata,
+                                         select = c("zip", "Y", strata_vars, "n_persons", "n_years")), # note that strata_vars includes "year"
+                                  subset(temp_matched_pseudopop,
+                                         select = c("zip", "year", "w", "counter_weight", zip_var_names)),
+                                  by = c("zip", "year"))
   
   if (return_cov_bal){
     cov_bal_data.table <- calculate_correlations(cov_bal_data.table = cov_bal_data.table,
@@ -277,9 +274,9 @@ get_matched_pseudopop <- function(attempt_number,
   else stop("User must specify whether to return covariate balance or pseudopopulation")
 }
 
-# function to match within a single stratum (dataset_plus_params), after GPS has been estimated
+# function to match ZIP codes within a single year (dataset_plus_params), after GPS has been estimated
 # returns a data.table with variable "counter_weight" denoting number of times each observation is matched
-match_within_stratum <- function(dataset_plus_params,
+match_zips_within_year <- function(dataset_plus_params,
                                  e_gps_std_pred,
                                  gps_mx,
                                  w_mx){
@@ -288,8 +285,7 @@ match_within_stratum <- function(dataset_plus_params,
   class(dataset_as_cgps_gps) <- "cgps_gps"
   dataset_as_cgps_gps$dataset <- subset(as.data.frame(dataset_plus_params),
                                         select = c("Y", "w", "gps", "counter_weight", "row_index", # used in matching
-                                                   zip_var_names, # used to measure covariate balance
-                                                   strata_vars, "n_persons", "n_years")) # not used in matching but used in outcome model
+                                                   zip_var_names)) # used to measure covariate balance
   dataset_as_cgps_gps$e_gps_pred <- dataset_plus_params$e_gps_pred
   dataset_as_cgps_gps$w_resid <- dataset_plus_params$w_resid
   
@@ -308,7 +304,7 @@ match_within_stratum <- function(dataset_plus_params,
                                     covar_bl_trs = 0.1,
                                     covar_bl_trs_type = "maximal",
                                     delta_n = matching_caliper,
-                                    scale = 1) # notice: max_attempt and transformers are not parameters
+                                    scale = 1) # notice: max_attempt and transformers are not parameters in compile_pseudo_pop(), though they are parameters another commonly used CausalGPS function generate_pseudo_pop()
   
   return(matched_pop)
 }

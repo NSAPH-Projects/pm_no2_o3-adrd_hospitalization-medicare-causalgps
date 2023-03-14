@@ -61,11 +61,6 @@ zip_year_data_with_strata[, `:=`(zip = as.factor(zip),
 
 ##### GPS Matching #####
 
-# get columns from full data that are useful for matching and add a label for stratum
-data_for_matching <- copy(zip_year_data_with_strata)
-data_for_matching[, stratum := .GRP, by = strata_vars]
-setkey(data_for_matching, stratum) # to do: consider if this line is necessary
-
 # set up data.table to check covariate balance for each GPS modeling attempt
 if (find_best_cov_bal_attempt){
   n_attempts_already_tried <- n_total_attempts - n_attempts # greater than 0 if user already ran some attempts
@@ -83,8 +78,8 @@ if (find_best_cov_bal_attempt){
                                               exposure_name = exposure_name,
                                               modifications = modifications,
                                               cov_bal_data.table = cov_bal_matching,
-                                              data_for_matching = data_for_matching,
                                               zip_year_data = zip_year_data,
+                                              zip_year_data_with_strata = zip_year_data_with_strata,
                                               return_cov_bal = T,
                                               return_pseudopop = F)
   }
@@ -118,8 +113,8 @@ best_matched_pseudopop <- get_matched_pseudopop(attempt_number = best_maxAC_atte
                                                 exposure_name = exposure_name,
                                                 modifications = modifications,
                                                 cov_bal_data.table = cov_bal_matching,
-                                                data_for_matching = data_for_matching,
                                                 zip_year_data = zip_year_data,
+                                                zip_year_data_with_strata = zip_year_data_with_strata,
                                                 return_cov_bal = F,
                                                 return_pseudopop = T)
 
