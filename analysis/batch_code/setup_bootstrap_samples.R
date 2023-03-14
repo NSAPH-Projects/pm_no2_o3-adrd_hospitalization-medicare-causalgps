@@ -13,7 +13,9 @@ exposure_name <- "pm25"
 
 # get data and helpful functions
 source(paste0(dir_code, "analysis/helper_functions.R"))
-zip_year_data <- read_fst(paste0(dir_data, "analysis/", exposure_name, "_zip_year_data_trimmed_0.05_0.95.fst"))
+zip_year_data <- read_fst(paste0(dir_data, "analysis/",
+                                 exposure_name, "/",
+                                 "zip_year_data_trimmed_0.05_0.95.fst"))
 
 ## Set up m out of n bootstrap ZIP codes, with replacement, to be saved as csv
 

@@ -7,7 +7,7 @@ dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
 dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
 
 # user should set number of cores in this computing job
-n_cores <- 16
+n_cores <- 48
 setDTthreads(threads = n_cores)
 
 # get classifications of variables
@@ -23,6 +23,16 @@ dt <- dt[ADRD_year >= cohort + 2 & # 2 year 'clean' period
            ADRD_year >= year & # censor observations after ADRD event
            year >= 2001] # begin with year 2001 to pair with 2000 exposures
 dt[cohort == 2000, cohort := 2001] # start 2000 cohort in 2001
+dt <- subset(dt, select = c("qid",
+                            "ADRD_year",
+                            "last_year_ffs",
+                            "ADRD_hosp",
+                            zip_expos_names,
+                            zip_var_names,
+                            "zip",
+                            indiv_var_names)) # includes "year"
+
+### Note: this is for the untrimmed exposure
 
 # calculate number of individuals, person-years, events
 cat("Number of individuals:", uniqueN(dt$qid)) # 50,053,399
@@ -36,22 +46,25 @@ n_years_followup2 <- dt[year == max(year), .SD, by = qid] # 22,490,481 rows. uni
 n_years_followup3 <- dt[year == last_year_ffs] # 45,995,856 rows. unique qid's
 # to do. need to figure out which of these data.frames to use
 dt[, .N, by = qid] # will give the number of followup years by individual
-dt[, .N, by = qid][, median(N)] should give the median follow up years
+dt[, .N, by = qid][, median(N)] # should give the median follow up years
+
+# get set of patients who experienced ADRD event
+# to do
+dt_ADRD <- dt
 
 
 # calculate summary statistics of patient-level variables at each patient's entry year
-# note: this is for the untrimmed exposure
 dt_entry <- dt[year == cohort]
 prop.table(table(dt_entry$sex))
 prop.table(table(dt_entry$age_grp)) # in 5-year bins
 prop.table(table(dt_entry$race)) # RTI-augmented race codes
 prop.table(table(dt_entry$dual)) # Medicaid eligibility
 
+# for patients who experienced ADRD event, calculate summary statistics of patient-level variables at each patient's entry year
+dt_ADRD_entry <- dt_ADRD[year == cohort]
+prop.table(table(dt_ADRD_entry$sex))
+prop.table(table(dt_ADRD_entry$age_grp)) # in 5-year bins
+prop.table(table(dt_ADRD_entry$race)) # RTI-augmented race codes
+prop.table(table(dt_ADRD_entry$dual)) # Medicaid eligibility
 
-ADRD_agg_lagged[, `:=`(zip = as.factor(zip),
-                       year = as.factor(year),
-                       cohort = as.factor(cohort),
-                       age_grp = as.factor(age_grp),
-                       sex = as.factor(sex),
-                       race = as.factor(race),
-                       dual = as.factor(dual))]
+
