@@ -231,23 +231,26 @@ get_matched_pseudopop <- function(attempt_number,
   #                                                          temp_zip_year_with_gps_dataset_plus_params$gps)
   
   # split dataset into a list of datasets by year
-  setorder(temp_zip_year_with_gps_dataset_plus_params, year)
+  setkey(temp_zip_year_with_gps_dataset_plus_params, year)
   temp_zip_year_with_gps_dataset_plus_params[, row_index := 1:.N, by = year]
   zip_list_by_year <- split(temp_zip_year_with_gps_dataset_plus_params,
                             temp_zip_year_with_gps_dataset_plus_params$year)
   
-  # match within years
   # set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/",
   #                                      exposure_name, "/",
   #                                      "matching/",
   #                                      modifications, "/",
   #                                      Sys.Date(), "_matching_zip_by_year", "_", nrow(temp_zip_year_with_gps_dataset_plus_params), "rows_", n_cores, "cores_", n_gb, "gb.log"),
   #            logger_level = "TRACE")
+  
+  # match within each year
   temp_matched_pseudopop_list <- lapply(zip_list_by_year,
                                         match_zips_within_year,
                                         e_gps_std_pred = temp_zip_year_with_gps_obj$e_gps_std_pred,
                                         gps_mx = temp_zip_year_with_gps_obj$gps_mx,
                                         w_mx = temp_zip_year_with_gps_obj$w_mx)
+  
+  # combine each year's pseudopopulation to make 1 pseudopopulation for all years
   temp_matched_pseudopop <- rbindlist(temp_matched_pseudopop_list)
   
   # apply estimated GPS value to all strata within each remaining/untrimmed ZIP-year (merge will only keep rows in both data.tables)
@@ -285,6 +288,7 @@ match_zips_within_year <- function(dataset_plus_params,
   class(dataset_as_cgps_gps) <- "cgps_gps"
   dataset_as_cgps_gps$dataset <- subset(as.data.frame(dataset_plus_params),
                                         select = c("Y", "w", "gps", "counter_weight", "row_index", # used in matching
+                                                   "zip", "year", # used to merge with full data
                                                    zip_var_names)) # used to measure covariate balance
   dataset_as_cgps_gps$e_gps_pred <- dataset_plus_params$e_gps_pred
   dataset_as_cgps_gps$w_resid <- dataset_plus_params$w_resid
