@@ -44,8 +44,17 @@ create_cov_bal_data.table <- function(method,
                          -1,
                          -1,
                          -1,
+                         -1,
                          -1) # these -1's are placeholders, will be replaced
-  colnames(cov_bal) <- c("Attempt", "Covariate", "Dataset", "Correlation", "AbsoluteCorrelation", "SampleSize", "ESS")
+  colnames(cov_bal) <- c("Attempt",
+                         "Covariate",
+                         "Dataset",
+                         "Correlation",
+                         "AbsoluteCorrelation",
+                         "SampleSize",
+                         "SampleSizeIncluded", # if matching method, will be smaller than SampleSize
+                         "ESS")
+  
   cov_bal <- as.data.table(cov_bal)
   return(cov_bal)
 }
@@ -93,10 +102,16 @@ calculate_correlations <- function(cov_bal_data.table,
                                           method = "pearson")]
   }
   
-  cov_bal_data.table[Attempt == attempt, AbsoluteCorrelation := abs(Correlation)]
-  cov_bal_data.table[Attempt == attempt, SampleSize := nrow(pseudopop)]
-  cov_bal_data.table[Attempt == attempt & Dataset == dataset_names[1], ESS := ess(pseudopop[[weight_name]])]
-  cov_bal_data.table[Attempt == attempt & Dataset == dataset_names[2], ESS := nrow(pseudopop)]
+  cov_bal_data.table[Attempt == attempt,
+                     AbsoluteCorrelation := abs(Correlation)]
+  cov_bal_data.table[Attempt == attempt,
+                     SampleSize := nrow(pseudopop)]
+  cov_bal_data.table[Attempt == attempt & Dataset == dataset_names[1],
+                     SampleSizeIncluded := sum(pseudopop[[weight_name]] > 0)]
+  cov_bal_data.table[Attempt == attempt & Dataset == dataset_names[1],
+                     ESS := ess(pseudopop[[weight_name]])]
+  cov_bal_data.table[Attempt == attempt & Dataset == dataset_names[2],
+                     ESS := nrow(pseudopop)]
   
   return(cov_bal_data.table)
 }
@@ -115,6 +130,7 @@ summarize_cov_bal <- function(cov_bal_data.table,
                                                                 meanAC = mean(AbsoluteCorrelation),
                                                                 maxACVariable = Covariate[which.max(AbsoluteCorrelation)],
                                                                 SampleSize = unique(SampleSize),
+                                                                SampleSizeIncluded = unique(SampleSizeIncluded),
                                                                 ESS = unique(ESS)),
                                         by = Attempt]
   if (save_csv){
@@ -177,22 +193,25 @@ get_weighted_pseudopop <- function(attempt_number,
 }
 
 # function to match ZIP codes within years; first estimate GPS then match within each stratum
-get_matched_pseudopop <- function(attempt_number,
+get_matched_pseudopop <- function(dir_code,
+                                  attempt_number,
                                   exposure_name,
                                   modifications,
+                                  n_cores,
+                                  n_gb,
                                   cov_bal_data.table,
                                   zip_year_data,
                                   zip_year_data_with_strata,
                                   return_cov_bal = T,
                                   return_pseudopop = F){
   
-  # # create log file to see internal processes of CausalGPS
-  # set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/",
-  #                                      exposure_name, "/",
-  #                                      "matching/",
-  #                                      modifications, "/",
-  #                                      Sys.Date(), "_estimateGpsForMatching_AttemptNumber", attempt_number, "_", nrow(zip_year_data), "rows_", n_cores, "cores_", n_gb, "gb.log"),
-  #            logger_level = "TRACE")
+  # create log file to see internal processes of CausalGPS
+  set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/",
+                                       exposure_name, "/",
+                                       "matching/",
+                                       modifications, "/",
+                                       Sys.Date(), "_estimateGpsForMatching_AttemptNumber", attempt_number, "_", nrow(zip_year_data), "rows_", n_cores, "cores_", n_gb, "gb.log"),
+             logger_level = "TRACE")
   
   # set seed according to attempt number
   set.seed(attempt_number)
@@ -236,12 +255,12 @@ get_matched_pseudopop <- function(attempt_number,
   zip_list_by_year <- split(temp_zip_year_with_gps_dataset_plus_params,
                             temp_zip_year_with_gps_dataset_plus_params$year)
   
-  # set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/",
-  #                                      exposure_name, "/",
-  #                                      "matching/",
-  #                                      modifications, "/",
-  #                                      Sys.Date(), "_matching_zip_by_year", "_", nrow(temp_zip_year_with_gps_dataset_plus_params), "rows_", n_cores, "cores_", n_gb, "gb.log"),
-  #            logger_level = "TRACE")
+  set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/",
+                                       exposure_name, "/",
+                                       "matching/",
+                                       modifications, "/",
+                                       Sys.Date(), "_matching_zip_by_year", "_", nrow(temp_zip_year_with_gps_dataset_plus_params), "rows_", n_cores, "cores_", n_gb, "gb.log"),
+             logger_level = "TRACE")
   
   # match within each year
   temp_matched_pseudopop_list <- lapply(zip_list_by_year,

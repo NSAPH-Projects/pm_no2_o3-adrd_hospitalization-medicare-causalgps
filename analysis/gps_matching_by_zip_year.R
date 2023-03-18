@@ -74,9 +74,12 @@ if (find_best_cov_bal_attempt){
 # if desired, get matched pseudopopulations using multiple different seeds to find the best one
 if (find_best_cov_bal_attempt){
   for (i in 1:n_attempts){
-    cov_bal_matching <- get_matched_pseudopop(attempt_number = i + n_attempts_already_tried,
+    cov_bal_matching <- get_matched_pseudopop(dir_code = dir_code,
+                                              attempt_number = i + n_attempts_already_tried,
                                               exposure_name = exposure_name,
                                               modifications = modifications,
+                                              n_cores = n_cores,
+                                              n_gb = n_gb,
                                               cov_bal_data.table = cov_bal_matching,
                                               zip_year_data = zip_year_data,
                                               zip_year_data_with_strata = zip_year_data_with_strata,
@@ -91,7 +94,7 @@ if (find_best_cov_bal_attempt){
                                        modifications = modifications,
                                        save_csv = T)
   best_maxAC_attempt <- cov_bal_summary$Attempt[which.min(cov_bal_summary$maxAC)]
-  best_maxAC_cov_bal <- cov_bal_matching[Attempt == best_maxAC_attempt]
+  best_maxAC_cov_bal <- cov_bal_matching[cov_bal_matching$Attempt == best_maxAC_attempt, ]
   
   # plot covariate balance
   matched_cov_bal_plot <- ggplot(best_maxAC_cov_bal, aes(x = Covariate, y = Absolute_Correlation, color = Dataset, group = Dataset)) +
@@ -109,9 +112,12 @@ if (find_best_cov_bal_attempt){
 }
 
 # regenerate GPS model and matched pseudopopulation with best covariate balance
-best_matched_pseudopop <- get_matched_pseudopop(attempt_number = best_maxAC_attempt,
+best_matched_pseudopop <- get_matched_pseudopop(dir_code = dir_code,
+                                                attempt_number = best_maxAC_attempt,
                                                 exposure_name = exposure_name,
                                                 modifications = modifications,
+                                                n_cores = n_cores,
+                                                n_gb = n_gb,
                                                 cov_bal_data.table = cov_bal_matching,
                                                 zip_year_data = zip_year_data,
                                                 zip_year_data_with_strata = zip_year_data_with_strata,
