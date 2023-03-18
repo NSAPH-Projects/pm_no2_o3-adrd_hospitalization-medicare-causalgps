@@ -33,7 +33,7 @@ source(paste0(dir_code, "analysis/helper_functions.R"))
 # get m out of n bootstrap sample
 boot_sample_number <- as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 
-boot_zips <- read.csv(paste0(dir_code, "analysis/batch_code/", exposure_name, "_boot_",
+boot_zips <- read.csv(paste0(dir_code, "analysis/bootstrap_code/", exposure_name, "_boot_",
                              m_boot, "zips_",
                              n_boot_iter, "replicates.csv"))
 boot_zips <- boot_zips[, boot_sample_number]
