@@ -65,10 +65,12 @@ zip_year_data_with_strata[, `:=`(zip = as.factor(zip),
 if (find_best_cov_bal_attempt){
   n_attempts_already_tried <- n_total_attempts - n_attempts # greater than 0 if user already ran some attempts
   cov_bal_matching <- create_cov_bal_data.table(method = "matching",
-                                                 attempt_numbers = (1 + n_attempts_already_tried):n_total_attempts)
+                                                attempt_numbers = (1 + n_attempts_already_tried):n_total_attempts,
+                                                zip_year_data = zip_year_data)
 } else{
   cov_bal_matching <- create_cov_bal_data.table(method = "matching",
-                                                attempt_numbers = best_maxAC_attempt)
+                                                attempt_numbers = best_maxAC_attempt,
+                                                zip_year_data = zip_year_data)
 }
 
 # if desired, get matched pseudopopulations using multiple different seeds to find the best one

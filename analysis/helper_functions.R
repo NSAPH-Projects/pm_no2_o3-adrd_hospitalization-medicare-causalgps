@@ -30,7 +30,8 @@ ess <- function(weights) return(sum(weights)^2 / (sum(weights^2)))
 
 # to do: see if zip can be included or if need more memory or something
 create_cov_bal_data.table <- function(method,
-                                      attempt_numbers){
+                                      attempt_numbers,
+                                      zip_year_data){
   
   if (method == "weighting") dataset_names <- c("Weighted", "Unweighted")
   else if (method == "matching") dataset_names <- c("Matched", "Unmatched")

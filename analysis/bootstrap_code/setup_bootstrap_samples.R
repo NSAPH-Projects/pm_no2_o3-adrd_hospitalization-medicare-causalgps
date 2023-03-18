@@ -22,10 +22,10 @@ zip_year_data <- read_fst(paste0(dir_data, "analysis/",
 # try multiple possible values of m, as sensitivity analysis
 # only requirements of m are that m -> infty and m/n -> 0 as n -> infty
 n_boot_iter <- 200
-n_boot <- length(unique(zip_year_data$zip)) # 31013?
-m_boot_values <- rep(NA, 10)
-m_boot_values[1] <- floor(n_boot / log(n_boot))
-m_boot_values[2:10] <- sapply(2:10, function(i) floor(i * sqrt(n_boot)))
+n_boot <- length(unique(zip_year_data$zip)) # 30,619 for PM2.5; 30,921 for NO2; 30,314 for ozone
+m_boot_values <- rep(NA, 6)
+m_boot_values[1:5] <- sapply(1:5, function(i) floor(2 * i * sqrt(n_boot)))
+m_boot_values[6] <- floor(n_boot / log(n_boot))
 
 # for each value of m, bootstrap m ZIP codes and save as csv
 for (i in 1:length(m_boot_values)){

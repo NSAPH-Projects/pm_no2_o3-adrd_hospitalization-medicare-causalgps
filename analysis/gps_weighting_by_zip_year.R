@@ -64,10 +64,12 @@ if (find_best_cov_bal_attempt){
 if (find_best_cov_bal_attempt){
   n_attempts_already_tried <- n_total_attempts - n_attempts # greater than 0 if user already ran some attempts
   cov_bal_weighting <- create_cov_bal_data.table(method = "weighting",
-                                                 attempt_numbers = (1 + n_attempts_already_tried):n_total_attempts)
+                                                 attempt_numbers = (1 + n_attempts_already_tried):n_total_attempts,
+                                                 zip_year_data = zip_year_data)
 } else{
   cov_bal_weighting <- create_cov_bal_data.table(method = "weighting",
-                                                 attempt_numbers = best_maxAC_attempt)
+                                                 attempt_numbers = best_maxAC_attempt,
+                                                 zip_year_data = zip_year_data)
 }
 
 if (find_best_cov_bal_attempt){
