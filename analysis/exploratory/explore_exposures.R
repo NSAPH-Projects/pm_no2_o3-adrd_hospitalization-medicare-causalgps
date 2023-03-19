@@ -117,44 +117,47 @@ dev.off()
 
 # plot distribution of exposure across ZIP codes
 zip_year_summary <- zip_year_data[, .(exposure_year = year - 1, # in our dataset, "year" is year of observation, exposure is taken from previous year
-                                      mean_pm25 = mean(pm25),
-                                      mean_no2 = mean(no2),
-                                      mean_ozone_summer = mean(ozone_summer),
-                                      sd_pm25 = sd(pm25),
-                                      sd_no2 = sd(no2),
-                                      sd_ozone_summer = sd(ozone_summer)),
+                                      pm25_median = median(pm25),
+                                      no2_median = median(no2),
+                                      ozone_summer_median = median(ozone_summer),
+                                      pm25_0.05 = quantile(pm25, 0.05),
+                                      no2_0.05 = quantile(no2, 0.05),
+                                      ozone_summer_0.05 = quantile(ozone_summer, 0.05),
+                                      pm25_0.95 = quantile(pm25, 0.95),
+                                      no2_0.95 = quantile(no2, 0.95),
+                                      ozone_summer_0.95 = quantile(ozone_summer, 0.95)),
                                   by = year]
 
 # to do: save as paste0(dir_results, "exploratory/zip_pm25_by_year.png"), etc.
 p <- ggplot(zip_year_summary, aes(x = exposure_year,
-                                  y = mean_pm25)) +
-  geom_ribbon(aes(ymin = mean_pm25 - sd_pm25,
-                  ymax = mean_pm25 + sd_pm25),
+                                  y = pm25_median)) +
+  geom_ribbon(aes(ymin = pm25_0.05,
+                  ymax = pm25_0.95),
               fill = "steelblue2") +
   geom_line(color = "red", size = 1) +
-  ggtitle("Annual mean PM2.5 across ZIP codes, by year\n(mean in red, +/-1 standard deviation in blue)") +
+  ggtitle("Annual mean PM2.5 across ZIP codes, by year\n(median in red, middle 90% in blue)") +
   theme(plot.title = element_text(hjust = 0.5)) +
   ylab("PM2.5 (micrograms/m^3)") +
   xlab("Exposure Year")
 
 p <- ggplot(zip_year_summary, aes(x = exposure_year,
-                                  y = mean_no2)) +
-  geom_ribbon(aes(ymin = mean_no2 - sd_no2,
-                  ymax = mean_no2 + sd_no2),
+                                  y = no2_median)) +
+  geom_ribbon(aes(ymin = no2_0.05,
+                  ymax = no2_0.95),
               fill = "steelblue2") +
   geom_line(color = "red", size = 1) +
-  ggtitle("Annual mean NO2 across ZIP codes, by year\n(mean in red, +/-1 standard deviation in blue)") +
+  ggtitle("Annual mean NO2 across ZIP codes, by year\n(median in red, middle 90% in blue)") +
   theme(plot.title = element_text(hjust = 0.5)) +
   ylab("NO2 (ppb)") +
   xlab("Exposure Year")
 
 p <- ggplot(zip_year_summary, aes(x = exposure_year,
-                                  y = mean_ozone_summer)) +
-  geom_ribbon(aes(ymin = mean_ozone_summer - sd_ozone_summer,
-                  ymax = mean_ozone_summer + sd_ozone_summer),
+                                  y = ozone_summer_median)) +
+  geom_ribbon(aes(ymin = ozone_summer_0.05,
+                  ymax = ozone_summer_0.95),
               fill = "steelblue2") +
   geom_line(color = "red", size = 1) +
-  ggtitle("Summer mean ozone across ZIP codes, by year\n(mean in red, +/-1 standard deviation in blue)") +
+  ggtitle("Summer mean ozone across ZIP codes, by year\n(median in red, middle 90% in blue in blue)") +
   theme(plot.title = element_text(hjust = 0.5)) +
   ylab("Ozone (ppb)") +
   xlab("Exposure Year")

@@ -18,9 +18,15 @@ exposure_name <- "no2"
 
 # parameters for this computing job
 n_cores <- 4 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
-n_gb <- 16 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
+n_gb <- 32 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
 find_best_cov_bal_attempt <- T # user should set this variable
-matching_caliper <- 4.5 ## to do: play with this (0.25, 0.5, 1, 1.5). goal is to get large enough ESS
+if (exposure_name == "pm25"){
+  matching_caliper <- 1.5
+} else if (exposure_name == "no2"){
+  matching_caliper <- 3.5
+} else if (exposure_name == "ozone_summer"){
+  matching_caliper <- 4.5
+} else message("'exposure_name' must be 'pm25', 'no2', or 'ozone_summer'")
 
 if (find_best_cov_bal_attempt){
   n_attempts <- 30 # user should set this; number of attempts this script will try to model the GPS
