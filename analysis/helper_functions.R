@@ -236,10 +236,10 @@ get_matched_pseudopop <- function(dir_code,
   temp_zip_year_with_gps_dataset_plus_params$w_resid <- temp_zip_year_with_gps_obj$w_resid
   temp_zip_year_with_gps_dataset_plus_params$zip <- zip_year_data$zip
   
-  # trim GPS, keeping observations in middle 95% of GPS values
-  gps_outer_quantiles <- quantile(temp_zip_year_with_gps_dataset_plus_params$gps, c(0.025, 0.975))
-  temp_zip_year_with_gps_dataset_plus_params <- temp_zip_year_with_gps_dataset_plus_params[gps >= gps_outer_quantiles[1] &
-                                                                                             gps <= gps_outer_quantiles[2]]
+  # # trim GPS, keeping observations in middle 95% of GPS values
+  # gps_outer_quantiles <- quantile(temp_zip_year_with_gps_dataset_plus_params$gps, c(0.025, 0.975))
+  # temp_zip_year_with_gps_dataset_plus_params <- temp_zip_year_with_gps_dataset_plus_params[gps >= gps_outer_quantiles[1] &
+  #                                                                                            gps <= gps_outer_quantiles[2]]
   
   # unused: # truncate GPS at 2.5th and 97.5th percentiles
   # gps_outer_quantiles <- quantile(temp_zip_year_with_gps_dataset_plus_params$gps, c(0.025, 0.975))

@@ -19,7 +19,19 @@ exposure_name <- "pm25"
 # parameters for this computing job
 n_cores <- 1 # 48 is max of fasse partition, 64 is max of fasse_bigmem partition
 n_attempts <- 30 # number of attempts for GPS weighting
-m_boot <- 2964 # user should update this. for pm2.5: 349, 699, 1049, 1399, 1749, 2964; for no2: 351, 703, 1055, 1406, 1758, 2990; for ozone: 348, 696, 1044, 1392, 1741, 2937
+
+# get m and n values for this m-out-of-n bootstrap
+if (exposure_name == "pm25"){
+  n_boot <- 30619
+  m_boot <- 2964
+} else if (exposure_name == "no2"){
+  n_boot <- 30921
+  m_boot <- 2990
+} else if (exposure_name == "ozone_summer"){
+  n_boot <- 30314
+  m_boot <- 2937
+} else message("'exposure_name' must be 'pm25', 'no2', or 'ozone_summer'")
+
 modifications <- paste0("gps_by_zip_year_", n_attempts, "attempts_boot_",
                         m_boot, "zips") # to be used in names of output files, e.g., cov bal summary
 
@@ -90,25 +102,20 @@ bam_exposure_only <- bam(formula_expos_only_smooth,
                          control = gam.control(trace = TRUE),
                          nthreads = 1)
 
-# use fitted model to predict ADRD event at any hypothetical level of exposure
+# use fitted model to predict log rate of ADRD event at any hypothetical level of exposure
+# averaged across all observations in the pseudopopulation
 predict_erf_at_a_point <- function(w){
   data <- best_weighted_pseudopop
   data$w <- w
-  return(predict(bam_exposure_only, data))
+  return(mean(predict(bam_exposure_only, data)))
 }
 
-# result to be bootstrapped: predicted values at various levels of exposure
+# result to be bootstrapped: predicted values at hypothetical levels of exposure
 w_values <- seq(min(zip_year_data$w), max(zip_year_data$w), length.out = 10)
-predicted_erf0 <- as.data.table(expand.grid(w = w_values,
-                                            row_index = 1:nrow(best_weighted_pseudopop),
-                                            prediction = 0))
-predicted_erf <- lapply(w_values, predict_erf_at_a_point)
-for (i in 1:length(predicted_erf)){
-  predicted_erf0[w == w_values[i], prediction := predicted_erf[[i]]]
-}
-
-predicted_erf4 <- predicted_erf0[, .(robust_SE = sd(prediction)), by = w]
-fwrite(predicted_erf4,
+predicted_erf <- sapply(w_values, predict_erf_at_a_point)
+predicted_erf <- data.table(w = w_values,
+                            prediction = predicted_erf)
+fwrite(predicted_erf,
        paste0(dir_results, "bootstrap/",
               exposure_name, "/",
               "weighting/",

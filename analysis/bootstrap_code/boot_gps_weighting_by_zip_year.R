@@ -13,12 +13,21 @@ dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
 dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
 
 # set exposure
-exposure_name <- "no2"
+exposure_name <- "ozone_summer"
 
 # parameters for this computing job
 n_cores <- 1 # 48 is max of fasse partition, 64 is max of fasse_bigmem partition
 n_attempts <- 30 # number of attempts for GPS weighting
-m_boot <- 2990 # user should update this. for pm2.5: 349, 699, 1049, 1399, 1749, 2964; for no2: 351, 703, 1055, 1406, 1758, 2990; for ozone: 348, 696, 1044, 1392, 1741, 2937
+
+# get m and n values for this m-out-of-n bootstrap
+if (exposure_name == "pm25"){
+  m_boot <- 2964
+} else if (exposure_name == "no2"){
+  m_boot <- 2990
+} else if (exposure_name == "ozone_summer"){
+  m_boot <- 2937
+} else message("'exposure_name' must be 'pm25', 'no2', or 'ozone_summer'")
+
 modifications <- paste0("gps_by_zip_year_", n_attempts, "attempts_boot_",
                         m_boot, "zips") # to be used in names of output files, e.g., cov bal summary
 

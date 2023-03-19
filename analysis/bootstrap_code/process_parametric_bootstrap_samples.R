@@ -12,8 +12,18 @@ exposure_name <- "pm25"
 
 # set number of bootstrap replicates
 n_boot_iter <- 30
-n_boot <- 30619 # 30,619 for PM2.5; 30,921 for NO2; 30,314 for ozone
-m_boot <- 2964 # user should set this to the desired value of m
+
+# get m and n values for this m-out-of-n bootstrap
+if (exposure_name == "pm25"){
+  n_boot <- 30619
+  m_boot <- 2964
+} else if (exposure_name == "no2"){
+  n_boot <- 30921
+  m_boot <- 2990
+} else if (exposure_name == "ozone_summer"){
+  n_boot <- 30314
+  m_boot <- 2937
+} else message("'exposure_name' must be 'pm25', 'no2', or 'ozone_summer'")
 
 # get bootstrap results (1 csv per bootstrap replicate) and merge them
 # note this is for weighting for now; to do: use for loop for matching and weighting
@@ -23,6 +33,5 @@ boot_results <- lapply(1:n_boot_iter, function(i) fread(paste0(dir_results, "boo
                                                                m_boot, "zips/",
                                                                "replicate_", i, ".csv")))
 boot_results <- rbindlist(boot_results)
-boot_var <- m_boot / n_boot * var(boot_results$coef_for_exposure,
-                                  na.rm = T)
+boot_var <- m_boot / n_boot * var(boot_results$coef_for_exposure) # deleted: na.rm = T
 boot_sd <- sqrt(boot_var)
