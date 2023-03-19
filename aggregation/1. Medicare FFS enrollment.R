@@ -3,23 +3,26 @@
 #' Code: determine FFS enrollment period for each individual
 #' Inputs: denominator files, QD exposure data, meteorological data, hosp data             
 #' Outputs: qid entry and exit from ffs enrollment                 
-#' Author: Daniel Mork                                                         
+#' Author: Daniel Mork, edited by Michelle Qin                                                       
 #' Last updated: May 12, 2022                                                  
 #' Memory to run: 96 GB
 # ############################################################################ #
-rm(list = ls())
-gc()
+# rm(list = ls())
+# gc()
 
 ##### Setup #####
 library(data.table)
 library(fst)
 
 options(stringsAsFactors = FALSE)
-setDTthreads(threads = 24)
-threads_fst(nr_of_threads = 24, reset_after_fork = TRUE)
+setDTthreads(threads = 48)
+threads_fst(nr_of_threads = 48, reset_after_fork = TRUE)
 
-dir_proj <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/"
-dir_data <- "/n/dominici_nsaph_l3/Lab/projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
+# directories for data, code, and results
+dir_data <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
+dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
+dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
+
 dir_denominator <- "/n/dominici_nsaph_l3/Lab/projects/analytic/denom_by_year/"
 
 ##### Read denom files ##### 
@@ -59,7 +62,7 @@ dt[, age := NULL]
 
 # Merge RTI race code
 rti <- rbindlist(lapply(c(2009:2014, 2016), function(y) {
-  d <- fread(paste0(dir_proj, "data/auxiliary_medicare_cols/rti_race_", y, ".csv"))
+  d <- fread(paste0(dir_data, "auxiliary_medicare_cols/rti_race_", y, ".csv"))
   d[, year := y]
 }), fill = TRUE)
 rti[, rti_race_cd := as.integer(rti_race_cd)]

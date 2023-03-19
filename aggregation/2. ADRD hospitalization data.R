@@ -11,8 +11,8 @@
 # gc()
 # 
 # ##### Setup #####
-# library(data.table)
-# library(fst)
+library(data.table)
+library(fst)
 # library(NSAPHutils)
 # 
 # options(stringsAsFactors = FALSE)
@@ -21,7 +21,12 @@
 # dir_data <- "/n/dominici_nsaph_l3/Lab/projects/pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
 # dir_denominator <- "/n/dominici_nsaph_l3/Lab/projects/analytic/denom_by_year/"
 
-source(paste0(dir_proj, "code/aggregation/1. Medicare FFS enrollment.R"))
+# directories for data, code, and results
+dir_data <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
+dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
+dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
+
+source(paste0(dir_code, "aggregation/1. Medicare FFS enrollment.R"))
 dir_hosp <- "/n/dominici_nsaph_l3/Lab/projects/analytic/adrd_hospitalization/"
 
 
