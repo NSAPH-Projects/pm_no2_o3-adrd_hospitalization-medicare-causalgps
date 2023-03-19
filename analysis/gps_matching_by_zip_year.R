@@ -99,7 +99,7 @@ if (find_best_cov_bal_attempt){
   best_maxAC_cov_bal <- cov_bal_matching[cov_bal_matching$Attempt == best_maxAC_attempt, ]
   
   # plot covariate balance
-  matched_cov_bal_plot <- ggplot(best_maxAC_cov_bal, aes(x = Covariate, y = Absolute_Correlation, color = Dataset, group = Dataset)) +
+  matched_cov_bal_plot <- ggplot(best_maxAC_cov_bal, aes(x = Covariate, y = AbsoluteCorrelation, color = Dataset, group = Dataset)) +
     geom_point() +
     geom_line() +
     ylab(paste("Absolute Correlation with", exposure_name)) +
