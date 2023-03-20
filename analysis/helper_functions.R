@@ -399,3 +399,10 @@ get_outcome_model_summary <- function(dir_results,
   }
   return(0)
 }
+
+# function to use fitted spline model to predict log rate of ADRD event at any hypothetical level of exposure, averaged across all observations in the population/pseudopopulation
+predict_erf_at_a_point <- function(w, spline_obj, df){
+  data <- df
+  data$w <- w
+  return(mean(predict(spline_obj, data)))
+}

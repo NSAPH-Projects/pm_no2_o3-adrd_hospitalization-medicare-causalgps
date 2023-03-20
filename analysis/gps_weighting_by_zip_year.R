@@ -16,7 +16,7 @@ dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/res
 # set exposure
 exposure_name <- "pm25"
 
-# get data and helpful functions
+# get data and helpful functions and constants
 source(paste0(dir_code, "analysis/helper_functions.R"))
 zip_year_data <- read_fst(paste0(dir_data, "analysis/",
                                  exposure_name, "/",
@@ -121,23 +121,81 @@ best_weighted_pseudopop <- get_weighted_pseudopop(attempt_number = best_maxAC_at
                                                   cov_bal_data.table = cov_bal_weighting,
                                                   return_cov_bal = F)
 
-# print summary statistics for pseudopopulation weights
-# to do: save in txt file
-ess(best_weighted_pseudopop$capped_stabilized_ipw)
+# # run parametric outcome model
+# cl <- parallel::makeCluster(n_cores, type = "PSOCK")
+# bam_exposure_only <- bam(formula_expos_only,
+#                          data = best_weighted_pseudopop,
+#                          offset = log(n_persons * n_years),
+#                          family = poisson(link = "log"),
+#                          weights = capped_stabilized_ipw,
+#                          samfrac = 0.05,
+#                          chunk.size = 5000,
+#                          control = gam.control(trace = TRUE),
+#                          nthreads = n_cores,
+#                          cluster = cl)
+# parallel::stopCluster(cl)
 
-# run parametric and semiparametric (thin-plate spline) outcome models
-parametric_model_summary <- get_outcome_model_summary(pseudopop = best_weighted_pseudopop,
-                                                      exposure_name = exposure_name,
-                                                      method = "weighting",
-                                                      modifications = modifications,
-                                                      n_cores = n_cores,
-                                                      parametric_or_semiparametric = "parametric",
-                                                      save_results = T)
+# # get parametric results of interest (coefficient for w)
+# coef <- summary(bam_exposure_only)$p.coeff["w"] # alternatively, summary(bam_exposure_only)$p.table["w", "Estimate"]
+# coef_se <- summary(bam_exposure_only)$se["w"] # alternatively, summary(bam_exposure_only)$p.table["w", "Std. Error"]
+# 
+# # save parametric result in specific folder
+# parametric_result <- data.table(exposure = exposure_name,
+#                                 method = "weighting",
+#                                 coefficient = coef,
+#                                 se_unadjusted = coef_se)
+# fwrite(parametric_result,
+#        paste0(dir_results, "parametric_results/",
+#               exposure_name, "/",
+#               "weighting/",
+#               modifications, "/",
+#               "parametric_result.csv"))
+# 
+# # save parametric result in existing table of all parametric results
+# parametric_results_table <- fread(paste0(dir_results, "parametric_results/parametric_results_table.csv"))
+# parametric_results_table[exposure == exposure_name &
+#                            method == "weighting", `:=`(coefficient = coef,
+#                                                       se_unadjusted = coef_se)]
+# fwrite(parametric_results_table,
+#        paste0(dir_results, "parametric_results/parametric_results_table.csv"))
 
-semiparametric_model_summary <- get_outcome_model_summary(pseudopop = best_weighted_pseudopop,
-                                                          exposure_name = exposure_name,
-                                                          method = "weighting",
-                                                          modifications = modifications,
-                                                          n_cores = n_cores,
-                                                          parametric_or_semiparametric = "semiparametric",
-                                                          save_results = T)
+# run semiparametric (thin-plate spline) outcome model
+cl <- parallel::makeCluster(n_cores, type = "PSOCK")
+bam_exposure_only <- bam(formula_expos_only_smooth,
+                         data = best_weighted_pseudopop,
+                         offset = log(n_persons * n_years),
+                         family = poisson(link = "log"),
+                         weights = capped_stabilized_ipw,
+                         samfrac = 0.05,
+                         chunk.size = 5000,
+                         control = gam.control(trace = TRUE),
+                         nthreads = n_cores,
+                         cluster = cl)
+parallel::stopCluster(cl)
+
+# save semiparametric point estimates
+w_values <- seq(min(zip_year_data$w), max(zip_year_data$w), length.out = 20)
+predicted_erf <- sapply(w_values,
+                        predict_erf_at_a_point,
+                        spline_obj = bam_exposure_only,
+                        df = best_weighted_pseudopop)
+predicted_erf <- data.table(w = w_values,
+                            prediction = predicted_erf)
+fwrite(predicted_erf,
+       paste0(dir_results, "semiparametric_results/",
+              exposure_name, "/",
+              "weighting/",
+              modifications, "/",
+              "point_estimates.csv"))
+
+# save semiparametric plot
+png(paste0(dir_results, "semiparametric_results/ERFs/",
+           exposure_name, "/",
+           "weighting/",
+           modifications, "/",
+           "bam_smooth_exposure_only.png"))
+plot(bam_exposure_only, main = paste0("GPS ",
+                                      "weighting",
+                                      ", Smoothed Poisson regression,\nexposure only (",
+                                      exposure_name, ")"))
+dev.off()

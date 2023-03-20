@@ -43,7 +43,7 @@ if (find_best_cov_bal_attempt){
   modifications <- paste0("match_zips_gps_untrimmed_caliper", matching_caliper, "_attempt", best_maxAC_attempt) # to be used in names of output files, to record how you're tuning the models
 }
 
-# get data and helpful functions
+# get data and helpful functions and constants
 source(paste0(dir_code, "analysis/helper_functions.R"))
 zip_year_data <- read_fst(paste0(dir_data, "analysis/",
                                  exposure_name, "/",
@@ -169,13 +169,37 @@ bam_exposure_only <- bam(formula_expos_only,
                          cluster = cl)
 parallel::stopCluster(cl)
 
-# save parametric result
-saveRDS(summary(bam_exposure_only),
-        file = paste0(dir_results, "parametric_results/",
-                      exposure_name, "/",
-                      "matching/",
-                      modifications, "/",
-                      "bam_exposure_only.rds"))
+# # save parametric result
+# saveRDS(summary(bam_exposure_only),
+#         file = paste0(dir_results, "parametric_results/",
+#                       exposure_name, "/",
+#                       "matching/",
+#                       modifications, "/",
+#                       "bam_exposure_only.rds"))
+
+# get parametric results of interest (coefficient for w)
+coef <- summary(bam_exposure_only)$p.coeff["w"] # alternatively, summary(bam_exposure_only)$p.table["w", "Estimate"]
+coef_se <- summary(bam_exposure_only)$se["w"] # alternatively, summary(bam_exposure_only)$p.table["w", "Std. Error"]
+
+# save parametric result in specific folder
+parametric_result <- data.table(exposure = exposure_name,
+                                method = "matching",
+                                coefficient = coef,
+                                se_unadjusted = coef_se)
+fwrite(parametric_result,
+       paste0(dir_results, "parametric_results/",
+              exposure_name, "/",
+              "matching/",
+              modifications, "/",
+              "parametric_result.csv"))
+
+# save parametric result in existing table of all parametric results
+parametric_results_table <- fread(paste0(dir_results, "parametric_results/parametric_results_table.csv"))
+parametric_results_table[exposure == exposure_name &
+                           method == "matching", `:=`(coefficient = coef,
+                                                      se_unadjusted = coef_se)]
+fwrite(parametric_results_table,
+       paste0(dir_results, "parametric_results/parametric_results_table.csv"))
 
 # run semiparametric (thin-plate spline) outcome model
 cl <- parallel::makeCluster(n_cores, type = "PSOCK")
@@ -191,7 +215,22 @@ bam_exposure_only <- bam(formula_expos_only_smooth,
                          cluster = cl)
 parallel::stopCluster(cl)
 
-# save semiparametric result
+# save semiparametric point estimates
+w_values <- seq(min(zip_year_data$w), max(zip_year_data$w), length.out = 20)
+predicted_erf <- sapply(w_values,
+                        predict_erf_at_a_point,
+                        spline_obj = bam_exposure_only,
+                        df = best_matched_pseudopop)
+predicted_erf <- data.table(w = w_values,
+                            prediction = predicted_erf)
+fwrite(predicted_erf,
+       paste0(dir_results, "semiparametric_results/",
+              exposure_name, "/",
+              "matching/",
+              modifications, "/",
+              "point_estimates.csv"))
+
+# save semiparametric plot
 png(paste0(dir_results, "semiparametric_results/ERFs/",
            exposure_name, "/",
            "matching/",
