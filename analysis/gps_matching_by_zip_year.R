@@ -21,7 +21,7 @@ n_cores <- 4 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
 n_gb <- 32 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
 find_best_cov_bal_attempt <- T # user should set this variable
 if (exposure_name == "pm25"){
-  matching_caliper <- 1.5
+  matching_caliper <- 2
 } else if (exposure_name == "no2"){
   matching_caliper <- 3.5
 } else if (exposure_name == "ozone_summer"){
@@ -141,8 +141,8 @@ summary(best_matched_pseudopop$counter_weight)
 quantile(best_matched_pseudopop$counter_weight, c(0, 0.25, 0.5, 0.75, 0.95, 0.99, 0.999, 0.9999, 1))
 # boxplot(best_matched_pseudopop$counter_weight)
 
-# print number of observations not trimmed by GPS
-cat("Number of observations not trimmed for having extreme GPS:", nrow(best_matched_pseudopop))
+# # print number of observations not trimmed by GPS
+# cat("Number of observations not trimmed for having extreme GPS:", nrow(best_matched_pseudopop))
 
 # print summary of pseudopopulation exposure
 best_matched_pseudopop[counter_weight > 0, .(max_exposure = max(w))]
@@ -155,19 +155,50 @@ best_matched_pseudopop[counter_weight > 0, .(min_exposure = min(w))]
 #      main = "Density of exposure in original population",
 #      xlab = exposure_name)
 
-# # run parametric and semiparametric (thin-plate spline) outcome models
-# parametric_model_summary <- get_outcome_model_summary(pseudopop = best_matched_pseudopop,
-#                                                       exposure_name = exposure_name,
-#                                                       method = "matching",
-#                                                       modifications = modifications,
-#                                                       n_cores = n_cores,
-#                                                       parametric_or_semiparametric = "parametric",
-#                                                       save_results = T)
-# 
-# semiparametric_model_summary <- get_outcome_model_summary(pseudopop = best_matched_pseudopop,
-#                                                           exposure_name = exposure_name,
-#                                                           method = "matching",
-#                                                           modifications = modifications,
-#                                                           n_cores = n_cores,
-#                                                           parametric_or_semiparametric = "semiparametric",
-#                                                           save_results = T)
+# run parametric outcome model
+cl <- parallel::makeCluster(n_cores, type = "PSOCK")
+bam_exposure_only <- bam(formula_expos_only,
+                         data = best_matched_pseudopop,
+                         offset = log(n_persons * n_years),
+                         family = poisson(link = "log"),
+                         weights = counter_weight,
+                         samfrac = 0.05,
+                         chunk.size = 5000,
+                         control = gam.control(trace = TRUE),
+                         nthreads = n_cores,
+                         cluster = cl)
+parallel::stopCluster(cl)
+
+# save parametric result
+saveRDS(summary(bam_exposure_only),
+        file = paste0(dir_results, "parametric_results/",
+                      exposure_name, "/",
+                      "matching/",
+                      modifications, "/",
+                      "bam_exposure_only.rds"))
+
+# run semiparametric (thin-plate spline) outcome model
+cl <- parallel::makeCluster(n_cores, type = "PSOCK")
+bam_exposure_only <- bam(formula_expos_only_smooth,
+                         data = best_matched_pseudopop,
+                         offset = log(n_persons * n_years),
+                         family = poisson(link = "log"),
+                         weights = counter_weight,
+                         samfrac = 0.05,
+                         chunk.size = 5000,
+                         control = gam.control(trace = TRUE),
+                         nthreads = n_cores,
+                         cluster = cl)
+parallel::stopCluster(cl)
+
+# save semiparametric result
+png(paste0(dir_results, "semiparametric_results/ERFs/",
+           exposure_name, "/",
+           "matching/",
+           modifications, "/",
+           "bam_smooth_exposure_only.png"))
+plot(bam_exposure_only, main = paste0("GPS ",
+                                      "matching",
+                                      ", Smoothed Poisson regression,\nexposure only (",
+                                      exposure_name, ")"))
+dev.off()

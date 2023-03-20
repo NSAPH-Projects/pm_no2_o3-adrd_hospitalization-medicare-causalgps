@@ -206,13 +206,13 @@ get_matched_pseudopop <- function(dir_code,
                                   return_cov_bal = T,
                                   return_pseudopop = F){
   
-  # create log file to see internal processes of CausalGPS
-  set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/",
-                                       exposure_name, "/",
-                                       "matching/",
-                                       modifications, "/",
-                                       Sys.Date(), "_estimateGpsForMatching_AttemptNumber", attempt_number, "_", nrow(zip_year_data), "rows_", n_cores, "cores_", n_gb, "gb.log"),
-             logger_level = "TRACE")
+  # # create log file to see internal processes of CausalGPS
+  # set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/",
+  #                                      exposure_name, "/",
+  #                                      "matching/",
+  #                                      modifications, "/",
+  #                                      Sys.Date(), "_estimateGpsForMatching_AttemptNumber", attempt_number, "_", nrow(zip_year_data), "rows_", n_cores, "cores_", n_gb, "gb.log"),
+  #            logger_level = "TRACE")
   
   # set seed according to attempt number
   set.seed(attempt_number)
@@ -256,12 +256,12 @@ get_matched_pseudopop <- function(dir_code,
   zip_list_by_year <- split(temp_zip_year_with_gps_dataset_plus_params,
                             temp_zip_year_with_gps_dataset_plus_params$year)
   
-  set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/",
-                                       exposure_name, "/",
-                                       "matching/",
-                                       modifications, "/",
-                                       Sys.Date(), "_matching_zip_by_year", "_", nrow(temp_zip_year_with_gps_dataset_plus_params), "rows_", n_cores, "cores_", n_gb, "gb.log"),
-             logger_level = "TRACE")
+  # set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/",
+  #                                      exposure_name, "/",
+  #                                      "matching/",
+  #                                      modifications, "/",
+  #                                      Sys.Date(), "_matching_zip_by_year", "_", nrow(temp_zip_year_with_gps_dataset_plus_params), "rows_", n_cores, "cores_", n_gb, "gb.log"),
+  #            logger_level = "TRACE")
   
   # match within each year
   temp_matched_pseudopop_list <- lapply(zip_list_by_year,
@@ -336,7 +336,8 @@ match_zips_within_year <- function(dataset_plus_params,
 
 ## Functions for outcome models
 
-get_outcome_model_summary <- function(pseudopop,
+get_outcome_model_summary <- function(dir_results,
+                                      pseudopop,
                                       exposure_name,
                                       method,
                                       modifications,
@@ -381,13 +382,13 @@ get_outcome_model_summary <- function(pseudopop,
                             exposure_name, "/",
                             method, "/",
                             modifications, "/",
-                            "bam_exposure_only_", nrow(pseudopop), "rows.rds"))
+                            "bam_exposure_only.rds"))
     } else{
       png(paste0(dir_results, "semiparametric_results/ERFs/",
                  exposure_name, "/",
                  method, "/",
                  modifications, "/",
-                 "bam_smooth_exposure_only_", nrow(pseudopop), "rows.png"))
+                 "bam_smooth_exposure_only.png"))
       plot(bam_exposure_only, main = paste0("GPS ",
                                             method,
                                             ", Smoothed Poisson regression,\nexposure only (",
