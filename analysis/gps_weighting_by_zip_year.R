@@ -173,6 +173,18 @@ bam_exposure_only <- bam(formula_expos_only_smooth,
                          cluster = cl)
 parallel::stopCluster(cl)
 
+# save semiparametric plot
+png(paste0(dir_results, "semiparametric_results/ERFs/",
+           exposure_name, "/",
+           "weighting/",
+           modifications, "/",
+           "bam_smooth_exposure_only.png"))
+plot(bam_exposure_only, main = paste0("GPS ",
+                                      "weighting",
+                                      ", Smoothed Poisson regression,\nexposure only (",
+                                      exposure_name, ")"))
+dev.off()
+
 # save semiparametric point estimates
 w_values <- seq(min(zip_year_data$w), max(zip_year_data$w), length.out = 20)
 predicted_erf <- sapply(w_values,
@@ -187,15 +199,3 @@ fwrite(predicted_erf,
               "weighting/",
               modifications, "/",
               "point_estimates.csv"))
-
-# save semiparametric plot
-png(paste0(dir_results, "semiparametric_results/ERFs/",
-           exposure_name, "/",
-           "weighting/",
-           modifications, "/",
-           "bam_smooth_exposure_only.png"))
-plot(bam_exposure_only, main = paste0("GPS ",
-                                      "weighting",
-                                      ", Smoothed Poisson regression,\nexposure only (",
-                                      exposure_name, ")"))
-dev.off()
