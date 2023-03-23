@@ -17,7 +17,7 @@ exposure_name <- "no2"
 
 # parameters for this computing job
 n_cores <- 1 # 48 is max of fasse partition, 64 is max of fasse_bigmem partition
-n_gb <- 16 # to do: check if 16 is enough, or if need 32
+n_gb <- 8 # to do: check if 16 is enough, or if need 32
 n_attempts <- 30 # number of attempts for GPS matching
 
 # get m and n values for this m-out-of-n bootstrap

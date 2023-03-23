@@ -40,7 +40,7 @@ zip_year_data_with_strata[, `:=`(zip = as.factor(zip),
 # parameters for this computing job; user should set
 n_cores <- 16 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
 n_gb <- 64 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
-find_best_cov_bal_attempt <- T # user should set this variable
+find_best_cov_bal_attempt <- F # user should set this variable
 
 if (find_best_cov_bal_attempt){
   n_attempts <- 30 # user should set this; number of attempts this script will try to model the GPS
@@ -53,7 +53,15 @@ if (find_best_cov_bal_attempt){
   }
 } else{
   n_attempts <- 1
-  best_maxAC_attempt <- 1 # user should set this to the attempt # to be used (for the seed)
+  
+  if (exposure_name == "pm25"){
+    best_maxAC_attempt <- 3
+  } else if (exposure_name == "no2"){
+    best_maxAC_attempt <- 20
+  } else if (exposure_name == "ozone_summer"){
+    best_maxAC_attempt <- 27
+  } else message("'exposure_name' must be 'pm25', 'no2', or 'ozone_summer'")
+  
   modifications <- paste0("attempt", best_maxAC_attempt) # to be used in names of output files, to record how you're tuning the models
 }
 
@@ -166,8 +174,8 @@ bam_exposure_only <- bam(formula_expos_only_smooth,
                          offset = log(n_persons * n_years),
                          family = poisson(link = "log"),
                          weights = capped_stabilized_ipw,
-                         samfrac = 0.05,
-                         chunk.size = 5000,
+                         samfrac = 0.05, # maybe ask if this is good
+                         chunk.size = 5000, # can probably make this bigger to run faster but needs more memory
                          control = gam.control(trace = TRUE),
                          nthreads = n_cores,
                          cluster = cl)
@@ -187,12 +195,24 @@ dev.off()
 
 # save semiparametric point estimates
 w_values <- seq(min(zip_year_data$w), max(zip_year_data$w), length.out = 20)
-predicted_erf <- sapply(w_values,
+# first, use lapply and see if faster than sapply. then, makeCluster(nthread, type = "PSOCK" and use parLapply with cluster
+predicted_erf <- lapply(w_values,
                         predict_erf_at_a_point,
                         spline_obj = bam_exposure_only,
                         df = best_weighted_pseudopop)
-predicted_erf <- data.table(w = w_values,
-                            prediction = predicted_erf)
+# predicted_erf <- data.table(w = w_values,
+#                             prediction = predicted_erf)
+
+cl <- parallel::makeCluster(n_cores, type = "PSOCK")
+predicted_erf_list <- parLapply(cl = cl,
+                                X = w_values,
+                                fun = predict_erf_at_a_point,
+                                spline_obj = bam_exposure_only,
+                                df = best_weighted_pseudopop)
+parallel::stopCluster(cl)
+# predicted_erf <- data.table(w = w_values,
+#                             prediction = unlist(predicted_erf_list))
+
 fwrite(predicted_erf,
        paste0(dir_results, "semiparametric_results/",
               exposure_name, "/",

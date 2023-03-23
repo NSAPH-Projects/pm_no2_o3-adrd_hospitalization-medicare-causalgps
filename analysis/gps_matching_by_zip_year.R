@@ -19,7 +19,9 @@ exposure_name <- "no2"
 # parameters for this computing job
 n_cores <- 4 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
 n_gb <- 32 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
-find_best_cov_bal_attempt <- T # user should set this variable
+find_best_cov_bal_attempt <- F # user should set this variable
+
+# get matching caliper (previously tuned to the following)
 if (exposure_name == "pm25"){
   matching_caliper <- 2
 } else if (exposure_name == "no2"){
@@ -39,7 +41,15 @@ if (find_best_cov_bal_attempt){
   }
 } else{
   n_attempts <- 1
-  best_maxAC_attempt <- 1 # user should set this to the attempt # to be used (for the seed)
+  
+  if (exposure_name == "pm25"){
+    best_maxAC_attempt <- 23
+  } else if (exposure_name == "no2"){
+    best_maxAC_attempt <- 8
+  } else if (exposure_name == "ozone_summer"){
+    best_maxAC_attempt <- 20
+  } else message("'exposure_name' must be 'pm25', 'no2', or 'ozone_summer'")
+  
   modifications <- paste0("match_zips_gps_untrimmed_caliper", matching_caliper, "_attempt", best_maxAC_attempt) # to be used in names of output files, to record how you're tuning the models
 }
 
