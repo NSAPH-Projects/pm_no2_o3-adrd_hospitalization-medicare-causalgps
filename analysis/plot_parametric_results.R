@@ -9,6 +9,9 @@ dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/res
 # get helpful constants
 source(paste0(dir_code, "analysis/constants.R"))
 
+# get exposure IQRs (for hazard ratio)
+zip_exposure_summary <- fread(paste0(dir_results, "exploratory/zip_exposure_summary.csv"))
+
 # # get results
 # parametric_results_table <- fread(paste0(dir_results, "parametric_results/parametric_results_table.csv"))
 # 
@@ -18,17 +21,17 @@ source(paste0(dir_code, "analysis/constants.R"))
 # 
 # # convert coefficient to hazard ratio
 # parametric_results_table$HR <- 0.1 # placeholder value; a double
-# parametric_results_table[exposure == "pm25", HR := exp(4 * coefficient)]
-# parametric_results_table[exposure == "no2", HR := exp(10 * coefficient)]
-# parametric_results_table[exposure == "ozone_summer", HR := exp(10 * coefficient)]
+# parametric_results_table[exposure == "pm25", HR := exp(zip_exposure_summary[Exposure == "pm25", IQR] * coefficient)]
+# parametric_results_table[exposure == "no2", HR := exp(zip_exposure_summary[Exposure == "no2", IQR] * coefficient)]
+# parametric_results_table[exposure == "ozone_summer", HR := exp(zip_exposure_summary[Exposure == "ozone_summer", IQR] * coefficient)]
 # 
 # # get 95% confidence intervals for HRs
-# parametric_results_table[exposure == "pm25", `:=`(HR_95CI_lower = exp(4 * coef_95CI_lower),
-#                                                   HR_95CI_upper = exp(4 * coef_95CI_upper))]
-# parametric_results_table[exposure == "no2", `:=`(HR_95CI_lower = exp(10 * coef_95CI_lower),
-#                                                  HR_95CI_upper = exp(10 * coef_95CI_upper))]
-# parametric_results_table[exposure == "ozone_summer", `:=`(HR_95CI_lower = exp(10 * coef_95CI_lower),
-#                                                           HR_95CI_upper = exp(10 * coef_95CI_upper))]
+# parametric_results_table[exposure == "pm25", `:=`(HR_95CI_lower = exp(zip_exposure_summary[Exposure == "pm25", IQR] * coef_95CI_lower),
+#                                                   HR_95CI_upper = exp(zip_exposure_summary[Exposure == "pm25", IQR] * coef_95CI_upper))]
+# parametric_results_table[exposure == "no2", `:=`(HR_95CI_lower = exp(zip_exposure_summary[Exposure == "no2", IQR] * coef_95CI_lower),
+#                                                  HR_95CI_upper = exp(zip_exposure_summary[Exposure == "no2", IQR] * coef_95CI_upper))]
+# parametric_results_table[exposure == "ozone_summer", `:=`(HR_95CI_lower = exp(zip_exposure_summary[Exposure == "ozone_summer", IQR] * coef_95CI_lower),
+#                                                           HR_95CI_upper = exp(zip_exposure_summary[Exposure == "ozone_summer", IQR] * coef_95CI_upper))]
 
 # for now, hard code results from google sheet
 parametric_results_table <- expand.grid(Exposure = toupper(zip_expos_names), # note: important to NOT call this column "exposure_name", or else won't be able to match with results later
@@ -37,33 +40,33 @@ parametric_results_table <- expand.grid(Exposure = toupper(zip_expos_names), # n
                                         HR_95CI_lower = -1000.1,
                                         HR_95CI_upper = -1000.1) # these are placeholder numbers (important that they are doubles)
 parametric_results_table <- setorder(parametric_results_table, Exposure)
-parametric_results_table$HR <- c(1.14604857,
-                                 1.103757204,
-                                 1.106011167,
-                                 1.118960355,
-                                 1.04780762,
-                                 1.002202422,
-                                 1.057883274,
-                                 1.045808217,
-                                 1.021528464)
-parametric_results_table$HR_95CI_lower <- c(1.143767749,
-                                            1.092011656,
-                                            1.078081138,
-                                            1.117171727,
-                                            1.042926089,
-                                            0.989966997,
-                                            1.05581206,
-                                            1.037015391,
-                                            1.008600057)
-parametric_results_table$HR_95CI_upper <- c(1.14833394,
-                                            1.115629086,
-                                            1.134664784,
-                                            1.120751847,
-                                            1.052711999,
-                                            1.014589069,
-                                            1.05995855,
-                                            1.054675598,
-                                            1.03462259)
+parametric_results_table$HR <- c(1.152275543,
+                                 1.108096989,
+                                 1.110449857,
+                                 1.144553815,
+                                 1.05769926,
+                                 1.002646135,
+                                 1.056699348,
+                                 1.044876482,
+                                 1.021095561)
+parametric_results_table$HR_95CI_lower <- c(1.149891268,
+                                            1.095839141,
+                                            1.081307818,
+                                            1.142356527,
+                                            1.051782988,
+                                            0.9879605534,
+                                            1.054671583,
+                                            1.036265588,
+                                            1.008428196)
+parametric_results_table$HR_95CI_upper <- c(1.154664761,
+                                            1.120491952,
+                                            1.140377296,
+                                            1.14675533,
+                                            1.063648811,
+                                            1.017550011,
+                                            1.05873101,
+                                            1.053558928,
+                                            1.033922046)
 
 # plot results
 p <- ggplot(parametric_results_table, aes(x = Method,
