@@ -13,7 +13,7 @@ dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
 dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
 
 # set exposure
-exposure_name <- "ozone_summer"
+exposure_name <- "no2"
 
 # parameters for this computing job
 n_cores <- 1 # 48 is max of fasse partition, 64 is max of fasse_bigmem partition
@@ -40,7 +40,7 @@ boot_sample_number <- as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 boot_zips <- read.csv(paste0(dir_data, "analysis/",
                              exposure_name, "/",
                              "boot_zips/",
-                             m_boot, "zips_200replicates.csv"))
+                             m_boot, "zips_1000replicates.csv"))
 boot_zips <- boot_zips[, boot_sample_number]
 
 zip_year_data <- read_fst(paste0(dir_data, "analysis/", exposure_name, "/zip_year_data_trimmed_0.05_0.95.fst"), as.data.table = T)

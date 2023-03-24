@@ -21,7 +21,7 @@ zip_year_data <- read_fst(paste0(dir_data, "analysis/",
 
 # try multiple possible values of m, as sensitivity analysis
 # only requirements of m are that m -> infty and m/n -> 0 as n -> infty
-n_boot_iter <- 200
+n_boot_iter <- 1000 # or, to start out, 200
 n_boot <- length(unique(zip_year_data$zip)) # 30,619 for PM2.5; 30,921 for NO2; 30,314 for ozone
 m_boot_values <- rep(NA, 6)
 m_boot_values[1:5] <- sapply(1:5, function(i) floor(2 * i * sqrt(n_boot)))
@@ -31,7 +31,7 @@ m_boot_values[6] <- floor(n_boot / log(n_boot))
 for (i in 1:length(m_boot_values)){
   set.seed(186)
   m_boot <- m_boot_values[i]
-  boot_zips <- sapply(1:n_boot_iter, function(i) sample(unique(zip_year_data$zip), m_boot, replace = T))
+  boot_zips <- sapply(1:n_boot_iter, function(j) sample(unique(zip_year_data$zip), m_boot, replace = T))
   fwrite(boot_zips, paste0(dir_data,
                            "analysis/",
                            exposure_name, "/",

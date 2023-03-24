@@ -31,7 +31,6 @@ boot_results <- lapply(1:n_boot_iter, function(i) fread(paste0(dir_results, "boo
                                                                exposure_name, "/",
                                                                method, "/",
                                                                m_boot, "zips/",
-                                                               # "1000replicates/",
                                                                "replicate_", i, ".csv")))
 boot_results <- rbindlist(boot_results)
 boot_var <- m_boot / n_boot * var(boot_results$coef_for_exposure) # deleted: na.rm = T

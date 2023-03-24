@@ -50,7 +50,7 @@ boot_sample_number <- as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 boot_zips <- read.csv(paste0(dir_data, "analysis/",
                              exposure_name, "/",
                              "boot_zips/",
-                             m_boot, "zips_200replicates.csv"))
+                             m_boot, "zips_1000replicates.csv"))
 boot_zips <- boot_zips[, boot_sample_number]
 
 zip_year_data <- read_fst(paste0(dir_data, "analysis/", exposure_name, "/zip_year_data_trimmed_0.05_0.95.fst"), as.data.table = T)
