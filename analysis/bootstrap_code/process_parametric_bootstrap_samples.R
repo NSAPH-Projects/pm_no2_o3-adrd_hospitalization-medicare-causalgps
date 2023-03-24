@@ -8,11 +8,11 @@ dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
 dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
 
 # set exposure and method for this run
-exposure_name <- "no2"
-method <- "matching"
+exposure_name <- "pm25"
+method <- "weighting"
 
 # set number of bootstrap replicates
-n_boot_iter <- 30
+n_boot_iter <- 200
 
 # get m and n values for this m-out-of-n bootstrap
 if (exposure_name == "pm25"){
@@ -31,6 +31,7 @@ boot_results <- lapply(1:n_boot_iter, function(i) fread(paste0(dir_results, "boo
                                                                exposure_name, "/",
                                                                method, "/",
                                                                m_boot, "zips/",
+                                                               # "1000replicates/",
                                                                "replicate_", i, ".csv")))
 boot_results <- rbindlist(boot_results)
 boot_var <- m_boot / n_boot * var(boot_results$coef_for_exposure) # deleted: na.rm = T

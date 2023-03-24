@@ -5,9 +5,9 @@
 #SBATCH --job-name=mqin_gps_matching
 #SBATCH --output=boot_gps_matching_by_zip_year.out
 #SBATCH --error=boot_gps_matching_by_zip_year.err
-#SBATCH --mem=8000
-#SBATCH --time=00:30:00
-#SBATCH --array=1-30
+#SBATCH --mem=6000
+#SBATCH --time=00:25:00
+#SBATCH --array=101-200
 #SBATCH --mail-user=michelleqin@college.harvard.edu
 #SBATCH --mail-type=ALL
 

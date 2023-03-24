@@ -193,7 +193,7 @@ get_weighted_pseudopop <- function(attempt_number,
   }
 }
 
-# function to match ZIP codes within years; first estimate GPS then match within each stratum
+# function to match ZIP codes within years; first estimate GPS on ZIP-year data then match ZIP codes within each year
 get_matched_pseudopop <- function(dir_code,
                                   attempt_number,
                                   exposure_name,
@@ -230,7 +230,7 @@ get_matched_pseudopop <- function(dir_code,
                                              sl_lib = c("m_xgboost"),
                                              nthread = n_cores)
   
-  # create a temporary dataset storing all of CausalGPS's internal parameters, to be expanded from ZIP-years to units of analysis (merging with strata by ZIP, year)
+  # create a temporary dataset storing all of CausalGPS's internal parameters, to be split up by year
   temp_zip_year_with_gps_dataset_plus_params <- as.data.table(temp_zip_year_with_gps_obj$dataset)
   temp_zip_year_with_gps_dataset_plus_params$e_gps_pred <- temp_zip_year_with_gps_obj$e_gps_pred
   temp_zip_year_with_gps_dataset_plus_params$w_resid <- temp_zip_year_with_gps_obj$w_resid

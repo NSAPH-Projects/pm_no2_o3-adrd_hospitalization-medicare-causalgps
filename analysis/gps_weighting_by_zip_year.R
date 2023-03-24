@@ -203,6 +203,7 @@ predicted_erf <- lapply(w_values,
 # predicted_erf <- data.table(w = w_values,
 #                             prediction = predicted_erf)
 
+library(parallel)
 cl <- parallel::makeCluster(n_cores, type = "PSOCK")
 predicted_erf_list <- parLapply(cl = cl,
                                 X = w_values,
