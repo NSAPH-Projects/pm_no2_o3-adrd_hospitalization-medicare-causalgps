@@ -181,28 +181,30 @@ bam_exposure_only <- bam(formula_expos_only_smooth,
                          cluster = cl)
 parallel::stopCluster(cl)
 
-# save semiparametric plot
-png(paste0(dir_results, "semiparametric_results/ERFs/",
-           exposure_name, "/",
-           "weighting/",
-           modifications, "/",
-           "bam_smooth_exposure_only.png"))
-plot(bam_exposure_only, main = paste0("GPS ",
-                                      "weighting",
-                                      ", Smoothed Poisson regression,\nexposure only (",
-                                      exposure_name, ")"))
-dev.off()
+# # save semiparametric plot
+# png(paste0(dir_results, "semiparametric_results/ERFs/",
+#            exposure_name, "/",
+#            "weighting/",
+#            modifications, "/",
+#            "bam_smooth_exposure_only.png"))
+# plot(bam_exposure_only, main = paste0("GPS ",
+#                                       "weighting",
+#                                       ", Smoothed Poisson regression,\nexposure only (",
+#                                       exposure_name, ")"))
+# dev.off()
 
-# save semiparametric point estimates
+# Save semiparametric point estimates
+
+# define exposure points at which to predict the outcome
 w_values <- seq(min(zip_year_data$w), max(zip_year_data$w), length.out = 20)
-# first, use lapply and see if faster than sapply. then, makeCluster(nthread, type = "PSOCK" and use parLapply with cluster
-predicted_erf <- lapply(w_values,
-                        predict_erf_at_a_point,
-                        spline_obj = bam_exposure_only,
-                        df = best_weighted_pseudopop)
-# predicted_erf <- data.table(w = w_values,
-#                             prediction = predicted_erf)
 
+# first, use lapply and see if faster than sapply. then, makeCluster(nthread, type = "PSOCK" and use parLapply with cluster
+predicted_erf_list <- lapply(w_values,
+                             predict_erf_at_a_point,
+                             spline_obj = bam_exposure_only,
+                             df = best_weighted_pseudopop)
+
+# alternatively, try parLapply
 library(parallel)
 cl <- parallel::makeCluster(n_cores, type = "PSOCK")
 predicted_erf_list <- parLapply(cl = cl,
@@ -211,12 +213,7 @@ predicted_erf_list <- parLapply(cl = cl,
                                 spline_obj = bam_exposure_only,
                                 df = best_weighted_pseudopop)
 parallel::stopCluster(cl)
-# predicted_erf <- data.table(w = w_values,
-#                             prediction = unlist(predicted_erf_list))
 
-fwrite(predicted_erf,
-       paste0(dir_results, "semiparametric_results/",
-              exposure_name, "/",
-              "weighting/",
-              modifications, "/",
-              "point_estimates.csv"))
+# if the above finishes running, save predictions
+predicted_erf <- data.table(w = w_values,
+                            prediction = unlist(predicted_erf_list))
