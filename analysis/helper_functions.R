@@ -7,10 +7,10 @@ zip_quant_var_names <- c("mean_bmi", "smoke_rate", "hispanic", "prop_blk",
                          "summer_tmmx", "summer_rmax")
 zip_unordered_cat_var_names <- c("region")
 indiv_quant_var_names <- NULL
-indiv_unordered_cat_var_names <- c("sex", "race", "dual", "age_grp", "year") # to do: age_group is ordered
-strata_vars <- c("year", "sex", "race", "dual", "age_grp") # to do: consider if year should be here
+indiv_unordered_cat_var_names <- c("sex", "race", "dual", "age_grp", "year") # note that age_grp here is an unordered categorical variable
+strata_vars <- c("year", "sex", "race", "dual", "age_grp") # include year to account for possible confounding, such as billing incentives changing year to year
 zip_var_names <- c(zip_quant_var_names, zip_unordered_cat_var_names)
-indiv_var_names <- c(indiv_unordered_cat_var_names, indiv_quant_var_names) # note: for now, using ADRD_age as a quantitative variable (not binned)
+indiv_var_names <- c(indiv_unordered_cat_var_names, indiv_quant_var_names)
 
 # outcome variable for this analysis
 outcome_name <- "n_hosp"

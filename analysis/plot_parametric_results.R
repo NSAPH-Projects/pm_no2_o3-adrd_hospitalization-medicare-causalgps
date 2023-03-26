@@ -50,32 +50,33 @@ parametric_results_table$HR <- c(1.152275543,
                                  1.044876482,
                                  1.021095561)
 parametric_results_table$HR_95CI_lower <- c(1.149891268,
-                                            1.095839141,
-                                            1.081307818,
+                                            1.09705365,
+                                            1.081006371,
                                             1.142356527,
-                                            1.051782988,
-                                            0.9879605534,
+                                            1.048598491,
+                                            0.9862114762,
                                             1.054671583,
-                                            1.036265588,
-                                            1.008428196)
+                                            1.035500191,
+                                            1.005404529)
 parametric_results_table$HR_95CI_upper <- c(1.154664761,
-                                            1.120491952,
-                                            1.140377296,
+                                            1.119251495,
+                                            1.140695299,
                                             1.14675533,
-                                            1.063648811,
-                                            1.017550011,
+                                            1.066879016,
+                                            1.019354668,
                                             1.05873101,
-                                            1.053558928,
-                                            1.033922046)
+                                            1.054337674,
+                                            1.037031478)
 
 # plot results
-p <- ggplot(parametric_results_table, aes(x = Method,
+p <- ggplot(parametric_results_table, aes(x = Exposure,
                                           y = HR,
-                                          color = Exposure)) +
+                                          color = Method)) +
   geom_point(position=position_dodge(0.75)) +
   geom_errorbar(aes(ymin = HR_95CI_lower,
                     ymax = HR_95CI_upper),
-                position=position_dodge(0.75), width = 0.5)
+                position=position_dodge(0.75), width = 0.5) +
+  ylab("Hazard Ratio")
 p
 
 # # save plot
