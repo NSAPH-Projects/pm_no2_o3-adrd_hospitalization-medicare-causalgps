@@ -13,7 +13,7 @@ dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
 dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
 
 # set exposure
-exposure_name <- "no2"
+exposure_name <- "pm25"
 
 # parameters for this computing job
 n_cores <- 1 # 48 is max of fasse partition, 64 is max of fasse_bigmem partition
@@ -96,7 +96,7 @@ bam_exposure_only <- bam(formula_expos_only,
                          samfrac = 0.05,
                          chunk.size = 5000,
                          control = gam.control(trace = TRUE),
-                         nthreads = 1)
+                         nthreads = n_cores)
 
 # result to be bootstrapped: coefficient for exposure
 coef_for_exposure <- summary(bam_exposure_only)$p.table["w", "Estimate"]
