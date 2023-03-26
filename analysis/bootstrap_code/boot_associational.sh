@@ -5,9 +5,9 @@
 #SBATCH --job-name=mqin_associational
 #SBATCH --output=boot_associational.out
 #SBATCH --error=boot_associational.err
-#SBATCH --mem=6000
-#SBATCH --time=00:20:00
-#SBATCH --array=1-2
+#SBATCH --mem=8000
+#SBATCH --time=00:05:00
+#SBATCH --array=1-500
 #SBATCH --mail-user=michelleqin@college.harvard.edu
 #SBATCH --mail-type=ALL
 
