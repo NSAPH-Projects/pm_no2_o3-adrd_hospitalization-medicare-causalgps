@@ -1,4 +1,5 @@
 # Memory required to run: More than 16 GB?
+### IMPORTANT NOTE ABOUT CMS PRIVACY POLICY: user should be careful not to export patient data with counts < 10. Check scale of maps to make sure smallest color is >10 ###
 
 # Loading packages
 library(data.table)
@@ -33,11 +34,13 @@ zip_expos_list <- split(zip_year_expos, by = "year")
 
 # get number of patients (= number of person years since it's 1 year) and events in 2016 by ZIP code
 # note: sum the patients and events to unstratify them
+### IMPORTANT NOTE ABOUT CMS PRIVACY POLICY: user should be careful not to export patient data with counts < 10. Check scale of maps to make sure smallest color is >10 ###
 zip_patients_2016 <- subset(ADRD_agg_lagged, subset = ADRD_agg_lagged$year == "2016", select = c("n_hosp", "n_persons", "zip"))
 zip_patients_2016 <- zip_patients_2016[, .(n_hosp = sum(n_hosp), n_persons = sum(n_persons)), by = .(zip)]
 zip_patients_2016[, hosp_rate := n_hosp / n_persons]
 
 # get patients' total outcome data: sum number of person-years and number of ADRD hospitalizations in each ZIP code (over all years)
+### IMPORTANT NOTE ABOUT CMS PRIVACY POLICY: user should be careful not to export patient data with counts < 10. Check scale of maps to make sure smallest color is >10 ###
 zip_year_patients <- subset(ADRD_agg_lagged, select = c("n_hosp", "n_persons",
                                                         "zip", "year"))
 zip_year_patients <- zip_year_patients[, .(n_hosp = sum(n_hosp), n_person_years = sum(n_persons)), by = .(zip)]
@@ -63,11 +66,13 @@ plot(zip_expos_merged[[16]]["pm25"], main = "PM2.5 (micrograms/m^3) in 2015")
 plot(zip_expos_merged[[16]]["no2"], main = "NO2 (ppb) in 2015")
 plot(zip_expos_merged[[16]]["ozone_summer"], main = "Summer ozone (ppb) in 2015")
 
+### IMPORTANT NOTE ABOUT CMS PRIVACY POLICY: user should be careful not to export patient data with counts < 10. Check scale of maps to make sure smallest color is >10 ###
 # plot number of patients and number of ADRD hospitalizations in 2016
 plot(zip_patients_2016_merged["n_persons"], main = "Number of patients in 2016")
 plot(zip_patients_2016_merged["n_hosp"], main = "Number of hospitalizations with ADRD in 2016")
 plot(zip_patients_2016_merged["hosp_rate"], main = "Rate of hospitalizations with ADRD in 2016")
 
+### IMPORTANT NOTE ABOUT CMS PRIVACY POLICY: user should be careful not to export patient data with counts < 10. Check scale of maps to make sure smallest color is >10 ###
 # plot total (sum of) person-years and ADRD hospitalizations in 2001-2016
 plot(zip_patients_merged["n_person_years"], main = "Total number of person-years over 2001-2016")
 plot(zip_patients_merged["n_hosp"], main = "Total number of hospitalizations with ADRD over 2001-2016")
