@@ -24,7 +24,7 @@ if (exposure_name == "pm25"){
   m_boot <- 2937
 } else message("'exposure_name' must be 'pm25', 'no2', or 'ozone_summer'")
 
-# get helpful functions
+# get helpful constants
 source(paste0(dir_code, "analysis/constants.R"))
 
 # get m out of n bootstrap sample

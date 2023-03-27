@@ -15,8 +15,8 @@ exposure_name <- "pm25"
 # set parameters for this computing job
 n_cores <- 16
 
-# get data and helpful functions
-source(paste0(dir_code, "analysis/helper_functions.R"))
+# get data and helpful constants
+source(paste0(dir_code, "analysis/constants.R"))
 zip_year_data_with_strata <- read_fst(paste0(dir_data, "analysis/",
                                              exposure_name, "/",
                                              "zip_year_data_with_strata_trimmed_0.05_0.95.fst"),

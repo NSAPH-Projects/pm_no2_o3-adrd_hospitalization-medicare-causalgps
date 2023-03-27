@@ -14,12 +14,13 @@ dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
 dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
 
 # set exposure
-exposure_name <- "no2"
+exposure_name <- "pm25"
 
 # parameters for this computing job
 n_cores <- 4 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
 n_gb <- 32 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
-find_best_cov_bal_attempt <- F # user should set this variable
+find_best_cov_bal_attempt <- F # user should set this variable; true means run for loop over several attempts to find attempt with best covariate balance
+save_best_attempt_cov_bal <- F # user should set this variable; true means save covariate balance as csv and plot
 
 # get matching caliper (previously tuned to the following)
 if (exposure_name == "pm25"){
@@ -53,7 +54,8 @@ if (find_best_cov_bal_attempt){
   modifications <- paste0("match_zips_gps_untrimmed_caliper", matching_caliper, "_attempt", best_maxAC_attempt) # to be used in names of output files, to record how you're tuning the models
 }
 
-# get data and helpful functions and constants
+# get data and helpful constants and functions
+source(paste0(dir_code, "analysis/constants.R"))
 source(paste0(dir_code, "analysis/helper_functions.R"))
 zip_year_data <- read_fst(paste0(dir_data, "analysis/",
                                  exposure_name, "/",
@@ -114,7 +116,14 @@ if (find_best_cov_bal_attempt){
   best_maxAC_attempt <- cov_bal_summary$Attempt[which.min(cov_bal_summary$maxAC)]
   best_maxAC_cov_bal <- cov_bal_matching[cov_bal_matching$Attempt == best_maxAC_attempt, ]
   
-  # plot covariate balance
+  # save best covariate balance as csv
+  fwrite(best_maxAC_cov_bal, paste0(dir_results, "covariate_balance/",
+                                    exposure_name, "/",
+                                    "matching/",
+                                    modifications, "/",
+                                    "best_cov_bal.csv"))
+  
+  # plot best covariate balance
   matched_cov_bal_plot <- ggplot(best_maxAC_cov_bal, aes(x = Covariate, y = AbsoluteCorrelation, color = Dataset, group = Dataset)) +
     geom_point() +
     geom_line() +
@@ -122,11 +131,12 @@ if (find_best_cov_bal_attempt){
     ggtitle(paste0(format(unique(best_maxAC_cov_bal$SampleSize), scientific = F, big.mark = ','), " units of analysis (Attempt #", best_maxAC_attempt, " of ", n_total_attempts, ")")) +
     theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
   
-  ggsave(paste0(dir_results, "covariate_balance/",
-                exposure_name, "/",
-                "matching/",
-                modifications, "/",
-                nrow(zip_year_data_with_strata), "rows.png"), matched_cov_bal_plot)
+  # # save image of best covariate balance plot
+  # ggsave(paste0(dir_results, "covariate_balance/",
+  #               exposure_name, "/",
+  #               "matching/",
+  #               modifications, "/",
+  #               nrow(zip_year_data_with_strata), "rows.png"), matched_cov_bal_plot)
 }
 
 # regenerate GPS model and matched pseudopopulation with best covariate balance
@@ -141,6 +151,30 @@ best_matched_pseudopop <- get_matched_pseudopop(dir_code = dir_code,
                                                 zip_year_data_with_strata = zip_year_data_with_strata,
                                                 return_cov_bal = F,
                                                 return_pseudopop = T)
+
+if (save_best_attempt_cov_bal){
+  
+  # calculate covariate balance of best attempt
+  best_maxAC_cov_bal <- calculate_correlations(cov_bal_data.table = cov_bal_matching,
+                                               method = "matching",
+                                               attempt = best_maxAC_attempt,
+                                               pseudopop = best_matched_pseudopop)
+  
+  # save best covariate balance as csv
+  fwrite(best_maxAC_cov_bal, paste0(dir_results, "covariate_balance/",
+                                    exposure_name, "/",
+                                    "matching/",
+                                    modifications, "/",
+                                    "best_cov_bal.csv"))
+  
+  # plot best covariate balance
+  matched_cov_bal_plot <- ggplot(best_maxAC_cov_bal, aes(x = Covariate, y = AbsoluteCorrelation, color = Dataset, group = Dataset)) +
+    geom_point() +
+    geom_line() +
+    ylab(paste("Absolute Correlation with", exposure_name)) +
+    ggtitle(paste0(format(unique(best_maxAC_cov_bal$SampleSize), scientific = F, big.mark = ','), " units of analysis (Attempt #", best_maxAC_attempt, ")")) +
+    theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
+}
 
 # print summary statistics for pseudopopulation weights
 cat("ESS:", ess(best_matched_pseudopop$counter_weight)) # to do: if ESS is small, investigate which observation(s) are being matched so many times and if increasing? or changing caliper helps

@@ -100,7 +100,7 @@ bam_exposure_only <- bam(formula_expos_only_smooth,
                          samfrac = 0.05,
                          chunk.size = 5000,
                          control = gam.control(trace = TRUE),
-                         nthreads = 1)
+                         nthreads = n_cores)
 
 # use fitted model to predict log rate of ADRD event at any hypothetical level of exposure
 # averaged across all observations in the pseudopopulation

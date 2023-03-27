@@ -31,7 +31,8 @@ if (exposure_name == "pm25"){
 modifications <- paste0("gps_by_zip_year_", n_attempts, "attempts_boot_",
                         m_boot, "zips") # to be used in names of output files, e.g., cov bal summary
 
-# get helpful functions
+# get data and helpful constants and functions
+source(paste0(dir_code, "analysis/constants.R"))
 source(paste0(dir_code, "analysis/helper_functions.R"))
 
 # get m out of n bootstrap sample
