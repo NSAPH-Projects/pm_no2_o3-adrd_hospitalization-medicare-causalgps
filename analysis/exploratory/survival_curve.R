@@ -74,7 +74,7 @@ png(paste0(dir_results, "exploratory/km_curve_by_pm25_quartile.png"))
 plot(fit_pm25[1],
      main = "Kaplan-Meier Estimate of Survival Function (Associational)",
      xlab = "Number of years observed",
-     ylab = "Probability of ADRD hospitalization",
+     ylab = "Probability of not being hospitalized with ADRD",
      col = "red") # lowest level of exposure in red
 lines(fit_pm25[2], col = "orange")
 lines(fit_pm25[3], col = "green")
@@ -88,7 +88,7 @@ png(paste0(dir_results, "exploratory/km_curve_by_no2_quartile.png"))
 plot(fit_no2[1],
      main = "Kaplan-Meier Estimate of Survival Function (Associational)",
      xlab = "Number of years observed",
-     ylab = "Probability of ADRD hospitalization",
+     ylab = "Probability of not being hospitalized with ADRD",
      col = "red") # lowest level of exposure in red
 lines(fit_no2[2], col = "orange")
 lines(fit_no2[3], col = "green")
@@ -102,7 +102,7 @@ png(paste0(dir_results, "exploratory/km_curve_by_ozone_summer_quartile.png"))
 plot(fit_no2[1],
      main = "Kaplan-Meier Estimate of Survival Function (Associational)",
      xlab = "Number of years observed",
-     ylab = "Probability of ADRD hospitalization",
+     ylab = "Probability of not being hospitalized with ADRD",
      col = "red") # lowest level of exposure in red
 lines(fit_no2[2], col = "orange")
 lines(fit_no2[3], col = "green")

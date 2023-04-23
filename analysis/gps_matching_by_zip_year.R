@@ -17,7 +17,7 @@ dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/res
 exposure_name <- "pm25"
 
 # parameters for this computing job
-n_cores <- 4 # 48 is max of fasse partition, 64 js max of fasse_bigmem partition
+n_cores <- 4 # 48 is max of fasse partition, 64 is max of fasse_bigmem partition
 n_gb <- 32 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
 find_best_cov_bal_attempt <- F # user should set this variable; true means run for loop over several attempts to find attempt with best covariate balance
 save_best_attempt_cov_bal <- F # user should set this variable; true means save covariate balance as csv and plot
