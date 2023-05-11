@@ -9,8 +9,8 @@ dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/res
 # get helpful constants
 source(paste0(dir_code, "analysis/constants.R"))
 
-# get exposure IQRs (for hazard ratio)
-zip_exposure_summary <- fread(paste0(dir_results, "exploratory/zip_exposure_summary.csv"))
+# # get exposure IQRs (for hazard ratio)
+# zip_exposure_summary <- fread(paste0(dir_results, "exploratory/zip_exposure_summary.csv"))
 
 # # get results
 # parametric_results_table <- fread(paste0(dir_results, "parametric_results/parametric_results_table.csv"))
@@ -34,8 +34,8 @@ zip_exposure_summary <- fread(paste0(dir_results, "exploratory/zip_exposure_summ
 #                                                           HR_95CI_upper = exp(zip_exposure_summary[Exposure == "ozone_summer", IQR] * coef_95CI_upper))]
 
 # for now, hard code results from google sheet
-parametric_results_table <- expand.grid(Exposure = toupper(zip_expos_names), # note: important to NOT call this column "exposure_name", or else won't be able to match with results later
-                                        Method = c("Associational", "GPS Weighting", "GPS Matching"),
+parametric_results_table <- expand.grid(Exposure = c("PM2.5", "NO2", "Summer Ozone"), # note: important to NOT call this column "exposure_name", or else won't be able to match with results later
+                                        Method = c("Poisson Regression", "GPS Weighting", "GPS Matching"),
                                         HR = -1000.1,
                                         HR_95CI_lower = -1000.1,
                                         HR_95CI_upper = -1000.1) # these are placeholder numbers (important that they are doubles)
@@ -71,12 +71,15 @@ parametric_results_table$HR_95CI_upper <- c(1.160455111,
 # plot results
 p <- ggplot(parametric_results_table, aes(x = Exposure,
                                           y = HR,
-                                          color = Method)) +
+                                          color = Method,
+                                          shape = Method)) +
   geom_point(position=position_dodge(0.75)) +
   geom_errorbar(aes(ymin = HR_95CI_lower,
                     ymax = HR_95CI_upper),
                 position=position_dodge(0.75), width = 0.5) +
-  ylab("Hazard Ratio")
+  ylab("Hazard Ratio") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
 p
 
 # # save plot
