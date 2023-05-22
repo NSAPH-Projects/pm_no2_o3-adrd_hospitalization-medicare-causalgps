@@ -14,7 +14,7 @@ dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
 dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
 
 # set exposure
-exposure_name <- "pm25"
+exposure_name <- "no2"
 
 # parameters for this computing job
 n_cores <- 4 # 48 is max of fasse partition, 64 is max of fasse_bigmem partition
@@ -176,28 +176,6 @@ if (save_best_attempt_cov_bal){
     theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
 }
 
-# print summary statistics for pseudopopulation weights
-cat("ESS:", ess(best_matched_pseudopop$counter_weight)) # to do: if ESS is small, investigate which observation(s) are being matched so many times and if increasing? or changing caliper helps
-cat("Number of observations matched:", sum(best_matched_pseudopop$counter_weight > 0))
-cat("Proportion of observations matched:", sum(best_matched_pseudopop$counter_weight > 0) / nrow(best_matched_pseudopop))
-cat("Distribution of number of matches per observations:")
-summary(best_matched_pseudopop$counter_weight)
-quantile(best_matched_pseudopop$counter_weight, c(0, 0.25, 0.5, 0.75, 0.95, 0.99, 0.999, 0.9999, 1))
-# boxplot(best_matched_pseudopop$counter_weight)
-
-# # print number of observations not trimmed by GPS
-# cat("Number of observations not trimmed for having extreme GPS:", nrow(best_matched_pseudopop))
-
-# print summary of pseudopopulation exposure
-best_matched_pseudopop[counter_weight > 0, .(max_exposure = max(w))]
-best_matched_pseudopop[counter_weight > 0, .(min_exposure = min(w))]
-# plot(density(best_matched_pseudopop$w,
-#              weights = best_matched_pseudopop$counter_weight / sum(best_matched_pseudopop$counter_weight)),
-#      main = "Density of exposure in matched pseudopopulation",
-#      xlab = exposure_name)
-# plot(density(best_matched_pseudopop$w),
-#      main = "Density of exposure in original population",
-#      xlab = exposure_name)
 
 # run parametric outcome model
 cl <- parallel::makeCluster(n_cores, type = "PSOCK")
@@ -212,42 +190,14 @@ bam_exposure_only <- bam(formula_expos_only,
                          nthreads = n_cores,
                          cluster = cl)
 parallel::stopCluster(cl)
-
-# # save parametric result
-# saveRDS(summary(bam_exposure_only),
-#         file = paste0(dir_results, "parametric_results/",
-#                       exposure_name, "/",
-#                       "matching/",
-#                       modifications, "/",
-#                       "bam_exposure_only.rds"))
-
-# get parametric results of interest (coefficient for w)
-coef <- summary(bam_exposure_only)$p.coeff["w"] # alternatively, summary(bam_exposure_only)$p.table["w", "Estimate"]
-coef_se <- summary(bam_exposure_only)$se["w"] # alternatively, summary(bam_exposure_only)$p.table["w", "Std. Error"]
-
-# save parametric result in specific folder
-parametric_result <- data.table(exposure = exposure_name,
-                                method = "matching",
-                                coefficient = coef,
-                                se_unadjusted = coef_se)
-fwrite(parametric_result,
-       paste0(dir_results, "parametric_results/",
-              exposure_name, "/",
-              "matching/",
-              modifications, "/",
-              "parametric_result.csv"))
-
-# save parametric result in existing table of all parametric results
-parametric_results_table <- fread(paste0(dir_results, "parametric_results/parametric_results_table.csv"))
-parametric_results_table[exposure == exposure_name &
-                           method == "matching", `:=`(coefficient = coef,
-                                                      se_unadjusted = coef_se)]
-fwrite(parametric_results_table,
-       paste0(dir_results, "parametric_results/parametric_results_table.csv"))
+cat(paste(exposure_name, "GPS Matching", bam_exposure_only$coefficients["w"], sep = ","),
+    sep = "\n",
+    file = paste0(dir_results, "parametric_results/coef_for_exposure.txt"),
+    append = TRUE)
 
 # run semiparametric (thin-plate spline) outcome model
 cl <- parallel::makeCluster(n_cores, type = "PSOCK")
-bam_exposure_only <- bam(formula_expos_only_smooth,
+bam_exposure_only <- bam(formula_expos_only_smooth_cr,
                          data = best_matched_pseudopop,
                          offset = log(n_persons * n_years),
                          family = poisson(link = "log"),
@@ -258,6 +208,22 @@ bam_exposure_only <- bam(formula_expos_only_smooth,
                          nthreads = n_cores,
                          cluster = cl)
 parallel::stopCluster(cl)
+
+# estimate counterfactual for every year-zip-strata, calculate ATE
+potential_data <- copy(best_matched_pseudopop[, ..strata_vars])
+data_prediction <- 
+  rbindlist(lapply(seq(min(best_matched_pseudopop$w), 
+                       max(best_matched_pseudopop$w), 
+                       length.out = 100), function(pot_exp) {
+                         
+                         # Get potential data if all had same potential exposure
+                         potential_data[, w := pot_exp]
+                         return(data.table(name = exposure_name,
+                                           w = pot_exp,
+                                           ate = mean(predict(bam_exposure_only, newdata = potential_data, type = "response"))))
+                       }))
+plot(I(1e5*ate)~w,data_prediction, type = 'l')
+save(data_prediction, file = paste0(dir_results, exposure_name, "_gpsmatching_smooth.rda"))
 
 # save semiparametric point estimates
 w_values <- seq(min(zip_year_data$w), max(zip_year_data$w), length.out = 20)

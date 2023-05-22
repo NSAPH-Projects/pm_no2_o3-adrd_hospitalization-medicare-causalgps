@@ -20,4 +20,4 @@ outcome_name <- "n_hosp"
 
 formula_expos_only <- as.formula(paste("Y ~", paste(c("w", strata_vars), collapse = "+", sep = "")))
 formula_expos_only_smooth <- as.formula(paste("Y ~", paste(c("s(w, bs = 'ts')", strata_vars), collapse = "+", sep = "")))
-formula_expos_only_smooth_cr <- as.formula(paste("Y ~", paste(c("s(w, bs = 'cr', k = 5)", strata_vars), collapse = "+", sep = "")))
+formula_expos_only_smooth_cr <- as.formula(paste("Y ~", paste(c("s(w, bs = 'cr', k = 4, fx = TRUE)", strata_vars), collapse = "+", sep = "")))

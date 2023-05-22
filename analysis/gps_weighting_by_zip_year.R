@@ -14,7 +14,7 @@ dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
 dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
 
 # set exposure
-exposure_name <- "pm25"
+exposure_name <- "ozone_summer"
 
 # get data and helpful constants and functions
 source(paste0(dir_code, "analysis/constants.R"))
@@ -177,6 +177,10 @@ if (save_best_attempt_cov_bal){
 #                          nthreads = n_cores,
 #                          cluster = cl)
 # parallel::stopCluster(cl)
+# cat(paste(exposure_name, "GPS Weighting", bam_exposure_only$coefficients["w"], sep = ","),
+#     sep = "\n",
+#     file = paste0(dir_results, "parametric_results/coef_for_exposure.txt"),
+#     append = TRUE)
 
 # # get parametric results of interest (coefficient for w)
 # coef <- summary(bam_exposure_only)$p.coeff["w"] # alternatively, summary(bam_exposure_only)$p.table["w", "Estimate"]
@@ -194,39 +198,39 @@ if (save_best_attempt_cov_bal){
 #               modifications, "/",
 #               "parametric_result.csv"))
 # 
-# # save parametric result in existing table of all parametric results
-# parametric_results_table <- fread(paste0(dir_results, "parametric_results/parametric_results_table.csv"))
-# parametric_results_table[exposure == exposure_name &
-#                            method == "weighting", `:=`(coefficient = coef,
-#                                                       se_unadjusted = coef_se)]
-# fwrite(parametric_results_table,
-#        paste0(dir_results, "parametric_results/parametric_results_table.csv"))
 
 # run semiparametric (thin-plate spline) outcome model
 cl <- parallel::makeCluster(n_cores, type = "PSOCK")
-bam_exposure_only <- bam(formula_expos_only_smooth,
+bam_exposure_only <- bam(formula_expos_only_smooth_cr,
                          data = best_weighted_pseudopop,
                          offset = log(n_persons * n_years),
                          family = poisson(link = "log"),
                          weights = capped_stabilized_ipw,
-                         samfrac = 0.05, # maybe ask if this is good
-                         chunk.size = 5000, # can probably make this bigger to run faster but needs more memory
+                         samfrac = 0.05,
+                         chunk.size = 5000, # could make this bigger to run faster but needs more memory
                          control = gam.control(trace = TRUE),
                          nthreads = n_cores,
                          cluster = cl)
 parallel::stopCluster(cl)
 
-# # save semiparametric plot
-# png(paste0(dir_results, "semiparametric_results/ERFs/",
-#            exposure_name, "/",
-#            "weighting/",
-#            modifications, "/",
-#            "bam_smooth_exposure_only.png"))
-# plot(bam_exposure_only, main = paste0("GPS ",
-#                                       "weighting",
-#                                       ", Smoothed Poisson regression,\nexposure only (",
-#                                       exposure_name, ")"))
-# dev.off()
+# estimate counterfactual for every year-zip-strata, calculate ATE
+potential_data <- copy(best_weighted_pseudopop[, ..strata_vars])
+data_prediction <- 
+  rbindlist(lapply(seq(min(best_weighted_pseudopop$w), 
+                       max(best_weighted_pseudopop$w), 
+                       length.out = 100), function(pot_exp) {
+    
+    # Get potential data if all had same potential exposure
+    potential_data[, w := pot_exp]
+    return(data.table(name = exposure_name,
+                      w = pot_exp,
+                      ate = mean(predict(bam_exposure_only, newdata = potential_data, type = "response"))))
+  }))
+plot(I(1e5*ate)~w,data_prediction, type = 'l')
+exposure_density <- density(zip_year_data$w)
+save(data_prediction, exposure_density,
+     file = paste0(dir_results, exposure_name, "_gpsweighting_smooth.rda"))
+
 
 # Save semiparametric point estimates
 
