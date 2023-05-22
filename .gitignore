@@ -9,6 +9,6 @@ analysis/bootstrap_code/*err
 analysis/bootstrap_code/*out
 analysis/bootstrap_code/test_files
 *.*csv
-results
+*.*fst
 /out/*
 *~
