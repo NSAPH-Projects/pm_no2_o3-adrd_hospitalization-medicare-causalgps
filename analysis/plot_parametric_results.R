@@ -45,7 +45,7 @@ parametric_results_table$HR <- c(1.152275543,
                                  1.110449857,
                                  1.144553815,
                                  1.05769926,
-                                 1.002646135,
+                                 1.069683249,
                                  1.056699348,
                                  1.044876482,
                                  1.021095561)
@@ -54,7 +54,7 @@ parametric_results_table$HR_95CI_lower <- c(1.144153628,
                                             1.081006371,
                                             1.13738924,
                                             1.048598491,
-                                            0.9862114762,
+                                            1.052149766,
                                             1.049753462,
                                             1.035500191,
                                             1.005404529)
@@ -63,24 +63,32 @@ parametric_results_table$HR_95CI_upper <- c(1.160455111,
                                             1.140695299,
                                             1.151763521,
                                             1.066879016,
-                                            1.019354668,
+                                            1.087508917,
                                             1.063691192,
                                             1.054337674,
                                             1.037031478)
 
 # plot results
-p <- ggplot(parametric_results_table, aes(x = Exposure,
+ggplot(parametric_results_table, aes(x = Exposure,
                                           y = HR,
                                           color = Method,
                                           shape = Method)) +
-  geom_point(position=position_dodge(0.75)) +
+  geom_hline(yintercept = 1, linewidth = 1, linetype = 2) +
+  geom_point(position=position_dodge(0.5), size = 4) +
   geom_errorbar(aes(ymin = HR_95CI_lower,
                     ymax = HR_95CI_upper),
-                position=position_dodge(0.75), width = 0.5) +
-  ylab("Hazard Ratio") +
-  theme_minimal() +
-  theme(legend.position = "bottom")
-p
+                position=position_dodge(0.5), width = 0.4,
+                linewidth = 1) +
+  ylab("Hazard Ratio per IQR Increase in Exposure") +
+  theme_minimal(base_size = 24) +
+  theme(legend.key.width = unit(1, "cm"), 
+        legend.key.height = unit(1, "cm"),
+        legend.box.spacing = unit(-1, "cm"),
+        legend.position = "bottom",
+        axis.line = element_line(color = "black"),
+        axis.ticks = element_line(color = "black")) +
+  labs(color = "", shape = "", x = "") +
+  scale_x_discrete(labels = parse(text = c("PM[2.5]", "NO[2]", "Summer~Ozone")))
 
 # # save plot
 # ggsave(paste0(dir_results, "parametric_results/all_parametric_results.png"),

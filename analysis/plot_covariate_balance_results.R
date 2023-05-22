@@ -33,17 +33,44 @@ all_cov_bal[, Dataset := ifelse(Dataset == "Unweighted", "Unadjusted", Dataset)]
 all_cov_bal[, Dataset := factor(Dataset, levels = c("Unadjusted", "Matched", "Weighted"))]
 all_cov_bal[, Exposure := factor(Exposure, levels = c("pm25", "no2", "ozone_summer"), labels = c("PM2.5", "NO2", "Summer Ozone"))]
 
+# labels
+all_cov_bal$Exposure <- factor(all_cov_bal$Exposure, c("PM2.5", "NO2", "Summer Ozone"),
+                               c("PM[2.5]", "NO[2]", "Summer~Ozone"))
+all_cov_bal$Dataset <- factor(all_cov_bal$Dataset, c("Unadjusted", "Weighted", "Matched"),
+                              c("Unadjusted", "GPS Weighting", "GPS Matching"))
+covs <- c("education", "hispanic", "mean_bmi", "MW", "NE", "S", "W",
+          "PIR", "popdensity", "poverty", "prop_blk", "prop_owner_occ",
+          "smoke_rate", "summer_rmax", "summer_tmmx")
+cov_names <- c("Education", "% Hispanic", "Body Mass Index", 
+               "Region MidWest", "Region NorthEast", "Region South", "Region West",
+               "Home Price:Income", "Population Density",
+               "Poverty", "% Black", "% Owner Occupied",
+               "Smoking Rate", "Summer Humidity", "Summer Temperature")
+cov_order <- rev(order(cov_names))
+all_cov_bal$Covariate <- 
+  factor(all_cov_bal$Covariate, covs[cov_order], cov_names[cov_order])
+
 # plot covariate balance with exposures as facets
-cov_bal_plot <- ggplot(all_cov_bal, aes(x = AbsoluteCorrelation,
-                                        y = reorder(Covariate, AbsoluteCorrelation),
-                                        color = Dataset,
-                                        shape = Dataset,
-                                        group = Dataset)) +
-  facet_grid(vars(Exposure)) +
-  geom_point() +
-  geom_line(orientation = "y") +
-  geom_vline(xintercept = 0.1, linetype = "dashed", color = "black") +
-  xlab("Absolute Correlation with Exposure") +
-  ylab("Covariate") +
-  theme_minimal() +
-  theme(legend.position = "bottom")
+ggplot(all_cov_bal, aes(x = AbsoluteCorrelation,
+                        y = Covariate,
+                        color = Dataset,
+                        shape = Dataset,
+                        group = Dataset)) +
+  facet_grid(~Exposure, labeller = label_parsed) +
+  geom_point(size = 4) +
+  geom_line(orientation = "y", linewidth = 1) +
+  geom_vline(xintercept = 0, linewidth = 2) +
+  geom_vline(xintercept = 0.1, linetype = "dashed", 
+             linewidth = 1, color = "black") +
+  xlab("Absolute Correlation") +
+  ylab("") +
+  theme_minimal(base_size = 24) +
+  scale_x_continuous(expand = c(0, 0), limits = c(0, 0.44)) +
+  theme(legend.key.width = unit(1, "cm"), 
+        legend.key.height = unit(1, "cm"),
+        legend.position = c(.9, .9),
+        # axis.text.y = element_text(angle = 30),
+        axis.line = element_line(color = "black"),
+        axis.ticks = element_line(color = "black"), 
+        strip.placement = "outside") +
+  labs(color = "", shape = "")
