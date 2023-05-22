@@ -35,3 +35,9 @@ boot_results <- lapply(1:n_boot_iter, function(i) fread(paste0(dir_results, "boo
 boot_results <- rbindlist(boot_results)
 boot_var <- m_boot / n_boot * var(boot_results$coef_for_exposure) # deleted: na.rm = T
 boot_sd <- sqrt(boot_var)
+
+# save results in results folder
+cat(paste(exposure_name, method, boot_sd, sep = ","),
+    sep = "\n",
+    file = paste0(dir_results, "parametric_results/boot_SE.txt"),
+    append = TRUE)

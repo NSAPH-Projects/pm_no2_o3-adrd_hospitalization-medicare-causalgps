@@ -1,3 +1,5 @@
+## Note: The data have not been trimmed at this point
+
 library(data.table)
 library(fst)
 
@@ -11,7 +13,7 @@ n_cores <- 48
 setDTthreads(threads = n_cores)
 
 # get classifications of variables
-source(paste0(dir_code, "analysis/helper_functions.R"))
+source(paste0(dir_code, "analysis/constants.R"))
 
 # get (time-varying) patient data
 dt <- read_fst(paste0(dir_data, "denom/complete_ADRD_denom.fst"),
@@ -29,44 +31,91 @@ dt <- subset(dt, select = c("qid",
                             "zip",
                             indiv_var_names)) # includes "year"
 
-## Note: No trimming (by exposure or GPS) has been performed at this point
-
-# calculate number of individuals, person-years, events
-cat("Number of individuals:", uniqueN(dt$qid)) # 50,053,399
-cat("Number of person-years:", nrow(dt)) # 415,260,761
-cat("Number of events:", sum(dt$ADRD_hosp)) # 5,935,558
-cat("Overall prevalence across person-years:", sum(dt$ADRD_hosp) / nrow(dt)) # 0.01429357
-
-# get distribution of patients' years of followup
-followup_years <- dt[, .N, by = qid]
-summary(followup_years$N) # min is 1, max is 16, median is 7, mean is 8.296
-
-# calculate summary statistics of patient-level variables at each patient's entry year
-dt_entry <- dt[year == cohort]
-prop.table(table(dt_entry$sex))
-prop.table(table(dt_entry$age_grp)) # in 5-year bins
-prop.table(table(dt_entry$race)) # RTI-augmented race codes
-prop.table(table(dt_entry$dual)) # Medicaid eligibility
-
 # get subset of patients who experienced ADRD event
 dt_ADRD <- dt[year == ADRD_year][ADRD_hosp == 1]
 ADRD_patients <- dt_ADRD$qid
 dt_ADRD <- dt[qid %in% ADRD_patients]
 
-# for patients who experienced ADRD event, calculate number of individuals, person-years, events
-cat("Number of person-years among patients with ADRD event:", nrow(dt_ADRD)) # 47,084,973
-cat("Overall prevalence across person-years:", sum(dt$ADRD_hosp) / nrow(dt_ADRD)) # 0.01429357
-
-# for patients who experienced ADRD event, get distribution of patients' years of followup
-ADRD_patient_followup_years <- dt_ADRD[, .N, by = qid]
-summary(ADRD_patient_followup_years$N) # min is 2, max is 16, median is 7, mean is 7.933
-
-# for patients who experienced ADRD event, calculate summary statistics of patient-level variables at each patient's entry year
+# get patient-level variables at each patient's entry year, for full cohort and ADRD cohort
+dt_entry <- dt[year == cohort]
 dt_ADRD_entry <- dt_entry[qid %in% ADRD_patients]
-prop.table(table(dt_ADRD_entry$sex))
-prop.table(table(dt_ADRD_entry$age_grp)) # in 5-year bins
-prop.table(table(dt_ADRD_entry$race)) # RTI-augmented race codes
-prop.table(table(dt_ADRD_entry$dual)) # Medicaid eligibility
+
+# collect relevant datasets into list for easy indexing
+cohorts <- list(dt, dt_ADRD)
+entry_year_cohorts <- list(dt_entry, dt_ADRD_entry)
+names(cohorts) <- c("Full", "ADRD")
+names(entry_year_cohorts) <- c("Full", "ADRD")
+
+# set up txt file to store results
+cat(paste("Variable", "Cohort", "Value", sep = ","),
+    sep = "\n",
+    file = paste0(dir_results, "exploratory/table1.txt"),
+    append = TRUE)
+
+# save number of individuals and person-years
+for (cohort in c("Full", "ADRD")){
+  cat(paste("Number of individuals", paste0(cohort, "Cohort"), uniqueN(cohorts[[cohort]][["qid"]]), sep = ","),
+      sep = "\n",
+      file = paste0(dir_results, "exploratory/table1.txt"),
+      append = TRUE)
+  cat(paste("Number of person-years", paste0(cohort, "Cohort"), nrow(cohorts[[cohort]]), sep = ","),
+      sep = "\n",
+      file = paste0(dir_results, "exploratory/table1.txt"),
+      append = TRUE)
+}
+
+# save individual-level variables at each patient's year of entry
+for (cohort in c("Full", "ADRD")){
+  
+  # proportion female (coded as 2) and male (coded as 1)
+  cat(paste("Female", paste0(cohort, "Cohort"), paste0(round(mean(cohorts[[cohort]][["sex"]] == 2) * 100, 1), "%"), sep = ","),
+      sep = "\n",
+      file = paste0(dir_results, "exploratory/table1.txt"),
+      append = TRUE)
+  cat(paste("Male", paste0(cohort, "Cohort"), paste0(round(mean(cohorts[[cohort]][["sex"]] == 1) * 100, 1), "%"), sep = ","),
+      sep = "\n",
+      file = paste0(dir_results, "exploratory/table1.txt"),
+      append = TRUE)
+  
+  # proportion of each age group (5-year bins)
+  cat(paste(levels(cohorts[[cohort]][["age_grp"]]), paste0(cohort, "Cohort"), paste0(round(prop.table(table(cohorts[[cohort]][["age_grp"]])) * 100, 1), "%"), sep = ","),
+      sep = "\n",
+      file = paste0(dir_results, "exploratory/table1.txt"),
+      append = TRUE)
+  
+  # RTI-augmented race codes
+  cat(paste("Non-Hispanic White", paste0(cohort, "Cohort"), paste0(round(mean(cohorts[[cohort]][["race"]] == 1) * 100, 1), "%"), sep = ","),
+      sep = "\n",
+      file = paste0(dir_results, "exploratory/table1.txt"),
+      append = TRUE)
+  cat(paste("Black", paste0(cohort, "Cohort"), paste0(round(mean(cohorts[[cohort]][["race"]] == 2) * 100, 1), "%"), sep = ","),
+      sep = "\n",
+      file = paste0(dir_results, "exploratory/table1.txt"),
+      append = TRUE)
+  cat(paste("Hispanic", paste0(cohort, "Cohort"), paste0(round(mean(cohorts[[cohort]][["race"]] == 5) * 100, 1), "%"), sep = ","),
+      sep = "\n",
+      file = paste0(dir_results, "exploratory/table1.txt"),
+      append = TRUE)
+  cat(paste("Asian/Pacific Islander", paste0(cohort, "Cohort"), paste0(round(mean(cohorts[[cohort]][["race"]] == 4) * 100, 1), "%"), sep = ","),
+      sep = "\n",
+      file = paste0(dir_results, "exploratory/table1.txt"),
+      append = TRUE)
+  cat(paste("American Indian/Alaska Native", paste0(cohort, "Cohort"), paste0(round(mean(cohorts[[cohort]][["race"]] == 6) * 100, 1), "%"), sep = ","),
+      sep = "\n",
+      file = paste0(dir_results, "exploratory/table1.txt"),
+      append = TRUE)
+  cat(paste("Other", paste0(cohort, "Cohort"), paste0(round(mean(cohorts[[cohort]][["race"]] == 3) * 100, 1), "%"), sep = ","),
+      sep = "\n",
+      file = paste0(dir_results, "exploratory/table1.txt"),
+      append = TRUE)
+}
+
+## to do: everything below this
+
+
+prop.table(table(dt_entry$dual)) # Medicaid eligibility
+
+
 
 #### Merge exposures and confounders, at entry year ####
 
@@ -105,12 +154,21 @@ for (var in c(zip_expos_names, zip_quant_var_names)){
   # cat("SD of", var, "in full cohort at entry year:", sd(dt_entry[[var]], na.rm = T), "\n")
 }
 
-round(prop.table(table(dt_entry$region)), 3)
-
 for (var in c(zip_expos_names, zip_quant_var_names)){
   print(paste0(var, ": ", round(mean(dt_ADRD_entry[[var]], na.rm = T), 1), " (", round(sd(dt_ADRD_entry[[var]], na.rm = T), 1), ")"))
   # cat("Mean of", var, "in ADRD cohort at entry year:", mean(dt_ADRD_entry[[var]], na.rm = T), "\n")
   # cat("SD of", var, "in ADRD cohort at entry year:", sd(dt_ADRD_entry[[var]], na.rm = T), "\n")
 }
 
+### Not used in manuscript
+
+round(prop.table(table(dt_entry$region)), 3)
 round(prop.table(table(dt_ADRD_entry$region)), 3)
+
+# get distribution of patients' years of followup
+followup_years <- dt[, .N, by = qid]
+summary(followup_years$N) # min is 1, max is 16, median is 7, mean is 8.296
+
+# for patients who experienced ADRD event, get distribution of patients' years of followup
+ADRD_patient_followup_years <- dt_ADRD[, .N, by = qid]
+summary(ADRD_patient_followup_years$N) # min is 2, max is 16, median is 7, mean is 7.933
