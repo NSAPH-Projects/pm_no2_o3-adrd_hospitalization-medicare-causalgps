@@ -12,40 +12,40 @@
 
 `code/`
 
-  `aggregation/`   
+    `aggregation/`   
 
-  These six files create the three datasets, one for each exposure, to be analyzed.   
+    These six files create the three datasets, one for each exposure, to be analyzed.   
 
-  - *1. Medicare FFS enrollment.R*: Reads denominator files, gets 2000-2016 FFS data, defines variables like race and sex as at entry into FFS.
-  - *2. ADRD hospitalization data.R*: Gets first ADRD hospitalization year, age, and ZIP code; merge into qid entry exit data.
-  - *3. Aggregate data sets.R*: Aggregates individuals by FFS entry year (called `cohort`), `zip`, `age_grp`, `year`, `sex`, `race`, and Medicaid eligibility (called `dual`). Each observation is now an "aggregated patient unit".
-  - *4. Year-zip confounders.R:* Gets confounders and exposures by zip and year.
-  - *5. Merge and clean.R*: Merges patient data with confounders from current year and exposures from previous year, using complete cases.
-  - *6. Set up trimmed and ZIP data.R*: For each of PM2.5, NO2, summer ozone at the ZIP code and annual level, trims the dataset at the exposure's 5th and 95th percentiles, keeping the middle 90\% of aggregated patient units.
+    - *1. Medicare FFS enrollment.R*: Reads denominator files, gets 2000-2016 FFS data, defines variables like race and sex as at entry into FFS.
+    - *2. ADRD hospitalization data.R*: Gets first ADRD hospitalization year, age, and ZIP code; merge into qid entry exit data.
+    - *3. Aggregate data sets.R*: Aggregates individuals by FFS entry year (called `cohort`), `zip`, `age_grp`, `year`, `sex`, `race`, and Medicaid eligibility (called `dual`). Each observation is now an "aggregated patient unit".
+    - *4. Year-zip confounders.R:* Gets confounders and exposures by zip and year.
+    - *5. Merge and clean.R*: Merges patient data with confounders from current year and exposures from previous year, using complete cases.
+    - *6. Set up trimmed and ZIP data.R*: For each of PM2.5, NO2, summer ozone at the ZIP code and annual level, trims the dataset at the exposure's 5th and 95th percentiles, keeping the middle 90\% of aggregated patient units.
     
-  `analysis/`
+    `analysis/`
   
-  - *constants.R*: Hard-codes directory paths, covariate names, and formulas for outcome models.
+    - *constants.R*: Hard-codes directory paths, covariate names, and formulas for outcome models.
   
-  - *helper_functions.R*: Defines some useful functions for transforming variables, checking covariate balance, causal inference methods, etc.
+    - *helper_functions.R*: Defines some useful functions for transforming variables, checking covariate balance, causal inference methods, etc.
   
-  - *setup_parametric_results_tables.R*: Create a .txt file to collect regression results and a .txt file to collect m-out-of-n bootstrap standard errors.
+    - *setup_parametric_results_tables.R*: Create a .txt file to collect regression results and a .txt file to collect m-out-of-n bootstrap standard errors.
   
-  - *associational_model.R*: Poisson regression model, used as a baseline to compare causal inference results.
+    - *associational_model.R*: Poisson regression model, used as a baseline to compare causal inference results.
   
-  - *gps_weighting_by_zip_year.R*: GPS weighting analysis.
+    - *gps_weighting_by_zip_year.R*: GPS weighting analysis.
   
-  - *gps_matching_by_zip_year.R*: GPS matching analysis.
+    - *gps_matching_by_zip_year.R*: GPS matching analysis.
   
-    `bootstrap_code/`
+        `bootstrap_code/`
   
-      - *setup_bootstrap_samples.R*:
+          - *setup_bootstrap_samples.R*:
   
-  `exploratory/`
+    `exploratory/`
 
-    - *explore_indiv_vars.R*: Creates Table 1.
+      - *explore_indiv_vars.R*: Creates Table 1.
     
-    - *explore_zip_year_exposures.R*: Creates table of exposure summary statistics for the Appendix.
+      - *explore_zip_year_exposures.R*: Creates table of exposure summary statistics for the Appendix.
 
 `results`: Outputs saved by the above files.
 
