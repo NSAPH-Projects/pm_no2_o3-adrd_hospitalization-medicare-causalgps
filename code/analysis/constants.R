@@ -1,3 +1,9 @@
+## User should update directory paths for data, code, and results ##
+
+dir_data <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
+dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
+dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
+
 ## Classify variables in dataset
 
 offset_var_names <- c("n_persons", "n_years")
