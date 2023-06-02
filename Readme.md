@@ -8,7 +8,7 @@
 
 **Data**: All Medicare beneficiaries continuously enrolled in FFS plan between 2001 and 2016, until first ADRD hospitalization or change to HMO plan or death, aggregated by entry year, event year, ZIP code, 5-year-binned age group, race, sex, and Medicaid eligibility.
 
-**Description of Files and folders**: 
+**Description of Files and Folders**: 
 
 `code/aggregation/`   
 

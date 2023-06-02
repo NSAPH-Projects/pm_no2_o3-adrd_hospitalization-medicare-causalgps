@@ -8,8 +8,9 @@ code/analysis/.Rhistory
 code/analysis/bootstrap_code/*err
 code/analysis/bootstrap_code/*out
 code/analysis/bootstrap_code/test_files
-*.*csv
-*.*fst
-*.*rda
+data/
+*.csv
+*.fst
+*.rda
 /out/*
 *~
