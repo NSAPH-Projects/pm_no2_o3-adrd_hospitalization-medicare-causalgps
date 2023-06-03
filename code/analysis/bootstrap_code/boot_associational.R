@@ -4,10 +4,11 @@ library(data.table)
 library(fst)
 library(mgcv)
 
-# directories for data, code, and results
-dir_data <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
-dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
-dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
+# get directories, classifications of variables, formulas, and functions
+dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/git/code/"
+source(paste0(dir_code, "constants.R"))
+# source(paste0(dir_code, "analysis/helper_functions.R")) # not necessary in this script since regression is coded below
+
 
 # set exposure
 exposure_name <- "pm25"
@@ -24,8 +25,6 @@ if (exposure_name == "pm25"){
   m_boot <- 2937
 } else message("'exposure_name' must be 'pm25', 'no2', or 'ozone_summer'")
 
-# get helpful constants
-source(paste0(dir_code, "analysis/constants.R"))
 
 # get m out of n bootstrap sample
 boot_sample_number <- as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))

@@ -7,10 +7,11 @@ library(CausalGPS)
 library(wCorr)
 library(mgcv)
 
-# directories for data, code, and results
-dir_data <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
-dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
-dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
+# get directories, classifications of variables, formulas, and functions
+dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/git/code/"
+source(paste0(dir_code, "constants.R"))
+source(paste0(dir_code, "analysis/helper_functions.R"))
+
 
 # set exposure
 exposure_name <- "pm25"
@@ -31,9 +32,6 @@ if (exposure_name == "pm25"){
 modifications <- paste0("gps_by_zip_year_", n_attempts, "attempts_boot_",
                         m_boot, "zips") # to be used in names of output files, e.g., cov bal summary
 
-# get data and helpful constants and functions
-source(paste0(dir_code, "analysis/constants.R"))
-source(paste0(dir_code, "analysis/helper_functions.R"))
 
 # get m out of n bootstrap sample
 boot_sample_number <- as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))

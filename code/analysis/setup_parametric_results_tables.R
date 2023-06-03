@@ -1,7 +1,6 @@
-# directories for data, code, and results
-dir_data <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
-dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
-dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
+# get directories and classifications of variables
+dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/git/code/"
+source(paste0(dir_code, "constants.R"))
 
 # initiate table for regression results (coefficient for exposure)
 cat(paste("Exposure", "Method", "Coefficient", sep = ","),

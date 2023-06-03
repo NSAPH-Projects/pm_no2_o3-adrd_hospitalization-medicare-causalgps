@@ -8,10 +8,10 @@ library(wCorr)
 library(mgcv)
 library(ggplot2)
 
-# directories for data, code, and results
-dir_data <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
-dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
-dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
+# get directories, classifications of variables, formulas, and functions
+dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/git/code/"
+source(paste0(dir_code, "constants.R"))
+source(paste0(dir_code, "analysis/helper_functions.R"))
 
 # set exposure
 exposure_name <- "no2"
@@ -54,9 +54,7 @@ if (find_best_cov_bal_attempt){
   modifications <- paste0("match_zips_gps_untrimmed_caliper", matching_caliper, "_attempt", best_maxAC_attempt) # to be used in names of output files, to record how you're tuning the models
 }
 
-# get data and helpful constants and functions
-source(paste0(dir_code, "analysis/constants.R"))
-source(paste0(dir_code, "analysis/helper_functions.R"))
+# get data
 zip_year_data <- read_fst(paste0(dir_data, "analysis/",
                                  exposure_name, "/",
                                  "zip_year_data_trimmed_0.05_0.95.fst"),

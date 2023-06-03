@@ -1,9 +1,8 @@
 library(data.table)
 
-# directories for data, code, and results
-dir_data <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
-dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
-dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
+# get directories and classifications of variables
+dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/git/code/"
+source(paste0(dir_code, "constants.R"))
 
 # read in regression results (coefficient for exposure)
 coef <- fread(paste0(dir_results, "parametric_results/coef_for_exposure.txt"))
