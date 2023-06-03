@@ -3,7 +3,7 @@
 #' Code: combine qid entry/exit with first AD/ADRD hospitalization
 #' Inputs: denominator files, QD exposure data, meteorological data, hosp data             
 #' Outputs: exposures in grid by qid (rows) and year (cols)                    
-#' Author: Daniel Mork                                                         
+#' Author: Daniel Mork (Michelle Qin edited)                                    
 #' Last updated: Oct 18, 2022                                                  
 #' Memory to run: 96 GB
 # ############################################################################ #
@@ -11,18 +11,19 @@
 # gc()
 # 
 # ##### Setup #####
-# library(data.table)
-# library(fst)
+library(data.table)
+library(fst)
 # library(NSAPHutils)
-# 
+
 # options(stringsAsFactors = FALSE)
 # setDTthreads(threads = 16)
-# 
-# dir_data <- "/n/dominici_nsaph_l3/Lab/projects/pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
-# dir_denominator <- "/n/dominici_nsaph_l3/Lab/projects/analytic/denom_by_year/"
 
-source(paste0(dir_proj, "code/aggregation/1. Medicare FFS enrollment.R"))
-dir_hosp <- "/n/dominici_nsaph_l3/Lab/projects/analytic/adrd_hospitalization/"
+# get directories and classifications of variables
+dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/git/code/"
+source(paste0(dir_code, "constants.R"))
+
+source(paste0(dir_code, "aggregation/1. Medicare FFS enrollment.R")) # run previous script
+# dir_hosp <- "/n/dominici_nsaph_l3/Lab/projects/analytic/adrd_hospitalization/" # included in code/constants.R
 
 
 #### Read AD/ADRD hospitalization data, merge with denominator ####
