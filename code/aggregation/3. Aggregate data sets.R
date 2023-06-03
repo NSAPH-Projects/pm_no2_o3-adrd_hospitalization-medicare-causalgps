@@ -9,19 +9,24 @@
 # ############################################################################ #
 # rm(list = ls())
 # gc()
-# 
-# ##### Setup #####
+
+##### Setup #####
 # library(data.table)
 # library(fst)
 # library(NSAPHutils)
 # options(stringsAsFactors = FALSE)
-# 
+
 # setDTthreads(threads = 16)
-dir_proj <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/"
-source(paste0(dir_proj, "code/aggregation/2. ADRD hospitalization data.R"))
+
+# get directories and classifications of variables
+dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/git/code/"
+source(paste0(dir_code, "constants.R"))
+
+source(paste0(dir_code, "aggregation/2. ADRD hospitalization data.R")) # run previous script
+
 
 ##### Read denom files ##### 
-dt <- read_fst(paste0(dir_proj, "data/denom/complete_ADRD_denom.fst"),
+dt <- read_fst(paste0(dir_data, "denom/complete_ADRD_denom.fst"),
                as.data.table = TRUE)
 setkey(dt, zip, cohort, year, age_grp, sex, race, dual)
 
@@ -40,7 +45,7 @@ ADRD_agg <- dt_ADRD[, .(n_persons = .N, n_hosp = sum(ADRD_hosp)),
                     by = .(zip, cohort, year, age_grp, sex, race, dual)]
 ADRD_agg[, n_years := 1 + year - cohort]
 ADRD_agg[, .(.N, sum(n_hosp))] # 41,948,558 units; 5,935,558 events
-write_fst(ADRD_agg, paste0(dir_proj, "data/aggregated/ADRD_agg_tv.fst")) 
+write_fst(ADRD_agg, paste0(dir_data, "aggregated/ADRD_agg_tv.fst")) 
 rm(dt_ADRD)
 
 # Create AD aggregation:
@@ -54,10 +59,10 @@ AD_agg <- dt_AD[, .(n_persons = .N, n_hosp = sum(AD_hosp)),
                 by = .(zip, cohort, year, age_grp, sex, race, dual)]
 AD_agg[, n_years := 1 + year - cohort]
 AD_agg[, .(.N, sum(n_hosp))] # 42797243 units 2325106 events
-write_fst(AD_agg, paste0(dir_proj, "data/aggregated/AD_agg_tv.fst")) 
+write_fst(AD_agg, paste0(dir_data, "aggregated/AD_agg_tv.fst")) 
 
 
-# ffs_entry_exit_adrd <- read_fst(paste0(dir_proj, "data/denom/ffs_entry_exit_adrd.fst"), 
+# ffs_entry_exit_adrd <- read_fst(paste0(dir_data, "denom/ffs_entry_exit_adrd.fst"), 
 #                            as.data.table = TRUE)
 
 ##### Bin ages by (mostly) 5-year categories #####
@@ -73,7 +78,7 @@ write_fst(AD_agg, paste0(dir_proj, "data/aggregated/AD_agg_tv.fst"))
 #              by = .(zip, cohort, year, age_grp, sex, race, dual)]
 # AD_agg[, .(.N, sum(n_hosp), sum(n_persons), sum(n_persons * n_years))] 
 # # 50,473,844 units, 2907440 events, 
-# write_fst(AD_agg, paste0(dir_proj, "data/aggregated/AD_agg_tv.fst")) # AD_agg_corrected.fst was pre-age-binning
+# write_fst(AD_agg, paste0(dir_data, "aggregated/AD_agg_tv.fst")) # AD_agg_corrected.fst was pre-age-binning
 
 # no unknown sex or race
 # AD_agg <- ffs_entry_exit_adrd[sex != 0 & race != 0
@@ -83,7 +88,7 @@ write_fst(AD_agg, paste0(dir_proj, "data/aggregated/AD_agg_tv.fst"))
 #                               by = .(ffs_entry_year, AD_zip, AD_age_binned, AD_year,
 #                                                 sexM, race_cat, any_dual)]
 # AD_agg[, sum(n_ADhosp)] # 2929842
-# write_fst(AD_agg, paste0(dir_proj, "data/aggregated/AD_agg_age_binned.fst")) # AD_agg_corrected.fst was pre-age-binning
+# write_fst(AD_agg, paste0(dir_data, "aggregated/AD_agg_age_binned.fst")) # AD_agg_corrected.fst was pre-age-binning
 
 # begin at age 65, no unknown sex or race (pre-age-binning)
 # AD_agg65 <- ffs_entry_exit_adrd[entry_age == 65 & sex != 0 & race != 0
@@ -101,7 +106,7 @@ write_fst(AD_agg, paste0(dir_proj, "data/aggregated/AD_agg_tv.fst"))
 #              .(n_persons = .N, n_hosp = sum(ADRD_hosp), n_years = 1 + year - cohort),
 #              by = .(zip, cohort, year, age_grp, sex, race, dual)]
 # ADRD_agg[, .(.N, sum(n_hosp))] # 49531395 units 7480320 events
-# write_fst(ADRD_agg, paste0(dir_proj, "data/aggregated/ADRD_agg_tv.fst")) # AD_agg_corrected.fst was pre-age-binning
+# write_fst(ADRD_agg, paste0(dir_data, "aggregated/ADRD_agg_tv.fst")) # AD_agg_corrected.fst was pre-age-binning
 
 # no unknown sex or race
 # ADRD_agg <- ffs_entry_exit_adrd[sex != 0 & race != 0
@@ -111,7 +116,7 @@ write_fst(AD_agg, paste0(dir_proj, "data/aggregated/AD_agg_tv.fst"))
 #                                 by = .(ffs_entry_year, ADRD_zip, ADRD_age_binned, ADRD_year,
 #                                        sexM, race_cat, any_dual)]
 # ADRD_agg[, sum(n_ADRDhosp)] # 7540591
-# write_fst(ADRD_agg, paste0(dir_proj, "data/aggregated/ADRD_agg_age_binned.fst")) # ADRD_agg_corrected.fst was pre-age-binning
+# write_fst(ADRD_agg, paste0(dir_data, "aggregated/ADRD_agg_age_binned.fst")) # ADRD_agg_corrected.fst was pre-age-binning
 
 # The following are equivalent to ADRD_agg (pre-age-binning)
 # ADRD_agg_entry_age <- ffs_entry_exit_adrd[sex != 0 & race != 0

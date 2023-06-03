@@ -1,6 +1,9 @@
 library(ggplot2)
 library(data.table)
-dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
+
+# get directories
+dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/git/code/"
+source(paste0(dir_code, "constants.R"))
 
 res <-
   rbindlist(lapply(c("pm25", "no2", "ozone_summer"), function(e) {

@@ -10,6 +10,10 @@
 
 **Description of Files and Folders**: 
 
+`code/`
+
+  - *constants.R*: Hard-codes directory paths, covariate names, and formulas for outcome models.
+
 `code/aggregation/`   
 
 These six files create the three datasets, one for each exposure, to be analyzed.   
@@ -22,8 +26,6 @@ These six files create the three datasets, one for each exposure, to be analyzed
   - *6. Set up trimmed and ZIP data.R*: For each of PM2.5, NO2, summer ozone at the ZIP code and annual level, trims the dataset at the exposure's 5th and 95th percentiles, keeping the middle 90\% of aggregated patient units.
     
 `code/analysis/`
-  
-  - *constants.R*: Hard-codes directory paths, covariate names, and formulas for outcome models.
   
   - *helper_functions.R*: Defines some useful functions for transforming variables, checking covariate balance, causal inference methods, etc.
   

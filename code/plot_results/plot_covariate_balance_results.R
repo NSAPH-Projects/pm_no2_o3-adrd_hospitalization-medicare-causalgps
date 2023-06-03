@@ -1,13 +1,9 @@
 library(data.table)
 library(ggplot2)
 
-# directories for data, code, and results
-dir_data <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
-dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
-dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
-
-# get helpful constants
-source(paste0(dir_code, "analysis/constants.R"))
+# get directories and classifications of variables
+dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/git/code/"
+source(paste0(dir_code, "constants.R"))
 
 # get covariate balance results from tuned modeling
 pm25_weighting <- fread(paste0(dir_results, "covariate_balance/pm25/weighting/attempt3/best_cov_bal.csv"))

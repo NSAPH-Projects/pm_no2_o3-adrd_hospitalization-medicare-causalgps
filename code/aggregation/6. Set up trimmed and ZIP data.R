@@ -5,10 +5,9 @@ gc()
 library(data.table)
 library(fst)
 
-# directories for data, code, and results
-dir_data <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
-dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
-dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
+# get directories and classifications of variables
+dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/git/code/"
+source(paste0(dir_code, "constants.R"))
 
 # read in full data
 ADRD_agg_lagged <- read_fst(paste0(dir_data, "analysis/ADRD_complete_tv.fst"),
@@ -26,8 +25,6 @@ ADRD_agg_lagged[, `:=`(zip = as.factor(zip),
                        sex = as.factor(sex),
                        race = as.factor(race),
                        dual = as.factor(dual))]
-
-source(paste0(dir_code, "analysis/helper_functions.R"))
 
 
 ##### 2. Get data for exposure, outcome, and covariates of interest #####

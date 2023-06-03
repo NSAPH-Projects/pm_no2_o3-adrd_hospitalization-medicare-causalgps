@@ -1,15 +1,14 @@
+### Note: This script should be run after the data have been cleaned, processed, and aggregated data but NOT trimmed (i.e., files #1-5 in the code/aggregation folder have been run) ###
+
 library(data.table)
 library(fst)
 library(plotrix)
 library(ggplot2)
 
-# directories for data, code, and results
-dir_data <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
-dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
-dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
+# get directories and classifications of variables
+dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/git/code/"
+source(paste0(dir_code, "constants.R"))
 
-# get classifications of variables
-source(paste0(dir_code, "analysis/constants.R"))
 
 # read in full data
 ADRD_agg_lagged <- read_fst(paste0(dir_data, "analysis/ADRD_complete_tv.fst"),
@@ -47,26 +46,6 @@ for (expos in zip_expos_names){
 # zip_exposure_summary <- ifelse(zip_exposure_summary > 10, round(zip_exposure_summary, 0),
 #                                     round(zip_exposure_summary, 2))
 fwrite(zip_exposure_summary, paste0(dir_results, "exploratory/zip_exposure_summary.csv"))
-
-# get mean, SD, IQR of ZIP year exposures
-# > mean(zip_year_data$pm25)
-# [1] 9.951262
-# > sd(zip_year_data$pm25)
-# [1] 3.223463
-# > mean(zip_year_data$no2)
-# [1] 16.91286
-# > sd(zip_year_data$no2)
-# [1] 9.430883
-# > mean(zip_year_data$ozone_summer)
-# [1] 45.99236
-# > sd(zip_year_data$ozone_summer)
-# [1] 7.514933
-# > IQR(zip_year_data$pm25)
-# [1] 4.159233
-# > IQR(zip_year_data$no2)
-# [1] 12.01235
-# > IQR(zip_year_data$ozone_summer)
-# [1] 9.800937
 
 # get pairwise correlations of ZIP year exposures
 # > cor(zip_year_data$pm25, zip_year_data$no2)

@@ -1,19 +1,16 @@
-## Note: The data have not been trimmed at this point
+### Note: This script should be run after the data have been cleaned, processed, and aggregated data but NOT trimmed (i.e., files #1-5 in the code/aggregation folder have been run) ###
 
 library(data.table)
 library(fst)
 
-# directories for data, code, and results
-dir_data <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/data/"
-dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/code/"
-dir_results <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/results/"
+# get directories and classifications of variables
+dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/git/code/"
+source(paste0(dir_code, "constants.R"))
 
 # user should set number of cores in this computing job
 n_cores <- 48
 setDTthreads(threads = n_cores)
 
-# get classifications of variables
-source(paste0(dir_code, "analysis/constants.R"))
 
 # get (time-varying) patient data
 dt <- read_fst(paste0(dir_data, "denom/complete_ADRD_denom.fst"),
