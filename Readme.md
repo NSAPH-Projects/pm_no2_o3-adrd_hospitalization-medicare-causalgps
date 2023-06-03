@@ -8,6 +8,10 @@
 
 **Data**: All Medicare beneficiaries continuously enrolled in FFS plan between 2001 and 2016, until first ADRD hospitalization or change to HMO plan or death, aggregated by entry year, event year, ZIP code, 5-year-binned age group, race, sex, and Medicaid eligibility.
 
+Note: These data are private, obtained from the Centers for Medicare and Medicaid Services (CMS) under a data usage agreement.
+
+**Computation**: The computations in this repository were performed on the FAS Secure Environment (FASSE) cluster supported by the FAS Division of Science Research Computing Group (FASRC) at Harvard University. Our study was conducted under a protocol approved by the Human Subjects Committee of the Harvard T.H. Chan School of Public Health.
+
 **Description of Files and Folders**: 
 
 `code/`
