@@ -48,7 +48,10 @@ cat(paste(exposure_name, "Poisson Regression", bam_associational$coefficients["w
     file = paste0(dir_results, "parametric_results/coef_for_exposure.txt"),
     append = TRUE)
 
-# sensitivity analysis: thin-plate spline model
+
+### Sensitivity analysis: thin-plate spline outcome model ###
+
+# fit model
 cl <- parallel::makeCluster(n_cores, type = "PSOCK")
 bam_smooth_associational <- 
   bam(as.formula(paste("Y ~", paste(c("s(w, bs = 'cr', k = 4, fx = TRUE)",
@@ -82,12 +85,3 @@ data_prediction <-
    }))
 plot(I(1e5*ate)~w,data_prediction, type = 'l')
 save(data_prediction, file = paste0(dir_results, exposure_name, "_assoc_smooth.rda"))
-
-# save results for sensitivity analysis
-png(paste0(dir_results, "semiparametric_results/ERFs/",
-           exposure_name, "/",
-           "associational/",
-           "bam_smooth_associational_", nrow(zip_year_data_with_strata), "rows.png"))
-plot(bam_smooth_associational,
-     main = paste0("Associational, Smoothed Poisson regression\nExposure: ", exposure_name))
-dev.off()

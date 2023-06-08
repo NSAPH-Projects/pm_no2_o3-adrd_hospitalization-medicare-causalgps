@@ -122,13 +122,6 @@ if (find_best_cov_bal_attempt){
     ylab(paste("Absolute Correlation with", exposure_name)) +
     ggtitle(paste0(format(nrow(zip_year_data_with_strata), scientific = F, big.mark = ','), " units of analysis (Attempt #", best_maxAC_attempt, " of ", n_total_attempts, ")")) +
     theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
-  
-  # # save image of best covariate balance plot
-  # ggsave(paste0(dir_results, "covariate_balance/",
-  #               exposure_name, "/",
-  #               "weighting/",
-  #               modifications, "/",
-  #               nrow(zip_year_data_with_strata), "rows.png"), weighted_cov_bal_plot)
 }
 
 # regenerate GPS model and weighted pseudopopulation with best covariate balance
@@ -162,42 +155,28 @@ if (save_best_attempt_cov_bal){
     theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
 }
 
-# # run parametric outcome model
-# cl <- parallel::makeCluster(n_cores, type = "PSOCK")
-# bam_exposure_only <- bam(formula_expos_only,
-#                          data = best_weighted_pseudopop,
-#                          offset = log(n_persons * n_years),
-#                          family = poisson(link = "log"),
-#                          weights = capped_stabilized_ipw,
-#                          samfrac = 0.05,
-#                          chunk.size = 5000,
-#                          control = gam.control(trace = TRUE),
-#                          nthreads = n_cores,
-#                          cluster = cl)
-# parallel::stopCluster(cl)
-# cat(paste(exposure_name, "GPS Weighting", bam_exposure_only$coefficients["w"], sep = ","),
-#     sep = "\n",
-#     file = paste0(dir_results, "parametric_results/coef_for_exposure.txt"),
-#     append = TRUE)
+# run parametric outcome model
+cl <- parallel::makeCluster(n_cores, type = "PSOCK")
+bam_exposure_only <- bam(formula_expos_only,
+                         data = best_weighted_pseudopop,
+                         offset = log(n_persons * n_years),
+                         family = poisson(link = "log"),
+                         weights = capped_stabilized_ipw,
+                         samfrac = 0.05,
+                         chunk.size = 5000,
+                         control = gam.control(trace = TRUE),
+                         nthreads = n_cores,
+                         cluster = cl)
+parallel::stopCluster(cl)
+cat(paste(exposure_name, "GPS Weighting", bam_exposure_only$coefficients["w"], sep = ","),
+    sep = "\n",
+    file = paste0(dir_results, "parametric_results/coef_for_exposure.txt"),
+    append = TRUE)
 
-# # get parametric results of interest (coefficient for w)
-# coef <- summary(bam_exposure_only)$p.coeff["w"] # alternatively, summary(bam_exposure_only)$p.table["w", "Estimate"]
-# coef_se <- summary(bam_exposure_only)$se["w"] # alternatively, summary(bam_exposure_only)$p.table["w", "Std. Error"]
-# 
-# # save parametric result in specific folder
-# parametric_result <- data.table(exposure = exposure_name,
-#                                 method = "weighting",
-#                                 coefficient = coef,
-#                                 se_unadjusted = coef_se)
-# fwrite(parametric_result,
-#        paste0(dir_results, "parametric_results/",
-#               exposure_name, "/",
-#               "weighting/",
-#               modifications, "/",
-#               "parametric_result.csv"))
-# 
 
-# run semiparametric (thin-plate spline) outcome model
+### Sensitivity analysis: thin-plate spline outcome model ###
+
+# fit model
 cl <- parallel::makeCluster(n_cores, type = "PSOCK")
 bam_exposure_only <- bam(formula_expos_only_smooth_cr,
                          data = best_weighted_pseudopop,
@@ -228,29 +207,3 @@ plot(I(1e5*ate)~w,data_prediction, type = 'l')
 exposure_density <- density(zip_year_data$w)
 save(data_prediction, exposure_density,
      file = paste0(dir_results, exposure_name, "_gpsweighting_smooth.rda"))
-
-
-# Save semiparametric point estimates
-
-# define exposure points at which to predict the outcome
-w_values <- seq(min(zip_year_data$w), max(zip_year_data$w), length.out = 20)
-
-# first, use lapply and see if faster than sapply. then, makeCluster(nthread, type = "PSOCK" and use parLapply with cluster
-predicted_erf_list <- lapply(w_values,
-                             predict_erf_at_a_point,
-                             spline_obj = bam_exposure_only,
-                             df = best_weighted_pseudopop)
-
-# alternatively, try parLapply
-library(parallel)
-cl <- parallel::makeCluster(n_cores, type = "PSOCK")
-predicted_erf_list <- parLapply(cl = cl,
-                                X = w_values,
-                                fun = predict_erf_at_a_point,
-                                spline_obj = bam_exposure_only,
-                                df = best_weighted_pseudopop)
-parallel::stopCluster(cl)
-
-# if the above finishes running, save predictions
-predicted_erf <- data.table(w = w_values,
-                            prediction = unlist(predicted_erf_list))

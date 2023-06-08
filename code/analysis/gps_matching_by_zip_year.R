@@ -128,13 +128,6 @@ if (find_best_cov_bal_attempt){
     ylab(paste("Absolute Correlation with", exposure_name)) +
     ggtitle(paste0(format(unique(best_maxAC_cov_bal$SampleSize), scientific = F, big.mark = ','), " units of analysis (Attempt #", best_maxAC_attempt, " of ", n_total_attempts, ")")) +
     theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
-  
-  # # save image of best covariate balance plot
-  # ggsave(paste0(dir_results, "covariate_balance/",
-  #               exposure_name, "/",
-  #               "matching/",
-  #               modifications, "/",
-  #               nrow(zip_year_data_with_strata), "rows.png"), matched_cov_bal_plot)
 }
 
 # regenerate GPS model and matched pseudopopulation with best covariate balance
@@ -193,7 +186,10 @@ cat(paste(exposure_name, "GPS Matching", bam_exposure_only$coefficients["w"], se
     file = paste0(dir_results, "parametric_results/coef_for_exposure.txt"),
     append = TRUE)
 
-# run semiparametric (thin-plate spline) outcome model
+
+### Sensitivity analysis: thin-plate spline outcome model ###
+
+# fit model
 cl <- parallel::makeCluster(n_cores, type = "PSOCK")
 bam_exposure_only <- bam(formula_expos_only_smooth_cr,
                          data = best_matched_pseudopop,
@@ -222,30 +218,3 @@ data_prediction <-
                        }))
 plot(I(1e5*ate)~w,data_prediction, type = 'l')
 save(data_prediction, file = paste0(dir_results, exposure_name, "_gpsmatching_smooth.rda"))
-
-# save semiparametric point estimates
-w_values <- seq(min(zip_year_data$w), max(zip_year_data$w), length.out = 20)
-predicted_erf <- sapply(w_values,
-                        predict_erf_at_a_point,
-                        spline_obj = bam_exposure_only,
-                        df = best_matched_pseudopop)
-predicted_erf <- data.table(w = w_values,
-                            prediction = predicted_erf)
-fwrite(predicted_erf,
-       paste0(dir_results, "semiparametric_results/",
-              exposure_name, "/",
-              "matching/",
-              modifications, "/",
-              "point_estimates.csv"))
-
-# save semiparametric plot
-png(paste0(dir_results, "semiparametric_results/ERFs/",
-           exposure_name, "/",
-           "matching/",
-           modifications, "/",
-           "bam_smooth_exposure_only.png"))
-plot(bam_exposure_only, main = paste0("GPS ",
-                                      "matching",
-                                      ", Smoothed Poisson regression,\nexposure only (",
-                                      exposure_name, ")"))
-dev.off()
