@@ -16,6 +16,37 @@ source(paste0(dir_code, "analysis/helper_functions.R"))
 # set exposure
 exposure_name <- "ozone_summer"
 
+# parameters for this computing job; user should set
+n_cores <- 1 # 48 is max of fasse partition, 64 is max of fasse_bigmem partition
+n_gb <- 32 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
+find_best_cov_bal_attempt <- F # user should set this variable; true means run for loop over several attempts to find attempt with best covariate balance
+save_best_attempt_cov_bal <- F # user should set this variable; true means save covariate balance as csv
+
+if (find_best_cov_bal_attempt){
+  n_attempts <- 30 # user should set this; number of attempts this script will try to model the GPS
+  n_total_attempts <- 30 # user can set this to a number larger than n_attempts if some attempts have already been tried; to be printed on cov bal plot
+  
+  if (n_attempts < n_total_attempts){
+    modifications <- paste0(n_attempts, "more_attempts") # to be used in names of output files, to record how you're tuning the models
+  } else{
+    modifications <- paste0(n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
+  }
+} else{
+  n_attempts <- 1  # the following are the best attempts (out of 30)
+  
+  if (exposure_name == "pm25"){
+    best_maxAC_attempt <- 3
+  } else if (exposure_name == "no2"){
+    best_maxAC_attempt <- 20
+  } else if (exposure_name == "ozone_summer"){
+    best_maxAC_attempt <- 27
+  } else{
+    message("'exposure_name' must be 'pm25', 'no2', or 'ozone_summer'")
+  }
+  
+  modifications <- paste0("attempt", best_maxAC_attempt) # to be used in names of output files, to record how you're tuning the models
+}
+
 # get data
 zip_year_data <- read_fst(paste0(dir_data, "analysis/",
                                  exposure_name, "/",
@@ -35,35 +66,6 @@ zip_year_data_with_strata[, `:=`(zip = as.factor(zip),
                                  sex = as.factor(sex),
                                  race = as.factor(race),
                                  dual = as.factor(dual))]
-
-# parameters for this computing job; user should set
-n_cores <- 1 # 48 is max of fasse partition, 64 is max of fasse_bigmem partition
-n_gb <- 32 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
-find_best_cov_bal_attempt <- F # user should set this variable; true means run for loop over several attempts to find attempt with best covariate balance
-save_best_attempt_cov_bal <- F # user should set this variable; true means save covariate balance as csv and plot
-
-if (find_best_cov_bal_attempt){
-  n_attempts <- 30 # user should set this; number of attempts this script will try to model the GPS
-  n_total_attempts <- 30 # user can set this to a number larger than n_attempts if some attempts have already been tried; to be printed on cov bal plot
-  
-  if (n_attempts < n_total_attempts){
-    modifications <- paste0(n_attempts, "more_attempts") # to be used in names of output files, to record how you're tuning the models
-  } else{
-    modifications <- paste0(n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
-  }
-} else{
-  n_attempts <- 1
-  
-  if (exposure_name == "pm25"){
-    best_maxAC_attempt <- 3
-  } else if (exposure_name == "no2"){
-    best_maxAC_attempt <- 20
-  } else if (exposure_name == "ozone_summer"){
-    best_maxAC_attempt <- 27
-  } else message("'exposure_name' must be 'pm25', 'no2', or 'ozone_summer'")
-  
-  modifications <- paste0("attempt", best_maxAC_attempt) # to be used in names of output files, to record how you're tuning the models
-}
 
 
 ##### GPS Weighting #####
@@ -114,14 +116,6 @@ if (find_best_cov_bal_attempt){
                                     "weighting/",
                                     modifications, "/",
                                     "best_cov_bal.csv"))
-  
-  # plot best covariate balance
-  weighted_cov_bal_plot <- ggplot(best_maxAC_cov_bal, aes(x = Covariate, y = Absolute_Correlation, color = Dataset, group = Dataset)) +
-    geom_point() +
-    geom_line() +
-    ylab(paste("Absolute Correlation with", exposure_name)) +
-    ggtitle(paste0(format(nrow(zip_year_data_with_strata), scientific = F, big.mark = ','), " units of analysis (Attempt #", best_maxAC_attempt, " of ", n_total_attempts, ")")) +
-    theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
 }
 
 # regenerate GPS model and weighted pseudopopulation with best covariate balance
@@ -145,14 +139,6 @@ if (save_best_attempt_cov_bal){
                                     "weighting/",
                                     modifications, "/",
                                     "best_cov_bal.csv"))
-  
-  # plot best covariate balance
-  weighted_cov_bal_plot <- ggplot(best_maxAC_cov_bal, aes(x = Covariate, y = AbsoluteCorrelation, color = Dataset, group = Dataset)) +
-    geom_point() +
-    geom_line() +
-    ylab(paste("Absolute Correlation with", exposure_name)) +
-    ggtitle(paste0(format(unique(best_maxAC_cov_bal$SampleSize), scientific = F, big.mark = ','), " units of analysis (Attempt #", best_maxAC_attempt, ")")) +
-    theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
 }
 
 # run parametric outcome model
