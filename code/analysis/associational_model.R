@@ -1,3 +1,5 @@
+##### Note: For NO2, this script may require 60 GB to run #####
+
 ##### Setup #####
 
 library(data.table)
