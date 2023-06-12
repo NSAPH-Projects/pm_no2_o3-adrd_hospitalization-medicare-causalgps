@@ -8,8 +8,8 @@ source(paste0(dir_code, "constants.R"))
 
 
 # set exposure and method for this run
-exposure_name <- "pm25"
-method <- "weighting"
+exposure_name <- "pm25" # options: "pm25", "no2", "ozone"
+method <- "associational" # options: "associational", "weighting", "matching"
 
 # set number of bootstrap replicates
 n_boot_iter <- 200

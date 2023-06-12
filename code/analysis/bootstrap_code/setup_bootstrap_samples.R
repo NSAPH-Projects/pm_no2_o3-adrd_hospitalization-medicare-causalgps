@@ -8,7 +8,7 @@ dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/git/co
 source(paste0(dir_code, "constants.R"))
 
 # set exposure
-exposure_name <- "pm25"
+exposure_name <- "pm25" # options: "pm25", "no2", "ozone"
 
 # get data
 zip_year_data <- read_fst(paste0(dir_data, "analysis/",
