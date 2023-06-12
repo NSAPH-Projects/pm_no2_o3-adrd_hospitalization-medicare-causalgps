@@ -1,3 +1,4 @@
+.DS_Store
 .Rproj.user
 .Rhistory
 .RData
@@ -9,7 +10,6 @@ code/analysis/bootstrap_code/*err
 code/analysis/bootstrap_code/*out
 code/analysis/bootstrap_code/test_files
 data/
-*.csv
 *.fst
 *.rda
 /out/*

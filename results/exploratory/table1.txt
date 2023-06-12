@@ -1,0 +1,67 @@
+Variable,Cohort,Value
+Number of individuals,FullCohort,50053399
+Number of person-years,FullCohort,415260761
+Number of individuals,ADRDCohort,5935558
+Number of person-years,ADRDCohort,47084973
+Non-Hispanic White,FullCohort,85.5%
+Black,FullCohort,8.2%
+Hispanic,FullCohort,2.3%
+Asian/Pacific Islander,FullCohort,1.9%
+American Indian/Alaska Native,FullCohort,0.3%
+Other,FullCohort,1.8%
+Female,FullCohort,55.5%
+Male,FullCohort,44.5%
+Not Medicaid-eligible,FullCohort,88.8%
+Medicaid eligible,FullCohort,11.2%
+(64,69],FullCohort,60.5%
+(69,74],FullCohort,14.4%
+(74,79],FullCohort,11.7%
+(79,84],FullCohort,7.5%
+(84,89],FullCohort,3.9%
+(89,94],FullCohort,1.4%
+(94,Inf],FullCohort,0.6%
+Non-Hispanic White,ADRDCohort,87.1%
+Black,ADRDCohort,9.3%
+Hispanic,ADRDCohort,1.6%
+Asian/Pacific Islander,ADRDCohort,1%
+American Indian/Alaska Native,ADRDCohort,0.2%
+Other,ADRDCohort,0.8%
+Female,ADRDCohort,63.9%
+Male,ADRDCohort,36.1%
+Not Medicaid-eligible,ADRDCohort,85%
+Medicaid eligible,ADRDCohort,15%
+(64,69],ADRDCohort,22.4%
+(69,74],ADRDCohort,20.1%
+(74,79],ADRDCohort,24.2%
+(79,84],ADRDCohort,18.9%
+(84,89],ADRDCohort,10.2%
+(89,94],ADRDCohort,3.4%
+(94,Inf],ADRDCohort,0.7%
+pm25,FullCohort,11.6 (3.5)
+no2,FullCohort,22.7 (10.9)
+ozone_summer,FullCohort,46.9 (8.3)
+mean_bmi,FullCohort,27 (1)
+pct_smoke,FullCohort,47.2 (7)
+pct_hispanic,FullCohort,10.4 (16.2)
+pct_blk,FullCohort,11.1 (18.3)
+PIR,FullCohort,3.2 (1.8)
+pct_poverty,FullCohort,9.5 (6.6)
+pct_education,FullCohort,30.3 (15.5)
+popdensity,FullCohort,3220.4 (8787.6)
+pct_owner_occ,FullCohort,69 (16.2)
+summer_tmmx,FullCohort,302.7 (3.8)
+summer_rmax,FullCohort,89 (11.5)
+pm25,ADRDCohort,12.8 (3.3)
+no2,ADRDCohort,25.4 (10.7)
+ozone_summer,ADRDCohort,47.7 (8)
+mean_bmi,ADRDCohort,26.8 (1)
+pct_smoke,ADRDCohort,47.6 (6.9)
+pct_hispanic,ADRDCohort,9.3 (15.5)
+pct_blk,ADRDCohort,12.5 (19.8)
+PIR,ADRDCohort,2.9 (1.6)
+pct_poverty,ADRDCohort,10 (6.8)
+pct_education,ADRDCohort,34.3 (15.3)
+popdensity,ADRDCohort,3451.9 (8926.8)
+pct_owner_occ,ADRDCohort,68.2 (16.5)
+summer_tmmx,ADRDCohort,302.4 (3.7)
+summer_rmax,ADRDCohort,91 (9.6)

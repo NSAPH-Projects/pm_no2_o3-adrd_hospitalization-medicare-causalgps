@@ -1,0 +1,10 @@
+Exposure,Method,Coefficient
+pm25,Poisson Regression,0.0340805656464866
+pm25,GPS Weighting,0.0246820226985024
+pm25,GPS Matching,0.0251932909100214
+no2,Poisson Regression,0.0112368369207448
+no2,GPS Weighting,0.00466972897076545
+no2,GPS Matching,0.00560793951197954
+ozone_summer,Poisson Regression,0.00562714615687575
+ozone_summer,GPS Weighting,0.00447862250675715
+ozone_summer,GPS Matching,0.00212988489440428

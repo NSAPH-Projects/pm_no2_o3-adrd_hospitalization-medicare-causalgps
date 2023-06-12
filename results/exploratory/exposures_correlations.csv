@@ -1,0 +1,4 @@
+Exposure1,Exposure2,Correlation
+pm25,no2,0.399118213356107
+no2,ozone_summer,0.25031446792556
+ozone_summer,pm25,0.249975700428556
