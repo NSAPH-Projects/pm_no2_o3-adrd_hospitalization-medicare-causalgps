@@ -80,96 +80,90 @@ for (cohort in c("Full", "ADRD")){
 ### Calculate and save individual-level variables, at each patient's year of FFS entry ###
 for (cohort in c("Full", "ADRD")){
   
-  # percent female (coded as 2 in the data) and male (coded as 1 in the data)
-  cat(paste("Female",
-            paste0(cohort, "Cohort"),
-            paste0(round(mean(cohorts[[cohort]][["sex"]] == 2) * 100, 1), "%"),
-            sep = ","),
-      sep = "\n",
-      file = paste0(dir_results, "exploratory/table1.txt"),
-      append = TRUE)
-  cat(paste("Male",
-            paste0(cohort, "Cohort"),
-            paste0(round(mean(cohorts[[cohort]][["sex"]] == 1) * 100, 1), "%"),
-            sep = ","),
-      sep = "\n",
-      file = paste0(dir_results, "exploratory/table1.txt"),
-      append = TRUE)
-  
-  # percent of each age group (5-year bins)
-  cat(paste(levels(cohorts[[cohort]][["age_grp"]]),
-            paste0(cohort, "Cohort"),
-            paste0(round(prop.table(table(cohorts[[cohort]][["age_grp"]])) * 100, 1), "%"),
-            sep = ","),
-      sep = "\n",
-      file = paste0(dir_results, "exploratory/table1.txt"),
-      append = TRUE)
-  
   # percent of each race (RTI-augmented race codes)
   cat(paste("Non-Hispanic White",
             paste0(cohort, "Cohort"),
-            paste0(round(mean(cohorts[[cohort]][["race"]] == 1) * 100, 1), "%"),
+            paste0(round(mean(entry_year_cohorts[[cohort]][["race"]] == 1) * 100, 1), "%"),
             sep = ","),
       sep = "\n",
       file = paste0(dir_results, "exploratory/table1.txt"),
       append = TRUE)
   cat(paste("Black",
             paste0(cohort, "Cohort"),
-            paste0(round(mean(cohorts[[cohort]][["race"]] == 2) * 100, 1), "%"),
+            paste0(round(mean(entry_year_cohorts[[cohort]][["race"]] == 2) * 100, 1), "%"),
             sep = ","),
       sep = "\n",
       file = paste0(dir_results, "exploratory/table1.txt"),
       append = TRUE)
   cat(paste("Hispanic",
             paste0(cohort, "Cohort"),
-            paste0(round(mean(cohorts[[cohort]][["race"]] == 5) * 100, 1), "%"),
+            paste0(round(mean(entry_year_cohorts[[cohort]][["race"]] == 5) * 100, 1), "%"),
             sep = ","),
       sep = "\n",
       file = paste0(dir_results, "exploratory/table1.txt"),
       append = TRUE)
   cat(paste("Asian/Pacific Islander",
             paste0(cohort, "Cohort"),
-            paste0(round(mean(cohorts[[cohort]][["race"]] == 4) * 100, 1), "%"),
+            paste0(round(mean(entry_year_cohorts[[cohort]][["race"]] == 4) * 100, 1), "%"),
             sep = ","),
       sep = "\n",
       file = paste0(dir_results, "exploratory/table1.txt"),
       append = TRUE)
   cat(paste("American Indian/Alaska Native",
             paste0(cohort, "Cohort"),
-            paste0(round(mean(cohorts[[cohort]][["race"]] == 6) * 100, 1), "%"),
+            paste0(round(mean(entry_year_cohorts[[cohort]][["race"]] == 6) * 100, 1), "%"),
             sep = ","),
       sep = "\n",
       file = paste0(dir_results, "exploratory/table1.txt"),
       append = TRUE)
   cat(paste("Other",
             paste0(cohort, "Cohort"),
-            paste0(round(mean(cohorts[[cohort]][["race"]] == 3) * 100, 1), "%"),
+            paste0(round(mean(entry_year_cohorts[[cohort]][["race"]] == 3) * 100, 1), "%"),
             sep = ","),
       sep = "\n",
       file = paste0(dir_results, "exploratory/table1.txt"),
       append = TRUE)
   
-  ### to do: check and run the following
+  # percent female (coded as 2 in the data) and male (coded as 1 in the data)
+  cat(paste("Female",
+            paste0(cohort, "Cohort"),
+            paste0(round(mean(entry_year_cohorts[[cohort]][["sex"]] == 2) * 100, 1), "%"),
+            sep = ","),
+      sep = "\n",
+      file = paste0(dir_results, "exploratory/table1.txt"),
+      append = TRUE)
+  cat(paste("Male",
+            paste0(cohort, "Cohort"),
+            paste0(round(mean(entry_year_cohorts[[cohort]][["sex"]] == 1) * 100, 1), "%"),
+            sep = ","),
+      sep = "\n",
+      file = paste0(dir_results, "exploratory/table1.txt"),
+      append = TRUE)
   
   # percent Medicaid eligible
   cat(paste("Not Medicaid-eligible",
             paste0(cohort, "Cohort"),
-            paste0(round(mean(cohorts[[cohort]][["dual"]] == 0) * 100, 1), "%"),
+            paste0(round(mean(entry_year_cohorts[[cohort]][["dual"]] == 0) * 100, 1), "%"),
             sep = ","),
       sep = "\n",
       file = paste0(dir_results, "exploratory/table1.txt"),
       append = TRUE)
   cat(paste("Medicaid eligible",
             paste0(cohort, "Cohort"),
-            paste0(round(mean(cohorts[[cohort]][["dual"]] == 1) * 100, 1), "%"),
+            paste0(round(mean(entry_year_cohorts[[cohort]][["dual"]] == 1) * 100, 1), "%"),
             sep = ","),
       sep = "\n",
       file = paste0(dir_results, "exploratory/table1.txt"),
       append = TRUE)
   
-  ## to do: delete the following
-  
-  # prop.table(table(dt_entry$dual)) # Medicaid eligibility
+  # percent of each age group (5-year bins)
+  cat(paste(levels(entry_year_cohorts[[cohort]][["age_grp"]]),
+            paste0(cohort, "Cohort"),
+            paste0(round(prop.table(table(entry_year_cohorts[[cohort]][["age_grp"]])) * 100, 1), "%"),
+            sep = ","),
+      sep = "\n",
+      file = paste0(dir_results, "exploratory/table1.txt"),
+      append = TRUE)
 }
 
 
@@ -188,51 +182,41 @@ yr_zip_dat <- read_fst(paste0(dir_data, "denom/year_zip_confounders.fst"),
 yr_zip_dat[, dat_year := year + 1][, year := NULL] # year for merging into dataset (year before patient enters FFS)
 yr_zip_dat[, zip := as.integer(zip)]
 setnames(yr_zip_dat,
-         old = c("pct_blk", "pct_owner_occ"),
+         old = c("pct_blk", "pct_owner_occ"), # these are incorrectly named (proportions, not percentages)
          new = c("prop_blk", "prop_owner_occ"))
 setkey(yr_zip_dat, zip, dat_year)
 
-# merge exposures with patient data, at each patient's FFS entry year
-dt_entry <- merge(dt_entry, expos_dat,
-                  by.x = c("zip", "year"), by.y = c("zip", "dat_year"),
-                  all.x = TRUE)
-dt_ADRD_entry <- merge(dt_ADRD_entry, expos_dat,
-                       by.x = c("zip", "year"), by.y = c("zip", "dat_year"),
-                       all.x = TRUE)
+# for confounders, convert proportion variables into percentages, for Table 1 only
+prop_vars <- c("smoke_rate", "hispanic", "prop_blk", "poverty", "education", "prop_owner_occ")
+pct_vars <- c("pct_smoke", "pct_hispanic", "pct_blk", "pct_poverty", "pct_education", "pct_owner_occ")
+zip_quant_var_names_with_pct <- copy(zip_quant_var_names)
 
-# merge confounders with patient data, at each patient's FFS entry year
-dt_entry <- merge(dt_entry, yr_zip_dat,
-                  by.x = c("zip", "year"), by.y = c("zip", "dat_year"),
-                  all.x = TRUE)
-dt_ADRD_entry <- merge(dt_ADRD_entry, yr_zip_dat,
-                       by.x = c("zip", "year"), by.y = c("zip", "dat_year"),
-                       all.x = TRUE)
+for (i in 1:length(prop_vars)){
+  yr_zip_dat[[prop_vars[i]]] <- yr_zip_dat[[prop_vars[i]]] * 100 # convert from proportion to percentage
+  names(yr_zip_dat)[names(yr_zip_dat) == prop_vars[i]] <- pct_vars[i] # rename variable from proportion to percentage
+  zip_quant_var_names_with_pct[zip_quant_var_names_with_pct == prop_vars[i]] <- pct_vars[i]
+}
+
+# merge patient data with exposures and confounders, at each patient's FFS entry year
+for (cohort in c("Full", "ADRD")){
+  entry_year_cohorts[[cohort]] <- merge(entry_year_cohorts[[cohort]], expos_dat,
+                                        by.x = c("zip", "year"), by.y = c("zip", "dat_year"),
+                                        all.x = TRUE)
+  entry_year_cohorts[[cohort]] <- merge(entry_year_cohorts[[cohort]], yr_zip_dat,
+                                        by.x = c("zip", "year"), by.y = c("zip", "dat_year"),
+                                        all.x = TRUE)
+}
 
 # calculate and save mean and SD of exposures and neighborhood variables, at each patient's year of FFS entry
 for (cohort in c("Full", "ADRD")){
-  for (var in c(zip_expos_names, zip_quant_var_names)){
+  for (var in c(zip_expos_names, zip_quant_var_names_with_pct)){
     cat(paste(var,
               paste0(cohort, "Cohort"),
-              round(mean(cohorts[[cohort]][[var]], na.rm = T), 1), " (", round(sd(cohorts[[cohort]][[var]], na.rm = T), 1), ")",
+              paste0(round(mean(entry_year_cohorts[[cohort]][[var]], na.rm = T), 1),
+                     " (", round(sd(entry_year_cohorts[[cohort]][[var]], na.rm = T), 1), ")"),
               sep = ","),
         sep = "\n",
         file = paste0(dir_results, "exploratory/table1.txt"),
         append = TRUE)
   }
 }
-
-
-## to do: delete the following
-
-# for (var in c(zip_expos_names, zip_quant_var_names)){
-#   print(paste0(var, ": ", round(mean(dt_entry[[var]], na.rm = T), 1), " (", round(sd(dt_entry[[var]], na.rm = T), 1), ")"))
-#   # cat("Mean of", var, "in full cohort at entry year:", mean(dt_entry[[var]], na.rm = T), "\n")
-#   # cat("SD of", var, "in full cohort at entry year:", sd(dt_entry[[var]], na.rm = T), "\n")
-# }
-# 
-# for (var in c(zip_expos_names, zip_quant_var_names)){
-#   print(paste0(var, ": ", round(mean(dt_ADRD_entry[[var]], na.rm = T), 1), " (", round(sd(dt_ADRD_entry[[var]], na.rm = T), 1), ")"))
-#   # cat("Mean of", var, "in ADRD cohort at entry year:", mean(dt_ADRD_entry[[var]], na.rm = T), "\n")
-#   # cat("SD of", var, "in ADRD cohort at entry year:", sd(dt_ADRD_entry[[var]], na.rm = T), "\n")
-# }
-
