@@ -203,4 +203,4 @@ data_prediction <-
                                            ate = mean(predict(bam_exposure_only, newdata = potential_data, type = "response"))))
                        }))
 plot(I(1e5*ate)~w,data_prediction, type = 'l')
-save(data_prediction, file = paste0(dir_results, exposure_name, "_gpsmatching_smooth.rda"))
+save(data_prediction, file = paste0(dir_results, "semiparametric_results/", exposure_name, "_gpsmatching_smooth.rda"))

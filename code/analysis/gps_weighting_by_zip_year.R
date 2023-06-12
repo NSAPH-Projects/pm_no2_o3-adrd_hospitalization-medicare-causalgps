@@ -192,4 +192,4 @@ data_prediction <-
 plot(I(1e5*ate)~w,data_prediction, type = 'l')
 exposure_density <- density(zip_year_data$w)
 save(data_prediction, exposure_density,
-     file = paste0(dir_results, exposure_name, "_gpsweighting_smooth.rda"))
+     file = paste0(dir_results, "semiparametric_results/", exposure_name, "_gpsweighting_smooth.rda"))
