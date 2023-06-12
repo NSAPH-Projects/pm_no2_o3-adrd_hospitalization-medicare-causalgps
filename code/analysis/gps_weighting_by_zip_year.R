@@ -17,7 +17,7 @@ source(paste0(dir_code, "analysis/helper_functions.R"))
 exposure_name <- "ozone_summer"
 
 # parameters for this computing job; user should set
-n_cores <- 1 # 48 is max of fasse partition, 64 is max of fasse_bigmem partition
+n_cores <- 4 # 48 is max of fasse partition, 64 is max of fasse_bigmem partition
 n_gb <- 32 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
 find_best_cov_bal_attempt <- F # user should set this variable; true means run for loop over several attempts to find attempt with best covariate balance
 save_best_attempt_cov_bal <- F # user should set this variable; true means save covariate balance as csv
