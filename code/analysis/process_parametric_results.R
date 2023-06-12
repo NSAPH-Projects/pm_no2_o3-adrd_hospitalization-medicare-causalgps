@@ -19,13 +19,14 @@ all_results <- merge(coef, boot_SE, by = c("Exposure", "Method"))
 # get each exposure's IQR
 zip_exposure_summary <- fread(paste0(dir_results, "exploratory/zip_exposure_summary.csv"))
 iqr <- zip_exposure_summary[, .(Exposure, IQR)] # 4.159 micrograms/m^2 for PM2.5, 12.012 ppb for NO2, 9.801 ppb for summer ozone
+all_results <- merge(all_results, iqr, by = "Exposure")
 
 # calculate point estimate for hazard ratio (HR) per IQR increase in each exposure
-all_results[, HR := exp(IQR * coef)]
+all_results[, HR := exp(IQR * Coefficient)]
 
 # calculate 95% confidence interval for coefficient
-all_results[, `:=`(coef_CI_lower = coef - 1.96 * boot_SE,
-                   coef_CI_upper = coef + 1.96 * boot_SE)]
+all_results[, `:=`(coef_CI_lower = Coefficient - 1.96 * BootSE,
+                   coef_CI_upper = Coefficient + 1.96 * BootSE)]
 
 # calculate 95% confidence interval for hazard ratio (HR)
 all_results[, `:=`(HR_CI_lower = exp(IQR * coef_CI_lower),
