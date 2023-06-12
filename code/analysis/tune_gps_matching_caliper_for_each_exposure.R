@@ -14,11 +14,11 @@ source(paste0(dir_code, "constants.R"))
 source(paste0(dir_code, "analysis/helper_functions.R"))
 
 # set exposure
-exposure_name <- "no2"
+exposure_name <- "pm25" # options: "pm25", "no2", or "ozone_summer"
 
 # parameters for this computing job
 n_cores <- 4 # 48 is max of fasse partition, 64 is max of fasse_bigmem partition
-n_gb <- 32 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
+n_gb <- 48 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
 
 # get data
 zip_year_data <- read_fst(paste0(dir_data, "analysis/",
