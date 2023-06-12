@@ -9,10 +9,10 @@ dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/git/co
 source(paste0(dir_code, "constants.R"))
 
 # set exposure
-exposure_name <- "no2"
+exposure_name <- "pm25"
 
 # set parameters for this computing job
-n_cores <- 16
+n_cores <- 4
 
 # get data
 zip_year_data_with_strata <- read_fst(paste0(dir_data, "analysis/",
@@ -84,4 +84,4 @@ data_prediction <-
                                           type = "response"))))
    }))
 plot(I(1e5*ate)~w,data_prediction, type = 'l')
-save(data_prediction, file = paste0(dir_results, exposure_name, "_assoc_smooth.rda"))
+save(data_prediction, file = paste0(dir_results, "semiparametric_results/", exposure_name, "_assoc_smooth.rda"))
