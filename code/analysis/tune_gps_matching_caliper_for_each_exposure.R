@@ -58,7 +58,7 @@ for (matching_caliper in matching_calipers_to_try){
   
   # a variable called "modifications" will be used in the filepath of the results, to record the covariate balance of each attempt
   if (n_attempts < n_total_attempts){
-    modifications <- paste0("match_zips_gps_untrimmed_caliper", matching_caliper, "_", n_attempts, "more_attempts")
+    modifications <- paste0("match_zips_gps_untrimmed_caliper", matching_caliper, "_", n_attempts, "more_attempts") # "gps untrimmed" refers to the fact that this analysis does not trim the GPS
   } else{
     modifications <- paste0("match_zips_gps_untrimmed_caliper", matching_caliper, "_", n_attempts, "attempts")
   }
