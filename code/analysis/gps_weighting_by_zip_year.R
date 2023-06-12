@@ -84,13 +84,14 @@ if (find_best_cov_bal_attempt){
 
 if (find_best_cov_bal_attempt){
   
-  # create log file to see internal processes of CausalGPS
-  set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/",
-                                       exposure_name, "/",
-                                       "weighting/",
-                                       modifications, "/",
-                                       Sys.Date(), "_estimate_gps_for_weighting_", nrow(zip_year_data), "rows_", n_cores, "cores_", n_gb, "gb.log"),
-             logger_level = "TRACE")
+  # # create log file to see internal processes of CausalGPS
+  # # Note: user must create these folders and subfolders prior to running this line, or else will get error of "No such file or directory"
+  # set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/",
+  #                                      exposure_name, "/",
+  #                                      "weighting/",
+  #                                      modifications, "/",
+  #                                      Sys.Date(), "_estimate_gps_for_weighting_", nrow(zip_year_data), "rows_", n_cores, "cores_", n_gb, "gb.log"),
+  #            logger_level = "TRACE")
   
   for (i in 1:n_attempts){
     cov_bal_weighting <- get_weighted_pseudopop(attempt_number = i + n_attempts_already_tried,

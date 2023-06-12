@@ -212,26 +212,14 @@ get_matched_pseudopop <- function(dir_code,
   temp_zip_year_with_gps_dataset_plus_params$w_resid <- temp_zip_year_with_gps_obj$w_resid
   temp_zip_year_with_gps_dataset_plus_params$zip <- zip_year_data$zip
   
-  # # trim GPS, keeping observations in middle 95% of GPS values
-  # gps_outer_quantiles <- quantile(temp_zip_year_with_gps_dataset_plus_params$gps, c(0.025, 0.975))
-  # temp_zip_year_with_gps_dataset_plus_params <- temp_zip_year_with_gps_dataset_plus_params[gps >= gps_outer_quantiles[1] &
-  #                                                                                            gps <= gps_outer_quantiles[2]]
-  
-  # unused: # truncate GPS at 2.5th and 97.5th percentiles
-  # gps_outer_quantiles <- quantile(temp_zip_year_with_gps_dataset_plus_params$gps, c(0.025, 0.975))
-  # temp_zip_year_with_gps_dataset_plus_params$gps <- ifelse(temp_zip_year_with_gps_dataset_plus_params$gps < gps_outer_quantiles[1],
-  #                                                          gps_outer_quantiles[1],
-  #                                                          temp_zip_year_with_gps_dataset_plus_params$gps)
-  # temp_zip_year_with_gps_dataset_plus_params$gps <- ifelse(temp_zip_year_with_gps_dataset_plus_params$gps > gps_outer_quantiles[2],
-  #                                                          gps_outer_quantiles[2],
-  #                                                          temp_zip_year_with_gps_dataset_plus_params$gps)
-  
   # split dataset into a list of datasets by year
   setkey(temp_zip_year_with_gps_dataset_plus_params, year)
   temp_zip_year_with_gps_dataset_plus_params[, row_index := 1:.N, by = year]
   zip_list_by_year <- split(temp_zip_year_with_gps_dataset_plus_params,
                             temp_zip_year_with_gps_dataset_plus_params$year)
   
+  # # create log file to see internal processes of CausalGPS
+  # # Note: user must create these folders and subfolders prior to running this line, or else will get error of "No such file or directory"
   # set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/",
   #                                      exposure_name, "/",
   #                                      "matching/",
