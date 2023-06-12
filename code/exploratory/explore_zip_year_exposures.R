@@ -2,8 +2,6 @@
 
 library(data.table)
 library(fst)
-library(plotrix)
-library(ggplot2)
 
 # get directories and classifications of variables
 dir_code <- "~/nsaph_projects/mqin_pm_no2_o3-adrd_hosp-medicare-causalgps/git/code/"
