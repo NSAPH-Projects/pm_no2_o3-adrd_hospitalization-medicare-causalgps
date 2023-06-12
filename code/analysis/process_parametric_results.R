@@ -9,9 +9,12 @@ coef <- fread(paste0(dir_results, "parametric_results/coef_for_exposure.txt"))
 
 # read in m-out-of-n bootstrap standard errors (SEs) of coefficient for exposure
 boot_SE <- fread(paste0(dir_results, "parametric_results/boot_SE.txt"))
+boot_SE[, Method := ifelse(Method == "associational", "Poisson Regression",
+                           ifelse(Method == "weighting", "GPS Weighting",
+                                  ifelse(Method == "matching", "GPS Matching", "Unknown")))]
 
 # merge point estimates and SEs
-all_results <- merge(boef, boot_SE, by = c("Exposure", "Method"))
+all_results <- merge(coef, boot_SE, by = c("Exposure", "Method"))
 
 # get each exposure's IQR
 zip_exposure_summary <- fread(paste0(dir_results, "exploratory/zip_exposure_summary.csv"))
