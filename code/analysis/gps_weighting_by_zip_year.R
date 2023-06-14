@@ -82,10 +82,11 @@ if (find_best_cov_bal_attempt){
                                                  zip_year_data = zip_year_data)
 }
 
+# Note: user must create "results/covariate_balance/[exposure]/weighting/30attempts" folder prior to running this for loop, or else will get error of "cannot open the connection"
 if (find_best_cov_bal_attempt){
   
   # # create log file to see internal processes of CausalGPS
-  # # Note: user must create these folders and subfolders prior to running this line, or else will get error of "No such file or directory"
+  # # Note: user must create these folders and subfolders prior to running this line, or else will get error of "cannot open the connection"
   # set_logger(logger_file_path = paste0(dir_code, "analysis/CausalGPS_logs/",
   #                                      exposure_name, "/",
   #                                      "weighting/",
