@@ -14,13 +14,13 @@ source(paste0(dir_code, "constants.R"))
 source(paste0(dir_code, "analysis/helper_functions.R"))
 
 # set exposure
-exposure_name <- "no2"
+exposure_name <- "pm25" # options: "pm25", "no2", or "ozone_summer"
 
 # parameters for this computing job
 n_cores <- 4 # 48 is max of fasse partition, 64 is max of fasse_bigmem partition
-n_gb <- 32 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
+n_gb <- 48 # 184 is max of fasse partition, 499 is max of fasse_bigmem partition
 find_best_cov_bal_attempt <- F # user should set this variable; true means run for loop over several attempts to find attempt with best covariate balance
-save_best_attempt_cov_bal <- F # user should set this variable; true means save covariate balance as csv and plot
+save_best_attempt_cov_bal <- F # user should set this variable; true means save covariate balance as csv
 
 # get matching caliper (previously tuned to the following)
 if (exposure_name == "pm25"){
@@ -29,19 +29,21 @@ if (exposure_name == "pm25"){
   matching_caliper <- 3.5
 } else if (exposure_name == "ozone_summer"){
   matching_caliper <- 4.5
-} else message("'exposure_name' must be 'pm25', 'no2', or 'ozone_summer'")
+} else{
+  message("'exposure_name' must be 'pm25', 'no2', or 'ozone_summer'")
+}
 
 if (find_best_cov_bal_attempt){
   n_attempts <- 30 # user should set this; number of attempts this script will try to model the GPS
   n_total_attempts <- 30 # user can set this to a number larger than n_attempts if some attempts have already been tried; to be printed on cov bal plot
   
-  if (n_attempts < n_total_attempts){
+  if (n_attempts < n_total_attempts){ # "gps untrimmed" refers to the fact that this analysis does not trim the GPS
     modifications <- paste0("match_zips_gps_untrimmed_caliper", matching_caliper, "_", n_attempts, "more_attempts") # to be used in names of output files, to record how you're tuning the models
   } else{
     modifications <- paste0("match_zips_gps_untrimmed_caliper", matching_caliper, "_", n_attempts, "attempts") # to be used in names of output files, to record how you're tuning the models
   }
 } else{
-  n_attempts <- 1
+  n_attempts <- 1 # the following are the best attempts (out of 30)
   
   if (exposure_name == "pm25"){
     best_maxAC_attempt <- 23
@@ -120,21 +122,6 @@ if (find_best_cov_bal_attempt){
                                     "matching/",
                                     modifications, "/",
                                     "best_cov_bal.csv"))
-  
-  # plot best covariate balance
-  matched_cov_bal_plot <- ggplot(best_maxAC_cov_bal, aes(x = Covariate, y = AbsoluteCorrelation, color = Dataset, group = Dataset)) +
-    geom_point() +
-    geom_line() +
-    ylab(paste("Absolute Correlation with", exposure_name)) +
-    ggtitle(paste0(format(unique(best_maxAC_cov_bal$SampleSize), scientific = F, big.mark = ','), " units of analysis (Attempt #", best_maxAC_attempt, " of ", n_total_attempts, ")")) +
-    theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
-  
-  # # save image of best covariate balance plot
-  # ggsave(paste0(dir_results, "covariate_balance/",
-  #               exposure_name, "/",
-  #               "matching/",
-  #               modifications, "/",
-  #               nrow(zip_year_data_with_strata), "rows.png"), matched_cov_bal_plot)
 }
 
 # regenerate GPS model and matched pseudopopulation with best covariate balance
@@ -164,14 +151,6 @@ if (save_best_attempt_cov_bal){
                                     "matching/",
                                     modifications, "/",
                                     "best_cov_bal.csv"))
-  
-  # plot best covariate balance
-  matched_cov_bal_plot <- ggplot(best_maxAC_cov_bal, aes(x = Covariate, y = AbsoluteCorrelation, color = Dataset, group = Dataset)) +
-    geom_point() +
-    geom_line() +
-    ylab(paste("Absolute Correlation with", exposure_name)) +
-    ggtitle(paste0(format(unique(best_maxAC_cov_bal$SampleSize), scientific = F, big.mark = ','), " units of analysis (Attempt #", best_maxAC_attempt, ")")) +
-    theme(axis.text.x = element_text(angle = 90), plot.title = element_text(hjust = 0.5))
 }
 
 
@@ -193,7 +172,10 @@ cat(paste(exposure_name, "GPS Matching", bam_exposure_only$coefficients["w"], se
     file = paste0(dir_results, "parametric_results/coef_for_exposure.txt"),
     append = TRUE)
 
-# run semiparametric (thin-plate spline) outcome model
+
+### Sensitivity analysis: thin-plate spline outcome model ###
+
+# fit model
 cl <- parallel::makeCluster(n_cores, type = "PSOCK")
 bam_exposure_only <- bam(formula_expos_only_smooth_cr,
                          data = best_matched_pseudopop,
@@ -221,31 +203,4 @@ data_prediction <-
                                            ate = mean(predict(bam_exposure_only, newdata = potential_data, type = "response"))))
                        }))
 plot(I(1e5*ate)~w,data_prediction, type = 'l')
-save(data_prediction, file = paste0(dir_results, exposure_name, "_gpsmatching_smooth.rda"))
-
-# save semiparametric point estimates
-w_values <- seq(min(zip_year_data$w), max(zip_year_data$w), length.out = 20)
-predicted_erf <- sapply(w_values,
-                        predict_erf_at_a_point,
-                        spline_obj = bam_exposure_only,
-                        df = best_matched_pseudopop)
-predicted_erf <- data.table(w = w_values,
-                            prediction = predicted_erf)
-fwrite(predicted_erf,
-       paste0(dir_results, "semiparametric_results/",
-              exposure_name, "/",
-              "matching/",
-              modifications, "/",
-              "point_estimates.csv"))
-
-# save semiparametric plot
-png(paste0(dir_results, "semiparametric_results/ERFs/",
-           exposure_name, "/",
-           "matching/",
-           modifications, "/",
-           "bam_smooth_exposure_only.png"))
-plot(bam_exposure_only, main = paste0("GPS ",
-                                      "matching",
-                                      ", Smoothed Poisson regression,\nexposure only (",
-                                      exposure_name, ")"))
-dev.off()
+save(data_prediction, file = paste0(dir_results, "semiparametric_results/", exposure_name, "_gpsmatching_smooth.rda"))

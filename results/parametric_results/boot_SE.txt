@@ -1,0 +1,10 @@
+Exposure,Method,BootSE
+pm25,associational,0.000867745124178552
+pm25,weighting,0.0012287140969159
+pm25,matching,0.00329661026219217
+no2,associational,0.0002667138554475
+no2,weighting,0.000367045345584711
+no2,matching,0.000701981238756164
+ozone_summer,associational,0.000343305678089449
+ozone_summer,weighting,0.000469240617319056
+ozone_summer,matching,0.000806152271812765
