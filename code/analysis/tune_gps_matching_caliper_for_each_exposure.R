@@ -1,3 +1,5 @@
+##### Note: In order to save covariate balance results, user needs to create an empty folder (results/covariate_balance/[exposure]/matching/[modifications]) BEFORE running this script #####
+
 ##### Setup #####
 
 # devtools::install_github("fasrc/CausalGPS", ref="develop")
@@ -60,7 +62,7 @@ for (matching_caliper in matching_calipers_to_try){
   if (n_attempts < n_total_attempts){
     modifications <- paste0("match_zips_gps_untrimmed_caliper", matching_caliper, "_", n_attempts, "more_attempts") # "gps untrimmed" refers to the fact that this analysis does not trim the GPS
   } else{
-    modifications <- paste0("match_zips_gps_untrimmed_caliper", matching_caliper, "_", n_attempts, "attempts")
+    modifications <- paste0("match_zips_gps_untrimmed_caliper", matching_caliper, "_", n_attempts, "attempts") # "gps untrimmed" refers to the fact that this analysis does not trim the GPS
   }
   
   
