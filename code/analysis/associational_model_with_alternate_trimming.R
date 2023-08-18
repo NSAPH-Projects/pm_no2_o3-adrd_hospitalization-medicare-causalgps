@@ -84,44 +84,10 @@ for (exposure_name in zip_expos_names){
   bam_trimmed(exposure_name, dataset, trim_level_2)
 }
 
-
-### Sensitivity analysis: thin-plate spline outcome model ###
-
-# function to fit model
-bam_smooth_trimmed <- function(exposure_name, dataset, trim_level){
-  cl <- parallel::makeCluster(n_cores, type = "PSOCK")
-  bam_smooth_associational <- 
-    bam(as.formula(paste("Y ~", paste(c("s(w, bs = 'cr', k = 4, fx = TRUE)",
-                                        strata_vars,
-                                        zip_var_names),
-                                      collapse = "+", sep = ""))),
-        data = dataset,
-        offset = log(n_persons * n_years),
-        family = poisson(link = "log"),
-        samfrac = 0.05,
-        chunk.size = 5000,
-        control = gam.control(trace = TRUE),
-        nthreads = n_cores,
-        cluster = cl)
-  parallel::stopCluster(cl)
-  
-  # estimate counterfactual for every year-zip-strata, calculate ATE
-  potential_data <- copy(dataset)
-  data_prediction <- 
-    rbindlist(lapply(seq(min(dataset$w), 
-                         max(dataset$w), 
-                         length.out = 100), function(pot_exp) {
-                           
-                           # Get potential data if all had same potential exposure
-                           potential_data[, w := pot_exp]
-                           return(data.table(name = exposure_name,
-                                             w = pot_exp,
-                                             ate = mean(predict(bam_smooth_associational, 
-                                                                newdata = potential_data, 
-                                                                type = "response"))))
-                         }))
-  plot(I(1e5*ate)~w,data_prediction, type = 'l')
-  save(data_prediction, file = paste0(dir_results, "semiparametric_results/", exposure_name, "_trim_", trim_level[1], "_", trim_level[2], "_assoc_smooth.rda"))
-}
-
-# to do: run the spline for trim_level_1 and trim_level_2 over zip_expos_names?
+# convert regression coefficient to hazard ratio
+coef <- fread(paste0(dir_results, "parametric_results/coef_for_exposure_with_alternate_trimming.txt"))
+zip_exposure_summary <- fread(paste0(dir_results, "exploratory/zip_exposure_summary.csv"))
+iqr <- zip_exposure_summary[, .(Exposure, IQR)] # 4.159 micrograms/m^2 for PM2.5, 12.012 ppb for NO2, 9.801 ppb for summer ozone
+coef <- merge(coef, iqr, by = "Exposure")
+coef[, HR := exp(IQR * Coefficient)]
+coef
