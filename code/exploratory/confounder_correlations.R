@@ -23,21 +23,6 @@ zip_year_data <- subset(ADRD_agg_lagged,
 zip_year_data <- unique(zip_year_data, by = c("zip", "year"))
 
 
-# # read in trimmed PM2.5, NO2, and summer ozone data
-# pm25_data <- read_fst(paste0(dir_data, "analysis/",
-#                              "pm25/",
-#                              "zip_year_data_with_strata_trimmed_0.05_0.95.fst"),
-                      # as.data.table = T)
-# no2_data <- read_fst(paste0(dir_data, "analysis/",
-#                              "no2/",
-#                              "zip_year_data_with_strata_trimmed_0.05_0.95.fst"),
-#                       as.data.table = T)
-# ozone_summer_data <- read_fst(paste0(dir_data, "analysis/",
-#                              "ozone_summer/",
-#                              "zip_year_data_with_strata_trimmed_0.05_0.95.fst"),
-#                       as.data.table = T)
-
-
 ##### 2. Check correlation between confounders #####
 
 zip_year_data[, `:=`(pm25 = NULL,
