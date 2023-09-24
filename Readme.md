@@ -38,6 +38,8 @@ These six files create the three datasets, one for each exposure, to be analyzed
   - *associational_model.R*: Poisson regression model, used as a baseline to compare causal inference results.
   
   - *gps_weighting_by_zip_year.R*: GPS weighting analysis.
+    
+  - *tune_gps_matching_caliper_for_each_exposure.R*: For each exposure, tune the caliper for GPS matching, i.e., identify the caliper from 5 possible values that results in the best covariate balance (i.e., smallest maximum absolute correlation between any confounder and the exposure).
   
   - *gps_matching_by_zip_year.R*: GPS matching analysis.
   
